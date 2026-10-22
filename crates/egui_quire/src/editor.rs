@@ -153,6 +153,8 @@ pub(crate) struct Mem {
     pub reported_selection: Option<Vec<Range<usize>>>,
     /// First chord of a two-chord binding, waiting for the second.
     pub pending_chord: Option<crate::chord::Chord>,
+    /// The last key event was a press the keymap consumed: the `Text` it produced is dropped.
+    pub key_consumed: bool,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
     /// Reused per frame so clean frames do not allocate (E1).
@@ -497,6 +499,7 @@ impl<'a> CodeEditor<'a> {
             frame.mem.last_interaction = ctx.input(|i| i.time);
             glue::set_focused(frame.view, focused);
             frame.mem.pending_chord = None;
+            frame.mem.key_consumed = false;
             if !focused && glue::preedit(frame.view).is_some() {
                 glue::set_preedit(frame.view, None);
             }
@@ -884,8 +887,14 @@ impl FrameCx<'_> {
         let owns_ime = self.ctx.memory(|m| m.owns_ime_events(self.id));
         let events = ui.input_mut(|i| std::mem::take(&mut i.events));
         let mut kept = Vec::with_capacity(events.len());
+        // egui delivers a keypress as `Key` then the `Text` it produces (Option+Z on macOS gives
+        // "Ω"), possibly in a later pass. As in VS Code, where a matched keybinding prevents the
+        // keypress's default, the text of a key the keymap consumed is dropped; any other event
+        // in between ends that. Unbound keys (AltGr text entry) still type.
         for ev in events {
+            let drop_text = std::mem::take(&mut self.mem.key_consumed);
             let handled = match &ev {
+                Event::Text(_) if drop_text => true,
                 Event::Text(t) => {
                     if glue::preedit(self.view).is_none() && !t.is_empty() {
                         self.dispatch(glue::type_cmd(t));
@@ -925,7 +934,9 @@ impl FrameCx<'_> {
                     ..
                 } => match keys {
                     KeyHandling::Builtin(map) if glue::preedit(self.view).is_none() => {
-                        self.handle_key(map, os, *key, *modifiers)
+                        let consumed = self.handle_key(map, os, *key, *modifiers);
+                        self.mem.key_consumed = consumed;
+                        consumed
                     }
                     _ => false,
                 },

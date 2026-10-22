@@ -54,7 +54,12 @@ fn wrap_cfg() -> EditorConfig {
 }
 
 fn harness(st: St) -> Harness<'static, St> {
+    harness_os(st, egui::os::OperatingSystem::Nix)
+}
+
+fn harness_os(st: St, os: egui::os::OperatingSystem) -> Harness<'static, St> {
     let mut h = Harness::builder()
+        .with_os(os)
         .with_size(Vec2::new(420.0, 300.0))
         .with_step_dt(1.0 / 60.0)
         .build_ui_state(
@@ -422,4 +427,46 @@ fn alt_z_toggles_word_wrap() {
     h.run();
     assert_eq!(h.state().doc.config().word_wrap, WordWrap::Off);
     assert!((caret(&h).top() - off.top()).abs() < 0.5);
+}
+
+/// A key press as egui delivers it from a real keyboard: `Key`, then the `Text` it produced.
+fn key_then_text(h: &mut Harness<'_, St>, key: Key, modifiers: Modifiers, text: &str) {
+    for pressed in [true, false] {
+        h.event(Event::Key {
+            key,
+            physical_key: Some(key),
+            pressed,
+            repeat: false,
+            modifiers,
+        });
+        if pressed {
+            h.event(Event::Text(text.into()));
+        }
+    }
+    h.run();
+}
+
+#[test]
+fn a_bound_key_does_not_type_its_text() {
+    let mac = egui::os::OperatingSystem::Mac;
+    // Option+Z on macOS produces "Ω": the binding runs and nothing is typed.
+    let mut h = harness_os(St::new("abc", EditorConfig::default()), mac);
+    focus(&mut h);
+    key_then_text(&mut h, Key::Z, Modifiers::ALT, "Ω");
+    assert_eq!(h.state().doc.config().word_wrap, WordWrap::On);
+    assert_eq!(h.state().doc.text().to_string(), "abc");
+    // Shift+Option+A produces "Å": a block comment, no "Å".
+    let mut h = harness_os(St::new("abc", EditorConfig::default()), mac);
+    focus(&mut h);
+    key_then_text(&mut h, Key::A, Modifiers::ALT | Modifiers::SHIFT, "Å");
+    assert_eq!(h.state().doc.text().to_string(), "abc/*  */");
+}
+
+#[test]
+fn altgr_text_with_no_binding_still_types() {
+    // AltGr arrives as Ctrl+Alt on Windows and Linux; with no binding the text is typed.
+    let mut h = harness(St::new("abc", EditorConfig::default()));
+    focus(&mut h);
+    key_then_text(&mut h, Key::Q, Modifiers::CTRL | Modifiers::ALT, "@");
+    assert_eq!(h.state().doc.text().to_string(), "abc@");
 }
