@@ -40,7 +40,7 @@
   "satisfies"
 ] @keyword
 
-; quire overrides (MIT OR Apache-2.0)
+; quire overrides
 (type_parameters
   "<" @punctuation.bracket
   ">" @punctuation.bracket)

@@ -1,4 +1,4 @@
-; quire query, MIT OR Apache-2.0.
+; quire query.
 ; inherits: _javascript
 
 (type_arguments "<" @open ">" @close)
