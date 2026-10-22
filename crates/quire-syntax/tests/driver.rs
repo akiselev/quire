@@ -125,3 +125,22 @@ fn thread_spawner_stale_result_applies_and_a_new_job_follows() {
     assert!(d.tree_at(doc.version()).is_some());
     assert!(d.tree().unwrap().0.stats().reused + d.tree().unwrap().0.stats().parsed >= 1);
 }
+
+#[test]
+fn fresh_trees_set_the_documents_fold_ranges() {
+    // No indentation: the indentation provider finds nothing; the tree does.
+    let text = "function f() {\nconst a = 1;\nreturn a;\n}\nlet z = 0;\n";
+    let mut doc = Document::new(text, EditorConfig::default());
+    assert!(doc.fold_ranges().is_empty());
+    let mut d = driver(Arc::new(InlineSpawner));
+    d.update(&mut doc, 0..10, 0);
+    let folds: Vec<(usize, usize)> = doc
+        .fold_ranges()
+        .iter()
+        .map(|r| (r.start_line, r.end_line))
+        .collect();
+    assert!(
+        folds.iter().any(|&(s, e)| s == 0 && e >= 2),
+        "the function body folds from the syntax tree: {folds:?}"
+    );
+}

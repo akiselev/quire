@@ -15,8 +15,6 @@ svelte = ["dep:tree-sitter-htmlx-svelte", "javascript", "typescript", "css"]
 typescript = ["dep:tree-sitter-typescript"]
 javascript = ["dep:tree-sitter-javascript"]
 css = ["dep:tree-sitter-css"]
-# SyntaxDriver (debounced background parse jobs); its public API awaits approval.
-unstable-driver = []
 
 [dependencies]
 quire-core.workspace = true
@@ -39,7 +37,3 @@ harness = false
 
 [lints]
 workspace = true
-
-[[test]]
-name = "driver"
-required-features = ["unstable-driver"]

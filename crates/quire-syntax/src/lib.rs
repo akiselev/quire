@@ -9,8 +9,6 @@
 //! reused and reparsed incrementally across edits.
 
 mod config;
-// SyntaxDriver: public API pending the coordinator's approval; behind a non-default feature until then.
-#[cfg(feature = "unstable-driver")]
 mod driver;
 mod highlight;
 mod highlighter;
@@ -21,7 +19,6 @@ mod style;
 mod tree;
 
 pub use config::{QueryError, check_queries};
-#[cfg(feature = "unstable-driver")]
 pub use driver::{DEFAULT_DEBOUNCE_MS, DEFAULT_MARGIN_LINES, SyntaxDriver};
 pub use highlighter::{SyntaxTree, TreeSitterHighlighter};
 pub use lang::Lang;

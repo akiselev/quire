@@ -16,6 +16,9 @@ serde_json.workspace = true
 
 [dev-dependencies]
 egui_kittest.workspace = true
+# Host-side syntax highlighting in the playground and the integration kittest; the widget itself
+# reads tokens and folds from the Document only.
+quire-syntax.workspace = true
 eframe.workspace = true
 
 # Snapshot images render through wgpu (Metal); they are recorded and compared on macOS only, as

@@ -12,6 +12,8 @@
 //! - **Results** apply through [`Document::set_tokens`], which takes them as they are if the
 //!   version still matches and shifts them by whole lines through the recent changes if not
 //!   (stale beyond the window: dropped, and the next job recomputes).
+//! - **Folds:** each fresh tree's fold ranges go to [`Document::set_fold_ranges`] (replacing
+//!   the indentation-based ranges).
 //! - **Settled:** while a debounce or a job is pending the driver holds a token in the
 //!   document's [`PendingWork`](quire_core::syntax::PendingWork), so `Document::is_settled` and
 //!   its `SettledProbe` report busy until the result is applied.
@@ -19,7 +21,7 @@
 use std::ops::Range;
 use std::sync::{Arc, Mutex};
 
-use quire_core::syntax::{CancelFlag, Highlighter, PendingToken, Spawner, TokenRuns};
+use quire_core::syntax::{CancelFlag, FoldRange, Highlighter, PendingToken, Spawner, TokenRuns};
 use quire_core::{Document, Version};
 
 /// Default quiet time before a parse starts after an edit.
@@ -31,6 +33,8 @@ struct Done<H: Highlighter> {
     version: Version,
     tree: Option<Arc<H::Tree>>,
     runs: TokenRuns,
+    /// Fold ranges of a freshly parsed tree.
+    folds: Option<Vec<FoldRange>>,
     _pending: PendingToken,
 }
 
@@ -184,6 +188,11 @@ impl<H: Highlighter> SyntaxDriver<H> {
         {
             self.tree = Some((tree, done.version));
         }
+        if let Some(folds) = done.folds {
+            // Mapped forward through the recent changes; stale beyond the window: dropped (the
+            // next parse sends fresh ones).
+            let _ = doc.set_fold_ranges(done.version, folds);
+        }
         let range = done.runs.line_range();
         if doc.set_tokens(done.version, done.runs).is_ok() && done.version == doc.version() {
             if self.covered_at != Some(done.version) {
@@ -233,10 +242,12 @@ impl<H: Highlighter> SyntaxDriver<H> {
                 None => TokenRuns::default(),
             };
             let tree = if fresh { tree } else { None };
+            let folds = tree.as_ref().map(|t| h.folds(t));
             *job_slot.lock().expect("syntax job slot") = Some(Done {
                 version,
                 tree,
                 runs,
+                folds,
                 _pending: pending,
             });
             if let Some(w) = waker {

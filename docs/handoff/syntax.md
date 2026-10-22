@@ -14,8 +14,8 @@
 - `TreeSitterHighlighter` implements `quire_core::syntax::Highlighter`; its tree type is
   `SyntaxTree`. Capture names map to core `TokenType`s, and `*.builtin` captures get the
   defaultLibrary modifier.
-- `SyntaxDriver<H>` (`src/driver.rs`) sits behind the non-default feature `unstable-driver`.
-  Its public API is waiting for the coordinator's approval (proposal sent).
+- `SyntaxDriver<H>` (`src/driver.rs`): approved; always built (the `unstable-driver` feature is
+  gone). Fresh trees also feed `Document::set_fold_ranges`.
 - Criterion bench `benches/e5.rs`; numbers in E5.md: about 7.8 ms per edit on a 20k-line Svelte
   file, against a 3.7 ms tree-sitter floor.
 
@@ -41,9 +41,10 @@ Fixture snapshots: set `QUIRE_BLESS=1` to rewrite `tests/fixtures/*.tokens`. For
 run, set `QUIRE_FUZZ_SEEDS=n`.
 
 ## Next
-- Once the coordinator approves the SyntaxDriver API, drop the `unstable-driver` gate. After that,
-  wire it into egui_quire (widget agent): call `update(doc, visible_lines, now_ms)` each frame, set
-  the waker to `ctx.request_repaint`, and use `next_deadline()` to schedule frames.
+- Done (widget2): the driver is wired as host code around `CodeEditor::show` in
+  `crates/egui_quire/examples/playground.rs` and `crates/egui_quire/tests/syntax.rs` (update
+  before show with the last `visible_lines`, waker = `ctx.request_repaint`, `next_deadline()`
+  repaints, `settled` follows the driver's pending work).
 - If E5's 2 ms stays the target, the remaining non-tree-sitter cost is `changed_ranges` on the
   root (about 1.6 ms) plus layer bookkeeping (about 1 ms):
   - skip `changed_ranges` when the edit stays inside one leaf (no structural change possible);
