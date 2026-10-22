@@ -1,0 +1,20 @@
+[package]
+name = "quire-core"
+description = "Headless text model, change sets, transactions, selection and history for the quire code editor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+# No egui, no tokio, no threads; must build for wasm32-unknown-unknown.
+[dependencies]
+ropey.workspace = true
+smallvec.workspace = true
+
+[dev-dependencies]
+proptest.workspace = true
+
+[lints]
+workspace = true
