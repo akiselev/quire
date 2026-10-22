@@ -352,6 +352,21 @@ pub(crate) fn run(
                 None => CommandOutput::Nothing,
             })
         }
+        C::CompositionType {
+            text: typed,
+            replace_prev_chars,
+            replace_next_chars,
+        } => {
+            let typed = crate::text::normalize_line_endings(typed);
+            let o = edit::composition_type(
+                &ctx,
+                st(),
+                &typed,
+                *replace_prev_chars,
+                *replace_next_chars,
+            );
+            isolated(edit_out(o, Origin::Input(InputKind::Typing)))
+        }
         C::Undo | C::Redo => {
             let undo = matches!(cmd, C::Undo);
             if doc.undo_mode() == UndoMode::Host {

@@ -844,6 +844,44 @@ expectPrimarySel 1 1 1 3
 wordSelect 1 42
 expectPrimarySel 1 42 1 43
 
+=== Editor Controller > issue #9675: Undo/Redo adds a stop in between CHN Characters
+status: fail-ours VS Code writes the composition into the model with repeated compositionType calls grouped into one undo stop; quire keeps the preedit out of the text and each compositionType is one commit in its own undo group
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: ""
+expectSel 1 1 1 1
+type "ｓ"
+json {"id":"compositionType","text":"せ","replace_prev_chars":1,"replace_next_chars":0}
+json {"id":"compositionType","text":"せｎ","replace_prev_chars":1,"replace_next_chars":0}
+json {"id":"compositionType","text":"せん","replace_prev_chars":2,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんｓ","replace_prev_chars":2,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせ","replace_prev_chars":3,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせ","replace_prev_chars":3,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせい","replace_prev_chars":3,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせい","replace_prev_chars":4,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせい","replace_prev_chars":4,"replace_next_chars":0}
+json {"id":"compositionType","text":"せんせい","replace_prev_chars":4,"replace_next_chars":0}
+expectLine 1 "せんせい"
+expectSel 1 5 1 5
+cmd undo
+expectLine 1 ""
+expectSel 1 1 1 1
+
+=== Editor Controller > issue #23983: Calling model.setEOL does not reset cursor position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first line\nsecond line"
+setEOL crlf
+setSelections 2 2 2 2
+setEOL lf
+expectSel 2 2 2 2
+
+=== Editor Controller > issue #23983: Calling model.setValue() resets cursor position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first line\nsecond line"
+setEOL crlf
+setSelections 2 2 2 2
+setValue "different first line\ndifferent second line\nnew third line"
+expectSel 1 1 1 1
+
 === Editor Controller > issue #36740: wordwrap creates an extra step / character at the wrapping point
 # features: view option wordWrap; view option wordWrapColumn
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
@@ -893,6 +931,16 @@ cmd cursorRightSelect
 expectSel 1 13 1 16; 2 16 2 19; 3 13 3 16; 4 12 4 15; 5 6 5 9
 cmd cursorRightSelect
 expectSel 1 13 1 17; 2 16 2 20; 3 13 3 17; 4 12 4 16; 5 6 5 10
+
+=== Editor Controller > issue #41573 - delete across multiple lines does not shrink the selection when word wraps
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Authorization: 'Bearer pHKRfCTFSnGxs6akKlb9ddIXcca0sIUSZJutPHYqz7vEeHdMTMh0SGN0IGU3a0n59DXjTLRsj5EJ2u33qLNIFi9fk5XF8pK39PndLYUZhPt4QvHGLScgSkK0L4gwzkzMloTQPpKhqiikiIOvyNNSpd2o8j29NnOmdTUOKi9DVt74PD2ohKxyOrWZ6oZprTkb3eKajcpnS0LABKfaw2rmv4',"
+moveTo 1 43
+moveTo 1 147 select
+expectSel 1 43 1 147
+applyEdits [[1,1,1,43,""]]
+expectSel 1 1 1 105
 
 === Editor Controller > issue #22717: Moving text cursor cause an incorrect position in Chinese
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
@@ -1626,6 +1674,18 @@ setSelections 1 11 1 11
 type "n"
 expectText "prefixbegin]"
 
+=== Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair after composition
+status: fail-ours needs autoClosingPairs.beforeText
+# features: autoClosingPairs.beforeText
+config: {"autoClosingPairs":[["begin","end"],["n","]"]],"surroundingPairs":[["begin","end"],["n","]"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "prefixbegi"
+setSelections 1 11 1 11
+imeStart
+imeType "n"
+imeReplace "n" 1 0
+imeEnd
+expectText "prefixbegin]"
+
 === Editor Controller > autoClosingPairs - doc comments can be turned off
 status: fail-ours needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, editor option autoClosingComments
 # features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport; editor option autoClosingComments
@@ -1776,6 +1836,29 @@ setSelections 2 4 2 4
 type ")"
 expectLine 2 "y=();"
 
+=== Editor Controller > issue #15825: accents on mac US intl keyboard
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+expectSel 1 1 1 1
+imeStart
+imeType "`"
+imeReplace "è" 1 0
+imeEnd
+expectText "è"
+
+=== Editor Controller > issue #90016: allow accents on mac US intl keyboard to surround selection
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "test"
+setSelections 1 1 1 5
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeReplace "'" 1 0
+imeEnd
+expectText "'test'"
+
 === Editor Controller > issue #53357: Over typing ignores characters after backslash
 # features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
 config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
@@ -1808,6 +1891,104 @@ type "\\"
 expectText "\\(abc\\)"
 type ")"
 expectText "\\(abc\\)"
+
+=== Editor Controller > issue #2773: Accents (´`¨^, others?) are inserted in the wrong position (Mac)
+status: fail-ours a cursor move during composition; quire keeps the preedit out of the text and commits it at the selection current at composition end
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "hello\nworld"
+expectSel 1 1 1 1
+imeStart
+imeType "`"
+cmd cursorDownSelect
+imeReplace "`" 1 0
+imeReplace "`" 1 0
+imeEnd
+expectText "`hello\nworld"
+expectSel 1 2 2 2
+
+=== Editor Controller > issue #26820: auto close quotes when not used as accents
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+expectSel 1 1 1 1
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+expectText "''"
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+expectText "''"
+setValue "'abc"
+setSelections 1 5 1 5
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+expectText "'abc'"
+setValue "'abc'def "
+setSelections 1 10 1 10
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+expectText "'abc'def ''"
+setValue "abc"
+setSelections 1 1 1 1
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+setValue "abc"
+setSelections 1 4 1 4
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeEnd
+expectText "abc'"
+
+=== Editor Controller > issue #144690: Quotes do not overtype when using US Intl PC keyboard layout
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+expectSel 1 1 1 1
+imeStart
+imeType "'"
+imeReplace "'" 1 0
+imeReplace "'" 1 0
+imeEnd
+imeStart
+imeType "'"
+imeReplace "';" 1 0
+imeReplace "';" 2 0
+imeEnd
+expectText "'';"
+
+=== Editor Controller > issue #144693: Typing a quote using US Intl PC keyboard layout always surrounds words
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "const hello = 3;"
+setSelections 1 7 1 12
+imeStart
+imeType "'"
+imeReplace "é" 1 0
+imeReplace "é" 1 0
+imeEnd
+expectText "const é = 3;"
+
+=== Editor Controller > issue #82701: auto close does not execute when IME is canceled via backspace
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "{}"
+setSelections 1 2 1 2
+imeStart
+imeType "a"
+imeReplace "" 1 0
+imeEnd
+expectText "{}"
 
 === Editor Controller > issue #20891: All cursors should do the same thing
 # features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
@@ -1843,14 +2024,10 @@ wordSelect 2 6
 moveTo 1 8 select
 expectSel 2 12 1 6
 
-=== Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #1
+=== Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
 text: "just\n\nsome text"
 setSelections 2 1 2 1
-
-=== Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #2
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
-text: "just\n\nsome text"
 setSelections 2 1 2 1
 type "e"
 expectSel 2 2 2 2

@@ -87,7 +87,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller - Cursor > move eventing | N/A: viewModel.onEvent | — |
 | Editor Controller - Cursor > move in selection mode eventing | N/A: viewModel.onEvent | — |
 | Editor Controller - Cursor > saveState & restoreState | N/A: viewModel.saveCursorState | — |
-| Editor Controller - Cursor > Independent model edit 1 | N/A: model.applyEdits | — |
+| Editor Controller - Cursor > Independent model edit 1 | N/A: EditOperation.delete | — |
 | Editor Controller - Cursor > column select 1 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller - Cursor > grapheme breaking | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller - Cursor > issue #4905 - column select is biased to the right | `fixtures/monaco/cursor.test.fixture` | pass |
@@ -98,7 +98,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller - Cursor > setSelection / setPosition with source | N/A: TokenizationRegistry.register | — |
 | Editor Controller > issue microsoft/monaco-editor#443: Indentation of a single row deletes selected text in some cases | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Bug 9121: Auto indent + undo + redo is funky | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #23539: Setting model EOL isn't undoable | N/A: model.setEOL | — |
+| Editor Controller > issue #23539: Setting model EOL isn't undoable | N/A: model.pushEOL | — |
 | Editor Controller > issue #47733: Undo mangles unicode characters | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #46208: Allow empty selections in the undo/redo stack | N/A: model.pushEditOperations | — |
 | Editor Controller > bug #16815:Shift+Tab doesn't go back to tabstop | N/A: IndentAction.IndentOutdent | — |
@@ -127,13 +127,13 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > issue #33788: Wrong cursor position when double click to select a word | N/A: CoreNavigationCommands.WordSelectDrag | — |
 | Editor Controller > issue #12887: Double-click highlighting separating white space | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Double-click on punctuation should select the character, not adjacent space | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #9675: Undo/Redo adds a stop in between CHN Characters | N/A: viewModel.compositionType | — |
-| Editor Controller > issue #23983: Calling model.setEOL does not reset cursor position | N/A: model.setEOL | — |
-| Editor Controller > issue #23983: Calling model.setValue() resets cursor position | N/A: model.setEOL | — |
+| Editor Controller > issue #9675: Undo/Redo adds a stop in between CHN Characters | `fixtures/monaco/cursor.test.fixture` | fail (ours: VS Code writes the composition into the model with repeated compositionType calls grouped into one undo stop; quire keeps the preedit out of the text and each compositionType is one commit in its own undo group) |
+| Editor Controller > issue #23983: Calling model.setEOL does not reset cursor position | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #23983: Calling model.setValue() resets cursor position | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #36740: wordwrap creates an extra step / character at the wrapping point | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #110376: multiple selections with wordwrap behave differently | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #98320: Multi-Cursor, Wrap lines and cursorSelectRight ==> cursors out of sync | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #41573 - delete across multiple lines does not shrink the selection when word wraps | N/A: model.applyEdits | — |
+| Editor Controller > issue #41573 - delete across multiple lines does not shrink the selection when word wraps | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #22717: Moving text cursor cause an incorrect position in Chinese | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #112301: new stickyTabStops feature interferes with word wrap | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #44805: Should not be able to undo in readonly editor | N/A: model.pushEditOperations | — |
@@ -241,7 +241,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > issue #338693: undo after multi-character autoclose with auto-indentation first removes only the auto-closed characters | N/A: selections.map(?) | — |
 | Editor Controller > autoClosingPairs - beforeText | N/A: array of markers | — |
 | Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.beforeText) |
-| Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair after composition | N/A: viewModel.startComposition | — |
+| Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair after composition | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.beforeText) |
 | Editor Controller > autoClosingPairs - doc comments can be turned off | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, editor option autoClosingComments) |
 | Editor Controller > issue #72177: multi-character autoclose with conflicting patterns | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #55314: Do not auto-close when ending with open | N/A: model.tokenization | — |
@@ -258,23 +258,22 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > issue #85983 - editor.autoClosingBrackets: beforeWhitespace is incorrect for Python | N/A: line.substr | — |
 | Editor Controller > issue #78975 - Parentheses swallowing does not work when parentheses are inserted by autocomplete | N/A: viewModel.executeEdits | — |
 | Editor Controller > issue #78833 - Add config to use old brackets/quotes overtyping | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #15825: accents on mac US intl keyboard | N/A: viewModel.startComposition | — |
-| Editor Controller > issue #90016: allow accents on mac US intl keyboard to surround selection | N/A: viewModel.startComposition | — |
+| Editor Controller > issue #15825: accents on mac US intl keyboard | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #90016: allow accents on mac US intl keyboard to surround selection | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #53357: Over typing ignores characters after backslash | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #84998: Overtyping Brackets doesn't work after backslash | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #2773: Accents (´`¨^, others?) are inserted in the wrong position (Mac) | N/A: viewModel.startComposition | — |
-| Editor Controller > issue #26820: auto close quotes when not used as accents | N/A: viewModel.startComposition | — |
-| Editor Controller > issue #144690: Quotes do not overtype when using US Intl PC keyboard layout | N/A: viewModel.startComposition | — |
-| Editor Controller > issue #144693: Typing a quote using US Intl PC keyboard layout always surrounds words | N/A: viewModel.startComposition | — |
-| Editor Controller > issue #82701: auto close does not execute when IME is canceled via backspace | N/A: viewModel.startComposition | — |
+| Editor Controller > issue #2773: Accents (´`¨^, others?) are inserted in the wrong position (Mac) | `fixtures/monaco/cursor.test.fixture` | fail (ours: a cursor move during composition; quire keeps the preedit out of the text and commits it at the selection current at composition end) |
+| Editor Controller > issue #26820: auto close quotes when not used as accents | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #144690: Quotes do not overtype when using US Intl PC keyboard layout | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #144693: Typing a quote using US Intl PC keyboard layout always surrounds words | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #82701: auto close does not execute when IME is canceled via backspace | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #20891: All cursors should do the same thing | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #41825: Special handling of quotes in surrounding pairs | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > All cursors should do the same thing when deleting left | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #7100: Mouse word selection is strange when non-word character is at the end of line | N/A: CoreNavigationCommands.WordSelectDrag | — |
 | Editor Controller > issue #112039: shift-continuing a double/triple-click and drag selection does not remember its starting mode | `fixtures/monaco/cursor.test.fixture` | fail (ours: word/line drag selection modes live in the widget's mouse handling, not in core commands) |
 | Editor Controller > issue #158236: Shift click selection does not work on line number indicator | N/A: CoreNavigationCommands.LineSelectDrag | — |
-| Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #1 | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #2 | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor | `fixtures/monaco/cursor.test.fixture` | pass |
 | Undo stops > there is an undo stop between typing and deleting left | `fixtures/monaco/cursor.test.fixture` | pass |
 | Undo stops > there is an undo stop between typing and deleting right | `fixtures/monaco/cursor.test.fixture` | pass |
 | Undo stops > there is an undo stop between deleting left and typing | `fixtures/monaco/cursor.test.fixture` | pass |
@@ -861,7 +860,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | suite | tests | pass | ours | bug | N/A |
 |---|---|---|---|---|---|
 | copyLinesCommand.test.ts | 10 | 8 | 0 | 0 | 2 |
-| cursor.test.ts | 268 | 155 | 23 | 0 | 90 |
+| cursor.test.ts | 267 | 163 | 26 | 0 | 78 |
 | cursorColumns.test.ts | 7 | 0 | 0 | 0 | 7 |
 | editStack.test.ts | 1 | 0 | 0 | 0 | 1 |
 | editableTextModel.test.ts | 62 | 43 | 0 | 0 | 19 |
@@ -878,6 +877,6 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 
 ## Totals
 
-- VS Code tests listed: 776
-- translated: 384 (pass 346, fail ours 38, fail bug 0)
-- N/A: 392
+- VS Code tests listed: 775
+- translated: 395 (pass 354, fail ours 41, fail bug 0)
+- N/A: 380

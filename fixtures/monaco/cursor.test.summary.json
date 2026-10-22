@@ -310,7 +310,7 @@
  },
  {
   "name": "Editor Controller - Cursor > Independent model edit 1",
-  "na": "model.applyEdits"
+  "na": "EditOperation.delete"
  },
  {
   "name": "Editor Controller - Cursor > column select 1",
@@ -363,7 +363,7 @@
  },
  {
   "name": "Editor Controller > issue #23539: Setting model EOL isn't undoable",
-  "na": "model.setEOL"
+  "na": "model.pushEOL"
  },
  {
   "name": "Editor Controller > issue #47733: Undo mangles unicode characters",
@@ -498,15 +498,18 @@
  },
  {
   "name": "Editor Controller > issue #9675: Undo/Redo adds a stop in between CHN Characters",
-  "na": "viewModel.compositionType"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller > issue #23983: Calling model.setEOL does not reset cursor position",
-  "na": "model.setEOL"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller > issue #23983: Calling model.setValue() resets cursor position",
-  "na": "model.setEOL"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller > issue #36740: wordwrap creates an extra step / character at the wrapping point",
@@ -534,7 +537,11 @@
  },
  {
   "name": "Editor Controller > issue #41573 - delete across multiple lines does not shrink the selection when word wraps",
-  "na": "model.applyEdits"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "view option wordWrap",
+   "view option wordWrapColumn"
+  ]
  },
  {
   "name": "Editor Controller > issue #22717: Moving text cursor cause an incorrect position in Chinese",
@@ -1148,7 +1155,10 @@
  },
  {
   "name": "Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair after composition",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.beforeText"
+  ]
  },
  {
   "name": "Editor Controller > autoClosingPairs - doc comments can be turned off",
@@ -1250,11 +1260,19 @@
  },
  {
   "name": "Editor Controller > issue #15825: accents on mac US intl keyboard",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #90016: allow accents on mac US intl keyboard to surround selection",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #53357: Over typing ignores characters after backslash",
@@ -1274,23 +1292,43 @@
  },
  {
   "name": "Editor Controller > issue #2773: Accents (´`¨^, others?) are inserted in the wrong position (Mac)",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #26820: auto close quotes when not used as accents",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #144690: Quotes do not overtype when using US Intl PC keyboard layout",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #144693: Typing a quote using US Intl PC keyboard layout always surrounds words",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #82701: auto close does not execute when IME is canceled via backspace",
-  "na": "viewModel.startComposition"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #20891: All cursors should do the same thing",
@@ -1327,12 +1365,7 @@
   "na": "CoreNavigationCommands.LineSelectDrag"
  },
  {
-  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #1",
-  "fixture": "cursor.test.fixture",
-  "features": []
- },
- {
-  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #2",
+  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor",
   "fixture": "cursor.test.fixture",
   "features": []
  },

@@ -311,7 +311,15 @@ function makeEditor(model, opts) {
   };
   const editor = new Proxy(editorTarget, { get(t, p) { if (p in t) return t[p]; if (p === 'then') return undefined; throw new Unsupported(`editor.${String(p)}`); } });
   const viewModel = new Proxy({
+    startComposition: () => { cur.composing = true; step('imeStart'); },
+    endComposition: () => { cur.composing = false; step('imeEnd'); },
+    compositionType: (text, prev, next, delta) => {
+      if (delta) throw new Unsupported('compositionType positionDelta');
+      if (cur.composing) step(`imeReplace ${JSON.stringify(text)} ${prev} ${next}`);
+      else step(`json ${JSON.stringify({ id: 'compositionType', text, replace_prev_chars: prev, replace_next_chars: next })}`);
+    },
     type: (text, source) => {
+      if (cur.composing) { step(`imeType ${JSON.stringify(text)}`); return; }
       if (source === 'keyboard') {
         // VS Code types keyboard input char by char, each its own edit operation.
         for (const ch of Array.from(text)) step(`type ${JSON.stringify(ch)}`);

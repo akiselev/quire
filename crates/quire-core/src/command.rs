@@ -235,6 +235,21 @@ pub enum EditorCommand {
     /// Unfold everything.
     #[cfg_attr(feature = "serde", serde(rename = "editor.unfoldAll"))]
     UnfoldAll,
+    /// IME: delete `replace_prev_chars` characters before and `replace_next_chars` after each
+    /// cursor (on its line; ignored for a non-empty selection), then type `text` through the
+    /// typing rules (auto-surround, auto-close: VS Code's composition end), as one transaction in
+    /// its own undo group. A commit is `{text, 0, 0}`; DeleteSurrounding has empty `text`.
+    #[cfg_attr(feature = "serde", serde(rename = "compositionType"))]
+    CompositionType {
+        /// The committed text.
+        text: String,
+        /// Characters (code points) to delete before each cursor.
+        #[cfg_attr(feature = "serde", serde(default))]
+        replace_prev_chars: usize,
+        /// Characters (code points) to delete after each cursor.
+        #[cfg_attr(feature = "serde", serde(default))]
+        replace_next_chars: usize,
+    },
     /// Undo (a host request in host mode).
     #[cfg_attr(feature = "serde", serde(rename = "undo"))]
     Undo,
@@ -331,6 +346,7 @@ impl EditorCommand {
             ToggleFold => "editor.toggleFold",
             FoldAll => "editor.foldAll",
             UnfoldAll => "editor.unfoldAll",
+            CompositionType { .. } => "compositionType",
             Undo => "undo",
             Redo => "redo",
             Save => "workbench.action.files.save",

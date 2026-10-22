@@ -31,6 +31,7 @@
 //! expectValueInRange 1 1 2 3 "..."     VS Code model.getValueInRange (LF)
 //! expectRefused applyEdits [...]       the edits are refused (overlap)
 //! applyInverse                           apply the inverse of the last applyEdits
+//! imeStart / imeType "x" / imeReplace "x" 1 0 / imeEnd   IME composition, committed at imeEnd
 //! setEOL crlf                            no-op (the in-memory text is LF)
 //! columnSelect 4 15 [drag]             VS Code mouse column select to (line, mouseColumn)
 //! setValue "..."                         replace the text (a reload)
@@ -144,6 +145,9 @@ fn run_case(c: &Case) -> Result<(), String> {
     // `repeat` (VS Code `testRepeatedActionAndExtractPositions`): command, record kind, stop.
     let mut repeat: Option<(String, String, String)> = None;
     let mut last_inverse: Option<quire_core::ChangeSet> = None;
+    // IME emulation (what the widget does): the preedit stays out of the text; characters a
+    // `compositionType` replaces beyond the preedit are deleted from the text at commit.
+    let mut ime: Option<(String, usize, usize)> = None;
     for (line_no, step) in &c.steps {
         let (op, rest) = step.split_once(' ').unwrap_or((step.as_str(), ""));
         let rest = rest.trim();
@@ -322,6 +326,47 @@ fn run_case(c: &Case) -> Result<(), String> {
                 let tr = quire_core::Transaction::new(doc.version(), inv);
                 doc.apply(tr, &mut view)
                     .map_err(|e| err(format!("refused: {e}")))?;
+            }
+            "imeStart" => ime = Some((String::new(), 0, 0)),
+            "imeType" => {
+                let t: String =
+                    serde_json::from_str(rest).map_err(|e| err(format!("string: {e}")))?;
+                let st = ime.as_mut().ok_or_else(|| err("no composition".into()))?;
+                st.0.push_str(&t);
+                view.set_preedit(Some(quire_core::Preedit {
+                    text: st.0.clone(),
+                    active: None,
+                }));
+            }
+            "imeReplace" => {
+                let i = rest.rfind('"').ok_or_else(|| err("string".into()))?;
+                let t: String =
+                    serde_json::from_str(&rest[..=i]).map_err(|e| err(format!("string: {e}")))?;
+                let n = nums(&rest[i + 1..]);
+                let st = ime.as_mut().ok_or_else(|| err("no composition".into()))?;
+                let have = st.0.chars().count();
+                let keep = have.saturating_sub(n[0]);
+                st.1 += n[0].saturating_sub(have);
+                st.2 += n[1];
+                st.0 = st.0.chars().take(keep).collect::<String>() + &t;
+                view.set_preedit(Some(quire_core::Preedit {
+                    text: st.0.clone(),
+                    active: None,
+                }));
+            }
+            "imeEnd" => {
+                let (t, prev, next) = ime.take().ok_or_else(|| err("no composition".into()))?;
+                view.set_preedit(None);
+                exec(
+                    &mut doc,
+                    &mut view,
+                    EditorCommand::CompositionType {
+                        text: t,
+                        replace_prev_chars: prev,
+                        replace_next_chars: next,
+                    },
+                    time,
+                )?;
             }
             "setEOL" => {
                 // The in-memory text is always LF; the file line ending does not change positions.

@@ -116,6 +116,72 @@ pub(crate) fn type_text(ctx: &Ctx, st: St, typed: &str) -> Option<Out> {
     })
 }
 
+/// `compositionType` (see [`EditorCommand::CompositionType`](crate::EditorCommand)).
+pub(crate) fn composition_type(
+    ctx: &Ctx,
+    st: St,
+    typed: &str,
+    prev: usize,
+    next: usize,
+) -> Option<Out> {
+    let text = st.text.clone();
+    let mut state = st;
+    let mut acc: Option<ChangeSet> = None;
+    if prev > 0 || next > 0 {
+        let edits = state
+            .sel
+            .ranges()
+            .iter()
+            .map(|r| {
+                if !r.is_empty() {
+                    return None;
+                }
+                let line = text.line_range(text.byte_to_line(r.head));
+                let mut a = r.head;
+                for c in text.chars_before(r.head).take(prev) {
+                    if a <= line.start {
+                        break;
+                    }
+                    a -= c.len_utf8();
+                }
+                let mut b = r.head;
+                for c in text.chars_at(r.head).take(next) {
+                    if b >= line.end {
+                        break;
+                    }
+                    b += c.len_utf8();
+                }
+                Some(RangeEdit::replace(a..b, ""))
+            })
+            .collect();
+        let (changes, sel) = build(&text, &state.sel, edits);
+        if !changes.is_empty() {
+            map_auto_closed(&mut state.auto_closed, &changes);
+            state.text = changes.apply(&text).ok()?;
+            state.sel = sel;
+            acc = Some(changes);
+        }
+    }
+    let typed_out = if typed.is_empty() {
+        None
+    } else {
+        type_text(ctx, state.clone(), typed)
+    };
+    let (changes, sel, auto_closed) = match (acc, typed_out) {
+        (None, None) => return None,
+        (Some(c), None) => (c, state.sel, Vec::new()),
+        (None, Some(o)) => (o.changes, o.sel, o.auto_closed),
+        (Some(c), Some(o)) => (c.compose(&o.changes).ok()?, o.sel, o.auto_closed),
+    };
+    Some(Out {
+        changes,
+        sel,
+        kind: InputKind::Typing,
+        auto_closed,
+        close_before: true,
+    })
+}
+
 fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
     if ch == "\n" {
         return Some(enter(ctx, st));
