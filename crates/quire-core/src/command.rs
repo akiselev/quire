@@ -155,6 +155,18 @@ pub enum EditorCommand {
     /// Toggle a block comment around each selection (an empty selection gets an empty comment).
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.blockComment"))]
     BlockComment,
+    /// Replace each tab in every line's indentation with `tab_size` spaces, then set
+    /// `insert_spaces` (VS Code "Convert Indentation to Spaces").
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.indentationToSpaces"))]
+    IndentationToSpaces,
+    /// Replace each run of `tab_size` spaces in every line's indentation with a tab, then clear
+    /// `insert_spaces` (VS Code "Convert Indentation to Tabs").
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.indentationToTabs"))]
+    IndentationToTabs,
+    /// Re-indent the whole document with the language's `indentation_rules` (VS Code "Reindent
+    /// Lines"; nothing without rules).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.reindentlines"))]
+    ReindentLines,
     /// Insert a line below and move there (Ctrl+Enter).
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.insertLineAfter"))]
     InsertLineAfter,
@@ -350,6 +362,9 @@ impl EditorCommand {
             CopyLinesDown => "editor.action.copyLinesDownAction",
             DeleteAllLeft => "deleteAllLeft",
             DeleteAllRight => "deleteAllRight",
+            IndentationToSpaces => "editor.action.indentationToSpaces",
+            IndentationToTabs => "editor.action.indentationToTabs",
+            ReindentLines => "editor.action.reindentlines",
             ColumnSelectLeft => "cursorColumnSelectLeft",
             ColumnSelectRight => "cursorColumnSelectRight",
             ColumnSelectUp => "cursorColumnSelectUp",
@@ -439,6 +454,9 @@ impl EditorCommand {
             "editor.action.copyLinesDownAction" => CopyLinesDown,
             "deleteAllLeft" => DeleteAllLeft,
             "deleteAllRight" => DeleteAllRight,
+            "editor.action.indentationToSpaces" => IndentationToSpaces,
+            "editor.action.indentationToTabs" => IndentationToTabs,
+            "editor.action.reindentlines" => ReindentLines,
             "cursorColumnSelectLeft" => ColumnSelectLeft,
             "cursorColumnSelectRight" => ColumnSelectRight,
             "cursorColumnSelectUp" => ColumnSelectUp,

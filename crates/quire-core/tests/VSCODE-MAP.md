@@ -35,8 +35,8 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Contrib - Block Comment Command > bug #30358 #1 | `fixtures/monaco/blockCommentCommand.test.fixture` | pass |
 | Editor Contrib - Block Comment Command > bug #30358 #2 | `fixtures/monaco/blockCommentCommand.test.fixture` | pass |
 | Editor Contrib - Block Comment Command > issue #34618 | `fixtures/monaco/blockCommentCommand.test.fixture` | pass |
-| Editor Contrib - Block Comment Command > insertSpace false | `fixtures/monaco/blockCommentCommand.test.fixture` | fail (ours: needs editor option comments.insertSpace false) |
-| Editor Contrib - Block Comment Command > insertSpace false does not remove space | `fixtures/monaco/blockCommentCommand.test.fixture` | fail (ours: needs editor option comments.insertSpace false) |
+| Editor Contrib - Block Comment Command > insertSpace false | `fixtures/monaco/blockCommentCommand.test.fixture` | pass |
+| Editor Contrib - Block Comment Command > insertSpace false does not remove space | `fixtures/monaco/blockCommentCommand.test.fixture` | pass |
 
 ## copyLinesCommand.test.ts
 
@@ -414,14 +414,14 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 
 | VS Code test | quire | status |
 |---|---|---|
-| Change Indentation to Spaces - TypeScript/Javascript > single tabs only at start of line | N/A: new IndentationToSpacesCommand | — |
-| Change Indentation to Spaces - TypeScript/Javascript > multiple tabs at start of line | N/A: new IndentationToSpacesCommand | — |
-| Change Indentation to Spaces - TypeScript/Javascript > multiple tabs | N/A: new IndentationToSpacesCommand | — |
-| Change Indentation to Spaces - TypeScript/Javascript > empty lines | N/A: new IndentationToSpacesCommand | — |
-| Change Indentation to Tabs -  TypeScript/Javascript > spaces only at start of line | N/A: new IndentationToTabsCommand | — |
-| Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces at start of line | N/A: new IndentationToTabsCommand | — |
-| Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces | N/A: new IndentationToTabsCommand | — |
-| Change Indentation to Tabs -  TypeScript/Javascript > issue #45996 | N/A: new IndentationToSpacesCommand | — |
+| Change Indentation to Spaces - TypeScript/Javascript > single tabs only at start of line | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Spaces - TypeScript/Javascript > multiple tabs at start of line | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Spaces - TypeScript/Javascript > multiple tabs | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Spaces - TypeScript/Javascript > empty lines | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Tabs -  TypeScript/Javascript > spaces only at start of line | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces at start of line | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces | `fixtures/monaco/indentation.test.fixture` | pass |
+| Change Indentation to Tabs -  TypeScript/Javascript > issue #45996 | `fixtures/monaco/indentation.test.fixture` | pass |
 | Indent With Tab - TypeScript/JavaScript > temp issue because there should be at least one passing test in a suite | N/A: no editor in test | — |
 | Indent With Tab - TypeScript/JavaScript > issue #63388: perserve correct indentation on tab 1 | N/A: skipped upstream (test.skip) | — |
 | Indent With Tab - TypeScript/JavaScript > issue #63388: perserve correct indentation on tab 2 | N/A: skipped upstream (test.skip) | — |
@@ -508,7 +508,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 |---|---|---|
 | Editor Contrib - Line Comment Command > comment single line | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | Editor Contrib - Line Comment Command > case insensitive | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
-| Editor Contrib - Line Comment Command > comment with token column fixed | `fixtures/monaco/lineCommentCommand.test.fixture` | fail (ours: needs comments.lineComment.noIndent) |
+| Editor Contrib - Line Comment Command > comment with token column fixed | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | Editor Contrib - Line Comment Command > _analyzeLines | N/A: error: LineCommentCommand._analyzeLines is not a function | — |
 | Editor Contrib - Line Comment Command > _normalizeInsertionPoint | N/A: error: LineCommentCommand._normalizeInsertionPoint is not a function | — |
 | Editor Contrib - Line Comment Command > detects indentation | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
@@ -531,9 +531,9 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Contrib - Line Comment Command > issue #35673: Comment hotkeys throws the cursor before the comment #2 | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | Editor Contrib - Line Comment Command > issue #2837 "Add Line Comment" fault when blank lines involved | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | Editor Contrib - Line Comment Command > issue #47004: Toggle comments shouldn't move cursor | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
-| Editor Contrib - Line Comment Command > insertSpace false | `fixtures/monaco/lineCommentCommand.test.fixture` | fail (ours: needs editor option comments.insertSpace false) |
-| Editor Contrib - Line Comment Command > insertSpace false does not remove space | `fixtures/monaco/lineCommentCommand.test.fixture` | fail (ours: needs editor option comments.insertSpace false) |
-| ignoreEmptyLines false > does not ignore whitespace lines | `fixtures/monaco/lineCommentCommand.test.fixture` | fail (ours: needs editor option comments.ignoreEmptyLines false) |
+| Editor Contrib - Line Comment Command > insertSpace false | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
+| Editor Contrib - Line Comment Command > insertSpace false does not remove space | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
+| ignoreEmptyLines false > does not ignore whitespace lines | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | ignoreEmptyLines false > removes its own | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | ignoreEmptyLines false > works in only whitespace | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
 | ignoreEmptyLines false > comments single line | `fixtures/monaco/lineCommentCommand.test.fixture` | pass |
@@ -745,10 +745,10 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Contrib - Move Lines Command > move 4th line down | `fixtures/monaco/moveLinesCommand.test.fixture` | pass |
 | Editor Contrib - Move Lines Command > move multiple lines down | `fixtures/monaco/moveLinesCommand.test.fixture` | pass |
 | Editor Contrib - Move Lines Command > invisible selection is ignored | `fixtures/monaco/moveLinesCommand.test.fixture` | pass |
-| Editor contrib - Move Lines Command honors Indentation Rules > first line indentation adjust to 0 | N/A: new LanguageService | — |
-| Editor contrib - Move Lines Command honors Indentation Rules > move lines across block | N/A: new LanguageService | — |
+| Editor contrib - Move Lines Command honors Indentation Rules > first line indentation adjust to 0 | N/A: new Disposable | — |
+| Editor contrib - Move Lines Command honors Indentation Rules > move lines across block | N/A: new Disposable | — |
 | Editor contrib - Move Lines Command honors Indentation Rules > move line should still work as before if there is no indentation rules | N/A: move lines with indentation rules (autoIndent full) | — |
-| Editor - contrib - Move Lines Command honors onEnter Rules > issue #54829. move block across block | N/A: new LanguageService | — |
+| Editor - contrib - Move Lines Command honors onEnter Rules > issue #54829. move block across block | N/A: new Disposable | — |
 
 ## multicursor.test.ts
 
@@ -1039,14 +1039,14 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 
 | suite | tests | pass | ours | bug | N/A |
 |---|---|---|---|---|---|
-| blockCommentCommand.test.ts | 28 | 26 | 2 | 0 | 0 |
+| blockCommentCommand.test.ts | 28 | 28 | 0 | 0 | 0 |
 | copyLinesCommand.test.ts | 10 | 8 | 0 | 0 | 2 |
 | cursor.test.ts | 267 | 185 | 10 | 0 | 72 |
 | cursorColumns.test.ts | 7 | 0 | 0 | 0 | 7 |
 | editStack.test.ts | 1 | 0 | 0 | 0 | 1 |
 | editableTextModel.test.ts | 62 | 43 | 0 | 0 | 19 |
-| indentation.test.ts | 87 | 38 | 0 | 0 | 49 |
-| lineCommentCommand.test.ts | 50 | 41 | 4 | 0 | 5 |
+| indentation.test.ts | 87 | 46 | 0 | 0 | 41 |
+| lineCommentCommand.test.ts | 50 | 45 | 0 | 0 | 5 |
 | linesOperations.test.ts | 59 | 29 | 0 | 0 | 30 |
 | model.line.test.ts | 53 | 0 | 0 | 0 | 53 |
 | model.test.ts | 33 | 6 | 0 | 0 | 27 |
@@ -1061,5 +1061,5 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 ## Totals
 
 - VS Code tests listed: 940
-- translated: 518 (pass 487, fail ours 31, fail bug 0)
-- N/A: 422
+- translated: 526 (pass 501, fail ours 25, fail bug 0)
+- N/A: 414

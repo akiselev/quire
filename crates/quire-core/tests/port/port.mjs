@@ -89,7 +89,7 @@ function mapConfig(t) {
         const lc = v.lineComment;
         if (lc && typeof lc === 'object') {
           cfg.lineComment = lc.comment ?? null;
-          if (lc.noIndent) features.push('comments.lineComment.noIndent');
+          if (lc.noIndent) cfg.lineCommentNoIndent = true;
         } else cfg.lineComment = lc ?? null;
         cfg.blockComment = v.blockComment ? [v.blockComment[0], v.blockComment[1]] : null;
       } else if (k === 'autoCloseBefore') {
@@ -125,6 +125,8 @@ function mapConfig(t) {
     if (!lc.brackets && (lc.onEnterRules || lc.indentationRules)) cfg.brackets = [['(', ')'], ['{', '}'], ['[', ']']];
   }
   for (const f of t.extraFeatures || []) features.push(f);
+  // editor.comments options given to a comment command; only non-defaults are written.
+  if (t.comments && (!t.comments.insertSpace || !t.comments.ignoreEmptyLines)) cfg.comments = { insertSpace: !!t.comments.insertSpace, ignoreEmptyLines: !!t.comments.ignoreEmptyLines };
   const mo = t.modelOpts || {};
   for (const [k, v] of Object.entries(mo)) {
     if (k === 'tabSize') cfg.tabSize = v;

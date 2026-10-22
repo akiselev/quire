@@ -17,6 +17,7 @@ mod comment;
 mod edit;
 mod find;
 mod fold;
+mod indentation;
 mod lines;
 pub(crate) mod model;
 mod motion;
@@ -300,6 +301,29 @@ pub(crate) fn run(
         }
         C::BlockComment => isolated(edit_out(
             comment::block_comment(&ctx, &st()),
+            cmd_origin(cmd),
+        )),
+        C::IndentationToSpaces | C::IndentationToTabs => {
+            // VS Code runs the command, then `model.updateOptions({ insertSpaces })` even when
+            // nothing changed.
+            let spaces = matches!(cmd, C::IndentationToSpaces);
+            let o = indentation::indentation_to(&st(), cfg.tab_size, spaces);
+            let r = match o {
+                Some(o) => edit_out(Some(o), cmd_origin(cmd)),
+                None => Ok(CommandOutput::Transaction(
+                    Transaction::select(doc.version(), text.len_bytes(), sel.clone())
+                        .with_origin(cmd_origin(cmd)),
+                )),
+            };
+            isolated(r.map(|o| match o {
+                CommandOutput::Transaction(tr) => {
+                    CommandOutput::Transaction(tr.with_effect(Effect::SetInsertSpaces(spaces)))
+                }
+                o => o,
+            }))
+        }
+        C::ReindentLines => isolated(edit_out(
+            indentation::reindent_lines(cfg, &st()),
             cmd_origin(cmd),
         )),
         C::InsertLineAfter => edit_out(edit::insert_line(&ctx, &st(), true), cmd_origin(cmd)),

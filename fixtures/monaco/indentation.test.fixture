@@ -4,6 +4,70 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
 
+=== Change Indentation to Spaces - TypeScript/Javascript > single tabs only at start of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":4,"indentSize":4}
+text: "first\nsecond line\nthird line\n\tfourth line\n\tfifth"
+setSelections 2 3 2 3
+cmd editor.action.indentationToSpaces
+expectText "first\nsecond line\nthird line\n    fourth line\n    fifth"
+expectSel 2 3 2 3
+
+=== Change Indentation to Spaces - TypeScript/Javascript > multiple tabs at start of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":3,"indentSize":3}
+text: "\t\tfirst\n\tsecond line\n\t\t\t third line\nfourth line\nfifth"
+setSelections 1 5 1 5
+cmd editor.action.indentationToSpaces
+expectText "      first\n   second line\n          third line\nfourth line\nfifth"
+expectSel 1 9 1 9
+
+=== Change Indentation to Spaces - TypeScript/Javascript > multiple tabs
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "\t\tfirst\t\n\tsecond  \t line \t\n\t\t\t third line\n \tfourth line\nfifth"
+setSelections 1 5 1 5
+cmd editor.action.indentationToSpaces
+expectText "    first\t\n  second  \t line \t\n       third line\n   fourth line\nfifth"
+expectSel 1 7 1 7
+
+=== Change Indentation to Spaces - TypeScript/Javascript > empty lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "\t\t\t\n\t\n\t\t"
+setSelections 1 4 1 4
+cmd editor.action.indentationToSpaces
+expectText "      \n  \n    "
+expectSel 1 4 1 4
+
+=== Change Indentation to Tabs -  TypeScript/Javascript > spaces only at start of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":4,"indentSize":4}
+text: "    first\nsecond line\n    third line\nfourth line\nfifth"
+setSelections 2 3 2 3
+cmd editor.action.indentationToTabs
+expectText "\tfirst\nsecond line\n\tthird line\nfourth line\nfifth"
+expectSel 2 3 2 3
+
+=== Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces at start of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":3,"indentSize":3}
+text: "first\n   second line\n          third line\nfourth line\n     fifth"
+setSelections 1 5 1 5
+cmd editor.action.indentationToTabs
+expectText "first\n\tsecond line\n\t\t\t third line\nfourth line\n\t  fifth"
+expectSel 1 5 1 5
+
+=== Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "      first   \n  second     line \t\n       third line\n   fourth line\nfifth"
+setSelections 1 8 1 8
+cmd editor.action.indentationToTabs
+expectText "\t\t\tfirst   \n\tsecond     line \t\n\t\t\t third line\n\t fourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Change Indentation to Tabs -  TypeScript/Javascript > issue #45996
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":4,"indentSize":4}
+text: "\tabc"
+setSelections 1 3 1 3
+cmd editor.action.indentationToSpaces
+expectText "    abc"
+expectSel 1 6 1 6
+
 === Auto Indent On Type - TypeScript/JavaScript > issue #208215: indent after arrow function
 # features: autoClosingPairs.notIn (needs tokens)
 config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"]],"brackets":[["${","}"],["{","}"],["[","]"],["(",")"]],"lineComment":"//","blockComment":["/*","*/"],"indentationRules":{"increaseIndentPattern":"^((?!\\/\\/).)*(\\{([^}\"'`]*|(\\t|[ ])*\\/\\/.*)|\\([^)\"'`]*|\\[[^\\]\"'`]*)$","decreaseIndentPattern":"^((?!.*?\\/\\*).*\\*\\/)?\\s*[\\}\\]\\)].*$","indentNextLinePattern":"^((.*=>\\s*)|((.*[^\\w]+|\\s*)(if|while|for)\\s*\\(.*\\)\\s*))$","unIndentedLinePattern":"^(\\t|[ ])*[ ]\\*[^/]*\\*\\/\\s*$|^(\\t|[ ])*[ ]\\*\\/\\s*$|^(\\t|[ ])*[ ]\\*([ ]([^\\*]|\\*(?!\\/))*)?$"},"onEnterRules":[{"beforeText":"^\\s*\\/\\*\\*(?!\\/)([^\\*]|\\*(?!\\/))*$","action":{"indentAction":"indentOutdent","appendText":" * "},"afterText":"^\\s*\\*\\/$"},{"beforeText":"^\\s*\\/\\*\\*(?!\\/)([^\\*]|\\*(?!\\/))*$","action":{"indentAction":"none","appendText":" * "}},{"beforeText":"^(\\t|[ ])*[ ]\\*([ ]([^\\*]|\\*(?!\\/))*)?$","action":{"indentAction":"none","appendText":"* "},"previousLineText":"(?=^(\\s*(\\/\\*\\*|\\*)).*)(?=(?!(\\s*\\*\\/)))"},{"beforeText":"^(\\t|[ ])*[ ]\\*\\/\\s*$","action":{"indentAction":"none","removeText":1}},{"beforeText":"^(\\t|[ ])*[ ]\\*[^/]*\\*\\/\\s*$","action":{"indentAction":"none","removeText":1}},{"beforeText":"^\\s*(\\bcase\\s.+:|\\bdefault:)$","action":{"indentAction":"indent"},"afterText":"^(?!\\s*(\\bcase\\b|\\bdefault\\b))"},{"beforeText":"^\\s+([^{i\\s]|i(?!f\\b))","action":{"indentAction":"outdent"},"previousLineText":"^\\s*(((else ?)?if|for|while)\\s*\\(.*\\)\\s*|else\\s*)$"},{"beforeText":"^.*\\([^\\)]*$","action":{"indentAction":"indentOutdent","appendText":"\t"},"afterText":"^\\s*\\).*$"},{"beforeText":"^.*\\{[^\\}]*$","action":{"indentAction":"indentOutdent","appendText":"\t"},"afterText":"^\\s*\\}.*$"},{"beforeText":"^.*\\[[^\\]]*$","action":{"indentAction":"indentOutdent","appendText":"\t"},"afterText":"^\\s*\\].*$"}]}

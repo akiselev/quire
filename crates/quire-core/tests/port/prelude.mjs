@@ -504,22 +504,27 @@ globalThis.testCommand = (lines, languageId, selection, factory, expectedLines, 
   step(`expectText ${JSON.stringify(expectedLines.join('\n'))}`);
   step(`expectSel ${selArgs(expectedSelection)}`);
 };
+// indentation.ts: the command's tab size is the model's (quire reads `tabSize` from the config).
+for (const [name, id] of [['IndentationToSpacesCommand', 'editor.action.indentationToSpaces'], ['IndentationToTabsCommand', 'editor.action.indentationToTabs']]) {
+  STUBS.set(name, class { constructor(_sel, tabSize) { this.__cmd = id; cur.modelOpts = { ...(cur.modelOpts || {}), tabSize }; } });
+}
 // lineCommentCommand.ts / blockCommentCommand.ts
 STUBS.set('Type', { Toggle: 0, ForceAdd: 1, ForceRemove: 2 });
 STUBS.set('LineCommentCommand', class {
   constructor(_svc, _sel, indentSize, type, insertSpace, ignoreEmptyLines, ignoreFirstLine) {
     this.__cmd = ['editor.action.commentLine', 'editor.action.addCommentLine', 'editor.action.removeCommentLine'][type];
     this.__features = [];
-    if (indentSize !== 4) this.__features.push(`comment indentSize ${indentSize}`);
-    if (!insertSpace) this.__features.push('editor option comments.insertSpace false');
-    if (!ignoreEmptyLines) this.__features.push('editor option comments.ignoreEmptyLines false');
+    // comment.ts passes the model's indentSize and the editor.comments options.
+    if (indentSize !== 4) cur.modelOpts = { ...(cur.modelOpts || {}), indentSize };
+    cur.comments = { insertSpace, ignoreEmptyLines };
     if (ignoreFirstLine) this.__features.push('ignoreFirstLine');
   }
 });
 STUBS.set('BlockCommentCommand', class {
   constructor(_sel, insertSpace) {
     this.__cmd = 'editor.action.blockComment';
-    this.__features = insertSpace ? [] : ['editor option comments.insertSpace false'];
+    this.__features = [];
+    cur.comments = { insertSpace, ignoreEmptyLines: true };
   }
 });
 

@@ -35,8 +35,8 @@ pub mod words;
 pub use change::{Bias, ChangeError, ChangeSet, Edit, Operation};
 pub use command::{CommandOutput, EditorCommand, HostRequest, Motion};
 pub use config::{
-    AutoClosingStrategy, EditorConfig, EnterAction, IndentAction, IndentationRules, OnEnterRule,
-    OvertypeStrategy,
+    AutoClosingStrategy, CommentOptions, EditorConfig, EnterAction, IndentAction, IndentationRules,
+    OnEnterRule, OvertypeStrategy,
 };
 pub use diagnostics::{DiagAction, DiagTags, Diagnostic, Diagnostics, Severity, SourceId};
 pub use document::{Anchor, Applied, Document, Executed, Refusal, SettledProbe, Snapshot};

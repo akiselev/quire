@@ -12,9 +12,7 @@
  {
   "name": "Editor Contrib - Line Comment Command > comment with token column fixed",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "comments.lineComment.noIndent"
-  ]
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Comment Command > _analyzeLines",
@@ -127,51 +125,37 @@
  {
   "name": "Editor Contrib - Line Comment Command > insertSpace false",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.insertSpace false"
-  ]
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Comment Command > insertSpace false does not remove space",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.insertSpace false"
-  ]
+  "features": []
  },
  {
   "name": "ignoreEmptyLines false > does not ignore whitespace lines",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.ignoreEmptyLines false"
-  ]
+  "features": []
  },
  {
   "name": "ignoreEmptyLines false > removes its own",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.ignoreEmptyLines false"
-  ]
+  "features": []
  },
  {
   "name": "ignoreEmptyLines false > works in only whitespace",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.ignoreEmptyLines false"
-  ]
+  "features": []
  },
  {
   "name": "ignoreEmptyLines false > comments single line",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.ignoreEmptyLines false"
-  ]
+  "features": []
  },
  {
   "name": "ignoreEmptyLines false > detects indentation",
   "fixture": "lineCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.ignoreEmptyLines false"
-  ]
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Comment As Block Comment > fall back to block comment command",

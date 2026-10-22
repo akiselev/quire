@@ -132,15 +132,11 @@
  {
   "name": "Editor Contrib - Block Comment Command > insertSpace false",
   "fixture": "blockCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.insertSpace false"
-  ]
+  "features": []
  },
  {
   "name": "Editor Contrib - Block Comment Command > insertSpace false does not remove space",
   "fixture": "blockCommentCommand.test.fixture",
-  "features": [
-   "editor option comments.insertSpace false"
-  ]
+  "features": []
  }
 ]

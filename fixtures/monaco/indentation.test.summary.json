@@ -1,35 +1,43 @@
 [
  {
   "name": "Change Indentation to Spaces - TypeScript/Javascript > single tabs only at start of line",
-  "na": "new IndentationToSpacesCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Spaces - TypeScript/Javascript > multiple tabs at start of line",
-  "na": "new IndentationToSpacesCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Spaces - TypeScript/Javascript > multiple tabs",
-  "na": "new IndentationToSpacesCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Spaces - TypeScript/Javascript > empty lines",
-  "na": "new IndentationToSpacesCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Tabs -  TypeScript/Javascript > spaces only at start of line",
-  "na": "new IndentationToTabsCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces at start of line",
-  "na": "new IndentationToTabsCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces",
-  "na": "new IndentationToTabsCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Change Indentation to Tabs -  TypeScript/Javascript > issue #45996",
-  "na": "new IndentationToSpacesCommand"
+  "fixture": "indentation.test.fixture",
+  "features": []
  },
  {
   "name": "Indent With Tab - TypeScript/JavaScript > temp issue because there should be at least one passing test in a suite",

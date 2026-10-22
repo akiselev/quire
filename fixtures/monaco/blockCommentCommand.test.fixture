@@ -213,9 +213,7 @@ expectText " middle end"
 expectSel 1 1 1 1
 
 === Editor Contrib - Block Comment Command > insertSpace false
-status: fail-ours needs editor option comments.insertSpace false
-# features: editor option comments.insertSpace false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"],"comments":{"insertSpace":false,"ignoreEmptyLines":true}}
 text: "some text"
 setSelections 1 1 1 5
 cmd editor.action.blockComment
@@ -223,9 +221,7 @@ expectText "<0some0> text"
 expectSel 1 3 1 7
 
 === Editor Contrib - Block Comment Command > insertSpace false does not remove space
-status: fail-ours needs editor option comments.insertSpace false
-# features: editor option comments.insertSpace false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"],"comments":{"insertSpace":false,"ignoreEmptyLines":true}}
 text: "<0 some 0> text"
 setSelections 1 4 1 8
 cmd editor.action.blockComment

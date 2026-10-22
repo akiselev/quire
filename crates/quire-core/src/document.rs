@@ -32,7 +32,7 @@ use crate::recent::{LineEdit, RecentChanges, Stale};
 use crate::selection::Selection;
 use crate::syntax::{FoldRange, PendingWork, TokenRuns, TokenStore};
 use crate::text::Text;
-use crate::transaction::{Origin, Transaction};
+use crate::transaction::{Effect, Origin, Transaction};
 use crate::version::Version;
 use crate::view::EditorView;
 use smallvec::SmallVec;
@@ -104,6 +104,9 @@ pub struct Applied {
     pub origin: Origin,
     /// Whether the acting view's selection changed.
     pub selection_changed: bool,
+    /// Whether an effect changed the document's config ([`Effect::SetInsertSpaces`]); a host
+    /// that persists editor options reads [`Document::config`] then.
+    pub config_changed: bool,
     /// Undo groups this transaction closed (the host's `text.edit` boundaries in host mode).
     pub closed: SmallVec<[UndoGroupClosed; 1]>,
 }
@@ -560,7 +563,14 @@ impl Document {
                 got: tr.changes.len(),
             });
         }
-        if !tr.changes.is_empty() && self.config.read_only && !tr.origin.is_foreign() {
+        let sets_config = tr
+            .effects
+            .iter()
+            .any(|e| matches!(e, Effect::SetInsertSpaces(_)));
+        if (!tr.changes.is_empty() || sets_config)
+            && self.config.read_only
+            && !tr.origin.is_foreign()
+        {
             return Err(Refusal::ReadOnly);
         }
         for e in tr.changes.edits() {
@@ -697,6 +707,15 @@ impl Document {
         } else if let (Some(v), Some(sel)) = (view.as_deref_mut(), tr.selection.clone()) {
             v.set_selection_raw(sel);
         }
+        let mut config_changed = false;
+        for e in &tr.effects {
+            if let Effect::SetInsertSpaces(b) = e
+                && self.config.insert_spaces != *b
+            {
+                self.config.insert_spaces = *b;
+                config_changed = true;
+            }
+        }
         let mut selection_changed = false;
         if let Some(v) = view {
             for e in &tr.effects {
@@ -711,6 +730,7 @@ impl Document {
             changes: tr.changes,
             origin: tr.origin,
             selection_changed,
+            config_changed,
             closed,
         })
     }

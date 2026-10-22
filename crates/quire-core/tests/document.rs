@@ -387,3 +387,100 @@ fn catastrophic_rule_regex_is_no_match() {
         );
     }
 }
+
+#[test]
+fn indentation_to_spaces_sets_insert_spaces() {
+    let cfg = EditorConfig {
+        insert_spaces: false,
+        tab_size: 2,
+        ..Default::default()
+    };
+    let mut d = Document::new("\tx\n\t\ty", cfg);
+    let mut v = EditorView::new(&d);
+    let ex = d
+        .execute(&mut v, &EditorCommand::IndentationToSpaces, None)
+        .unwrap();
+    assert_eq!(d.text().to_string(), "  x\n    y");
+    assert!(d.config().insert_spaces);
+    assert!(ex.applied.unwrap().config_changed);
+    // Undo restores the text, not the option (VS Code's updateOptions).
+    d.execute(&mut v, &EditorCommand::Undo, None).unwrap();
+    assert_eq!(d.text().to_string(), "\tx\n\t\ty");
+    assert!(d.config().insert_spaces);
+    // Nothing to convert: the option still changes.
+    let mut d = Document::new("a", d.config().clone());
+    let mut v = EditorView::new(&d);
+    let ex = d
+        .execute(&mut v, &EditorCommand::IndentationToTabs, None)
+        .unwrap();
+    assert!(!d.config().insert_spaces);
+    let a = ex.applied.unwrap();
+    assert!(a.config_changed && !a.changed_text());
+    // A read-only document refuses it.
+    let mut d = Document::new(
+        "a",
+        EditorConfig {
+            read_only: true,
+            ..Default::default()
+        },
+    );
+    let mut v = EditorView::new(&d);
+    assert!(
+        d.execute(&mut v, &EditorCommand::IndentationToTabs, None)
+            .is_err()
+    );
+    assert!(d.config().insert_spaces);
+}
+
+fn reindent(
+    text: &str,
+    rules: serde_json::Value,
+    caret: (usize, usize),
+) -> (String, (usize, usize)) {
+    let mut cfg: EditorConfig =
+        serde_json::from_value(serde_json::json!({ "indentationRules": rules })).unwrap();
+    cfg.tab_size = 4;
+    cfg.indent_size = 4;
+    let mut d = Document::new(text, cfg);
+    let mut v = EditorView::new(&d);
+    let p = d.text().line_col_to_byte(caret.0, caret.1);
+    v.set_selection(&d, Selection::point(p));
+    d.execute(&mut v, &EditorCommand::ReindentLines, None)
+        .unwrap();
+    let head = v.selection().primary().head;
+    (d.text().to_string(), d.text().byte_to_line_col(head))
+}
+
+#[test]
+fn reindent_lines_follows_indentation_rules() {
+    let braces = serde_json::json!({
+        "increaseIndentPattern": "^.*\\{[^}\"']*$",
+        "decreaseIndentPattern": "^\\s*\\}",
+        "indentNextLinePattern": "^\\s*(if|while)\\s*\\(.*\\)\\s*$",
+        "unIndentedLinePattern": "^\\s*#"
+    });
+    // Blocks, an outdenting `}`, a line indented only by `indentNextLinePattern`, and an
+    // unindented line that keeps its own indentation without affecting the next line.
+    let (t, caret) = reindent(
+        "function f() {\nx;\n  if (a) {\ny;\n}\nif (b)\nz;\n#pragma\nw;\n        }",
+        braces.clone(),
+        (1, 0),
+    );
+    assert_eq!(
+        t,
+        "function f() {\n    x;\n    if (a) {\n        y;\n    }\n    if (b)\n        z;\n    #pragma\n    w;\n}"
+    );
+    // The caret before `x` moves after the inserted indentation (`replaceMove`).
+    assert_eq!(caret, (1, 4));
+    // The first line is the base and is not re-indented; levels snap to indent stops
+    // (`ShiftCommand.shiftIndent`).
+    let (t, _) = reindent("  a {\nb\n}", braces.clone(), (0, 0));
+    assert_eq!(t, "  a {\n    b\n}");
+    // Without indentation rules nothing changes.
+    let mut d = Document::new("a {\nb\n}", EditorConfig::default());
+    let mut v = EditorView::new(&d);
+    let ex = d
+        .execute(&mut v, &EditorCommand::ReindentLines, None)
+        .unwrap();
+    assert!(ex.applied.is_none());
+}

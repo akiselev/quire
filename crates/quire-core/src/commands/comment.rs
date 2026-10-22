@@ -7,13 +7,15 @@
 //! Copyright (c) Microsoft Corporation. All rights reserved.
 //! Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
 //!
-//! Differences: columns count chars (VS Code counts UTF-16 units); the comment options
-//! `insertSpace` and `ignoreEmptyLines` are VS Code's defaults (both on); one language per
-//! document.
+//! Differences: columns count chars (VS Code counts UTF-16 units); one language per document.
+//! The comment options come from `EditorConfig::comments` (`editor.comments.insertSpace`,
+//! `editor.comments.ignoreEmptyLines`) and `EditorConfig::line_comment_no_indent` (the language's
+//! `comments.lineComment.noIndent`).
 
 use super::model::{Model, Pos};
 use super::{Ctx, Out, St, track};
 use crate::change::ChangeSet;
+use crate::config::EditorConfig;
 use crate::selection::{SelRange, Selection};
 use crate::text::Text;
 use crate::transaction::InputKind;
@@ -26,9 +28,6 @@ pub(crate) enum LineCommentType {
     ForceAdd,
     ForceRemove,
 }
-
-const INSERT_SPACE: bool = true;
-const IGNORE_EMPTY_LINES: bool = true;
 
 /// `BlockCommentCommand._haystackHasNeedleAtOffset` (ASCII case-insensitive), on chars.
 fn has_needle_at(hay: &[char], needle: &[char], offset: usize) -> bool {
@@ -114,6 +113,7 @@ struct LineData {
 
 /// `LineCommentCommand._analyzeLines`.
 fn analyze_lines(
+    cfg: &EditorConfig,
     ty: LineCommentType,
     m: &Model,
     token: &[char],
@@ -137,21 +137,26 @@ fn analyze_lines(
         }
         let chars = m.line_chars(line);
         let Some(first) = m.first_non_ws(line) else {
-            d.ignore = IGNORE_EMPTY_LINES;
-            d.offset = chars.len();
+            d.ignore = cfg.comments.ignore_empty_lines;
+            d.offset = if cfg.line_comment_no_indent {
+                0
+            } else {
+                chars.len()
+            };
             lines.push(d);
             continue;
         };
         only_ws = false;
-        d.offset = first;
-        if remove && !has_needle_at(&chars, token, first) {
+        d.offset = if cfg.line_comment_no_indent { 0 } else { first };
+        if remove && !has_needle_at(&chars, token, d.offset) {
             match ty {
                 LineCommentType::Toggle => remove = false,
                 LineCommentType::ForceAdd => {}
                 LineCommentType::ForceRemove => d.ignore = true,
             }
         }
-        if remove && INSERT_SPACE {
+        if remove && cfg.comments.insert_space {
+            // VS Code measures from the first non-whitespace column even with `noIndent`.
             let e = first + d.len;
             if e < chars.len() && chars[e] == ' ' {
                 d.len += 1;
@@ -325,10 +330,17 @@ fn line_comment_cmd(
                         Pos::new(from.line, chars.len()),
                         st,
                         et,
+                        ctx.cfg.comments.insert_space,
                     )
                 } else {
                     from = Pos::new(from.line, m.first_non_ws(from.line).unwrap_or(0));
-                    add_block_ops(from, Pos::new(to.line, m.max_col(to.line)), st, et)
+                    add_block_ops(
+                        from,
+                        Pos::new(to.line, m.max_col(to.line)),
+                        st,
+                        et,
+                        ctx.cfg.comments.insert_space,
+                    )
                 };
                 if ops.len() == 1 {
                     delta = st.chars().count() + 1;
@@ -344,7 +356,7 @@ fn line_comment_cmd(
         return cmd;
     };
     let tok: Vec<char> = token.chars().collect();
-    let (remove, mut lines) = analyze_lines(ty, m, &tok, from.line, to.line, ignore_first);
+    let (remove, mut lines) = analyze_lines(ctx.cfg, ty, m, &tok, from.line, to.line, ignore_first);
     let ops: Vec<Op> = if remove {
         lines
             .iter()
@@ -357,7 +369,11 @@ fn line_comment_cmd(
             .collect()
     } else {
         normalize_insertion_point(m, &mut lines, from.line, ctx.cfg.indent_size.max(1));
-        let after = if INSERT_SPACE { " " } else { "" };
+        let after = if ctx.cfg.comments.insert_space {
+            " "
+        } else {
+            ""
+        };
         lines
             .iter()
             .enumerate()
@@ -404,8 +420,8 @@ fn remove_block_ops(inner_from: Pos, inner_to: Pos, st_len: usize, et_len: usize
 }
 
 /// `BlockCommentCommand._createAddBlockCommentOperations`.
-fn add_block_ops(from: Pos, to: Pos, st: &str, et: &str) -> Vec<Op> {
-    let sp = if INSERT_SPACE { " " } else { "" };
+fn add_block_ops(from: Pos, to: Pos, st: &str, et: &str, insert_space: bool) -> Vec<Op> {
+    let sp = if insert_space { " " } else { "" };
     if from != to {
         vec![
             Op::insert(from, format!("{st}{sp}")),
@@ -458,10 +474,10 @@ fn block_comment_cmd(m: &Model, ctx: &Ctx, sel: SelRange) -> Option<Cmd> {
         }
     }
     let (ops, rule) = if let (Some(s), Some(mut e)) = (si, ei) {
-        if INSERT_SPACE && s + st.len() < sl.len() && sl[s + st.len()] == ' ' {
+        if ctx.cfg.comments.insert_space && s + st.len() < sl.len() && sl[s + st.len()] == ' ' {
             st.push(' ');
         }
-        if INSERT_SPACE && e > 0 && el[e - 1] == ' ' {
+        if ctx.cfg.comments.insert_space && e > 0 && el[e - 1] == ' ' {
             et.insert(0, ' ');
             e -= 1;
         }
@@ -475,7 +491,7 @@ fn block_comment_cmd(m: &Model, ctx: &Ctx, sel: SelRange) -> Option<Cmd> {
             CursorRule::Block { back: 0 },
         )
     } else {
-        let ops = add_block_ops(from, to, st0, et0);
+        let ops = add_block_ops(from, to, st0, et0, ctx.cfg.comments.insert_space);
         let back = if ops.len() == 1 {
             et0.chars().count() + 1
         } else {

@@ -139,6 +139,29 @@ pub struct IndentationRules {
     pub unindented_line: Option<String>,
 }
 
+/// Options of the comment commands (VS Code `editor.comments`).
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase", default))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct CommentOptions {
+    /// Insert a space after a line comment token and inside block comment tokens, and remove it
+    /// with the token (`editor.comments.insertSpace`).
+    pub insert_space: bool,
+    /// Toggling line comments skips empty and whitespace-only lines
+    /// (`editor.comments.ignoreEmptyLines`).
+    pub ignore_empty_lines: bool,
+}
+
+impl Default for CommentOptions {
+    fn default() -> Self {
+        CommentOptions {
+            insert_space: true,
+            ignore_empty_lines: true,
+        }
+    }
+}
+
 /// Editing options of one document.
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -187,6 +210,11 @@ pub struct EditorConfig {
     pub line_comment: Option<String>,
     /// The language's block comment tokens, e.g. `("/*", "*/")`.
     pub block_comment: Option<(String, String)>,
+    /// Comment command options (VS Code's `editor.comments.*` settings).
+    pub comments: CommentOptions,
+    /// Line comments go at column 0 instead of the line's indentation (the language's
+    /// `comments.lineComment.noIndent`).
+    pub line_comment_no_indent: bool,
     /// Smart Home: Home goes to the first non-whitespace column first.
     pub smart_home: bool,
     /// Edits refused outside foreign (remote/reload) changes.
@@ -247,6 +275,8 @@ impl Default for EditorConfig {
             indentation_rules: None,
             line_comment: Some("//".to_string()),
             block_comment: Some(("/*".to_string(), "*/".to_string())),
+            comments: CommentOptions::default(),
+            line_comment_no_indent: false,
             smart_home: true,
             read_only: false,
             recent_changes_window: 64,

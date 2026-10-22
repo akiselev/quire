@@ -109,7 +109,8 @@ pub enum GroupHint {
     Isolated,
 }
 
-/// A side effect a transaction carries for the acting view.
+/// A side effect a transaction carries for the acting view (or, for `SetInsertSpaces`, the
+/// document).
 #[derive(Clone, PartialEq, Debug)]
 pub enum Effect {
     /// Scroll so the byte position (after the changes) is visible.
@@ -132,6 +133,11 @@ pub enum Effect {
     /// Replace the view's folds (byte ranges hidden after the changes, each from a header
     /// line's end to its last line's end).
     SetFolds(Vec<std::ops::Range<usize>>),
+    /// Set the document's `EditorConfig::insert_spaces` (VS Code's `model.updateOptions`, e.g.
+    /// after converting indentation). Unlike the other effects it acts on the
+    /// [`Document`](crate::Document), for every view; undo does not revert it, and
+    /// [`Applied::config_changed`](crate::Applied::config_changed) reports it.
+    SetInsertSpaces(bool),
 }
 
 /// An edit (or a selection change) against one version of a document.

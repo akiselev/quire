@@ -433,6 +433,8 @@ impl EditorView {
                 self.auto_closed.extend(list.iter().cloned());
                 self.prune_auto_closed();
             }
+            // Applied by the document.
+            Effect::SetInsertSpaces(_) => {}
         }
     }
 

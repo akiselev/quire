@@ -21,9 +21,7 @@ expectText "some text"
 expectSel 1 1 1 1
 
 === Editor Contrib - Line Comment Command > comment with token column fixed
-status: fail-ours needs comments.lineComment.noIndent
-# features: comments.lineComment.noIndent
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"lineCommentNoIndent":true}
 text: "some text\n\tsome more text"
 setSelections 2 1 2 1
 cmd editor.action.commentLine
@@ -191,9 +189,7 @@ expectText "    !@# A line\n    !@# Another line"
 expectSel 2 11 1 1
 
 === Editor Contrib - Line Comment Command > insertSpace false
-status: fail-ours needs editor option comments.insertSpace false
-# features: editor option comments.insertSpace false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null,"comments":{"insertSpace":false,"ignoreEmptyLines":true}}
 text: "some text"
 setSelections 1 1 1 1
 cmd editor.action.commentLine
@@ -201,9 +197,7 @@ expectText "!@#some text"
 expectSel 1 4 1 4
 
 === Editor Contrib - Line Comment Command > insertSpace false does not remove space
-status: fail-ours needs editor option comments.insertSpace false
-# features: editor option comments.insertSpace false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null,"comments":{"insertSpace":false,"ignoreEmptyLines":true}}
 text: "!@#    some text"
 setSelections 1 1 1 1
 cmd editor.action.commentLine
@@ -211,9 +205,7 @@ expectText "    some text"
 expectSel 1 1 1 1
 
 === ignoreEmptyLines false > does not ignore whitespace lines
-status: fail-ours needs editor option comments.ignoreEmptyLines false
-# features: editor option comments.ignoreEmptyLines false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"comments":{"insertSpace":true,"ignoreEmptyLines":false}}
 text: "\tsome text\n\t   \n\n\tsome more text"
 setSelections 4 2 1 1
 cmd editor.action.commentLine
@@ -221,8 +213,7 @@ expectText "!@# \tsome text\n!@# \t   \n!@# \n!@# \tsome more text"
 expectSel 4 6 1 5
 
 === ignoreEmptyLines false > removes its own
-# features: editor option comments.ignoreEmptyLines false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"comments":{"insertSpace":true,"ignoreEmptyLines":false}}
 text: "\t!@# some text\n\t   \n\t\t!@# some more text"
 setSelections 3 2 1 1
 cmd editor.action.commentLine
@@ -230,8 +221,7 @@ expectText "\tsome text\n\t   \n\t\tsome more text"
 expectSel 3 2 1 1
 
 === ignoreEmptyLines false > works in only whitespace
-# features: editor option comments.ignoreEmptyLines false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"comments":{"insertSpace":true,"ignoreEmptyLines":false}}
 text: "\t    \n\t\n\t\tsome more text"
 setSelections 3 1 1 1
 cmd editor.action.commentLine
@@ -239,8 +229,7 @@ expectText "\t!@#     \n\t!@# \n\t\tsome more text"
 expectSel 3 1 1 1
 
 === ignoreEmptyLines false > comments single line
-# features: editor option comments.ignoreEmptyLines false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"comments":{"insertSpace":true,"ignoreEmptyLines":false}}
 text: "some text\n\tsome more text"
 setSelections 1 1 1 1
 cmd editor.action.commentLine
@@ -248,8 +237,7 @@ expectText "!@# some text\n\tsome more text"
 expectSel 1 5 1 5
 
 === ignoreEmptyLines false > detects indentation
-# features: editor option comments.ignoreEmptyLines false
-config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"],"comments":{"insertSpace":true,"ignoreEmptyLines":false}}
 text: "\tsome text\n\tsome more text"
 setSelections 2 2 1 1
 cmd editor.action.commentLine
