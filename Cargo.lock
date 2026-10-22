@@ -1136,6 +1136,7 @@ dependencies = [
  "quire-syntax",
  "serde",
  "serde_json",
+ "unicode-segmentation",
 ]
 
 [[package]]

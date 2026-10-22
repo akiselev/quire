@@ -1698,6 +1698,49 @@ fn alt_shift_drag_makes_a_box_selection_and_alt_click_adds_a_cursor() {
 }
 
 #[test]
+fn box_selection_columns_follow_wide_glyphs() {
+    // Two wide CJK glyphs are four visual columns (as core counts them), whatever their drawn
+    // width relative to the monospace advance.
+    // The test fonts have no CJK glyphs: tofu boxes are wide glyphs whose width is not two
+    // advances, which is the case the galley hit test fixes.
+    let mut h = Harness::builder()
+        .with_size(Vec2::new(800.0, 400.0))
+        .with_step_dt(1.0 / 60.0)
+        .allow_missing_glyphs()
+        .build_ui_state(app, St::new("中文ab\nabcdefgh\n"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 9);
+    let c9 = h.state().caret.expect("caret rect");
+    caret_to(&mut h, 10);
+    let adv = h.state().caret.unwrap().left() - c9.left();
+    caret_to(&mut h, "中文".len());
+    let caret = h.state().caret.expect("caret rect");
+    // Anchor on the ASCII line 1 at visual column 4; head on line 0 one advance right of the
+    // end of "中文" (between "a" and "b": visual column 5 there, however wide the glyphs draw).
+    let x_a = caret.left();
+    assert!(
+        (x_a - c9.left() - 4.0 * adv).abs() > 0.5 * adv,
+        "the wide glyphs must not draw exactly two advances wide, or x / advance would pass too"
+    );
+    let y0 = caret.center().y;
+    let y1 = y0 + caret.height();
+    let m = Modifiers::ALT | Modifiers::SHIFT;
+    let anchor = pos2(c9.left() + 4.0 * adv, y1);
+    let head = pos2(x_a + 1.1 * adv, y0);
+    mouse(&mut h, anchor, true, m);
+    h.step();
+    h.event(Event::PointerMoved(head));
+    h.step();
+    mouse(&mut h, head, false, m);
+    h.run();
+    // Line 1 (starts at 9): columns 4..5 are bytes 13..14; line 0: "a" is bytes 6..7.
+    let mut r = ranges(&h);
+    r.sort_unstable();
+    assert_eq!(r, vec![(6, 7), (13, 14)]);
+}
+
+#[test]
 fn folds_hide_lines_and_the_gutter_marker_toggles() {
     let text = "fn a() {\n    x;\n    y;\n}\nz\n";
     let mut h = harness(St::new(text));

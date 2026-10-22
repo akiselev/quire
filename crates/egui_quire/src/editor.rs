@@ -871,10 +871,20 @@ impl FrameCx<'_> {
 
     /// (line, visual column) under a screen position; the column may lie past the line's end
     /// (box selection).
-    fn line_col_at(&self, p: Pos2) -> (usize, u32) {
+    /// (line, visual column) under `p` for box selection: inside the text the column comes from
+    /// the galley hit test (so wide CJK glyphs count as core counts them), past the line end it
+    /// adds whole advances, as VS Code's mouse column selection does.
+    fn line_col_at(&mut self, p: Pos2) -> (usize, u32) {
         let line = self.line_at_y(p.y);
         let x = p.x - self.geom.text_left(self.mem);
-        (line, (x / self.geom.adv).round().max(0.0) as u32)
+        let ll = self.layout_line(line);
+        let s = glue::line_str(glue::text(self.doc), line);
+        let tab = self.doc.config().tab_size;
+        if x <= ll.width() {
+            return (line, glue::visible_col(&s, ll.col_at(x), tab));
+        }
+        let past = ((x - ll.width()) / self.geom.adv).round().max(0.0) as u32;
+        (line, glue::visible_col(&s, s.len(), tab) + past)
     }
 
     /// Byte offset under a screen position.

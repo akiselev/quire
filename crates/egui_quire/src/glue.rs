@@ -394,6 +394,38 @@ pub fn composition_cmd(text: &str, before: usize, after: usize) -> EditorCommand
     }
 }
 
+/// Visual column of byte `col` in `line` (no newline): VS Code's
+/// `CursorColumns.visibleColumnFromColumn` as quire-core counts it (tabs to the next stop, wide
+/// East Asian characters two columns, one step per grapheme cluster keyed by its first char).
+/// Mirrors quire-core's `commands::model::visible_col`, which is crate-private.
+pub fn visible_col(line: &str, col: usize, tab_size: u32) -> u32 {
+    use unicode_segmentation::UnicodeSegmentation;
+    let tab = tab_size.max(1);
+    let mut v = 0;
+    for (b, g) in line.grapheme_indices(true) {
+        if b + g.len() > col {
+            break;
+        }
+        let c = g.chars().next().unwrap_or(' ');
+        v = if c == '\t' {
+            (v / tab + 1) * tab
+        } else if is_wide(c) {
+            v + 2
+        } else {
+            v + 1
+        };
+    }
+    v
+}
+
+/// quire-core's `is_wide` (crate-private there).
+fn is_wide(c: char) -> bool {
+    matches!(c as u32,
+        0x1100..=0x115F | 0x2E80..=0x303E | 0x3041..=0x33FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF |
+        0xA000..=0xA4CF | 0xAC00..=0xD7A3 | 0xF900..=0xFAFF | 0xFE30..=0xFE4F | 0xFF00..=0xFF60 |
+        0xFFE0..=0xFFE6 | 0x1F300..=0x1F64F | 0x1F900..=0x1F9FF | 0x20000..=0x3FFFD)
+}
+
 /// Alt+Shift+drag box selection between (line, visual column) points.
 pub fn column_select_cmd(anchor: (usize, u32), head: (usize, u32)) -> EditorCommand {
     EditorCommand::ColumnSelect {

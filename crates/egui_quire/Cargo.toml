@@ -13,6 +13,7 @@ quire-core = { workspace = true, features = ["serde"] }
 egui = { workspace = true, features = ["default_fonts"] }
 serde.workspace = true
 serde_json.workspace = true
+unicode-segmentation.workspace = true
 
 [dev-dependencies]
 egui_kittest.workspace = true
