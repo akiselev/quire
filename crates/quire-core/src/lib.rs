@@ -19,7 +19,9 @@ pub mod config;
 pub mod diagnostics;
 pub mod document;
 pub mod find;
+pub mod folding;
 pub mod history;
+pub mod large;
 pub mod recent;
 pub mod selection;
 pub mod syntax;
@@ -36,6 +38,7 @@ pub use diagnostics::{DiagAction, DiagTags, Diagnostic, Diagnostics, Severity, S
 pub use document::{Anchor, Applied, Document, Executed, Refusal, SettledProbe, Snapshot};
 pub use find::{FindError, FindQuery, FindState};
 pub use history::{History, UndoGroup, UndoGroupClosed, UndoMode};
+pub use large::{Degraded, DegradedReason, LargeFilePolicy};
 pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};

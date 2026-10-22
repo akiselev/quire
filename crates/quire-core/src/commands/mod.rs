@@ -14,6 +14,7 @@
 
 mod edit;
 mod find;
+mod fold;
 mod lines;
 pub(crate) mod model;
 mod motion;
@@ -155,6 +156,8 @@ pub(crate) fn track(text: &Text, changes: &ChangeSet, sel: &Selection) -> Select
 pub(crate) struct Ctx<'a> {
     pub cfg: &'a EditorConfig,
     pub cls: WordClassifier,
+    /// The view's folds: vertical motion skips hidden lines.
+    pub folds: &'a [Range<usize>],
 }
 
 fn tr_from(doc: &Document, changes: ChangeSet, sel: Selection, origin: Origin) -> Transaction {
@@ -177,6 +180,7 @@ pub(crate) fn run(
     let ctx = Ctx {
         cfg,
         cls: WordClassifier::new(&cfg.word_separators),
+        folds: view.folds(),
     };
     let text = doc.text();
     let sel = view.selection();
@@ -335,6 +339,19 @@ pub(crate) fn run(
             cmd_origin(cmd),
         )),
         C::DeleteAllLeft => isolated(edit_out(lines::delete_all_left(&st()), cmd_origin(cmd))),
+        C::Fold | C::Unfold | C::ToggleFold | C::FoldAll | C::UnfoldAll => {
+            let op = match cmd {
+                C::Fold => fold::Op::Fold,
+                C::Unfold => fold::Op::Unfold,
+                C::ToggleFold => fold::Op::Toggle,
+                C::FoldAll => fold::Op::FoldAll,
+                _ => fold::Op::UnfoldAll,
+            };
+            Ok(match fold::run(doc, view, op) {
+                Some(tr) => CommandOutput::Transaction(tr),
+                None => CommandOutput::Nothing,
+            })
+        }
         C::Undo | C::Redo => {
             let undo = matches!(cmd, C::Undo);
             if doc.undo_mode() == UndoMode::Host {

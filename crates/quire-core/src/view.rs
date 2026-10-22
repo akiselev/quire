@@ -165,6 +165,30 @@ impl EditorView {
         self.folds = folds;
     }
 
+    /// Whether `line` is hidden inside a fold (the header line of a fold stays visible).
+    pub fn is_line_hidden(&self, text: &Text, line: usize) -> bool {
+        if self.folds.is_empty() || line == 0 || line >= text.len_lines() {
+            return false;
+        }
+        let start = text.line_to_byte(line);
+        let end = text.line_range(line).end;
+        let i = self.folds.partition_point(|f| f.start < start);
+        self.folds[..i].iter().any(|f| end <= f.end)
+    }
+
+    /// The fold whose header is `line`, if that line is folded.
+    pub fn fold_at_line(&self, text: &Text, line: usize) -> Option<Range<usize>> {
+        if line >= text.len_lines() {
+            return None;
+        }
+        let at = text.line_range(line).end;
+        self.folds
+            .iter()
+            .filter(|f| f.start == at)
+            .max_by_key(|f| f.end)
+            .cloned()
+    }
+
     /// The find state.
     pub fn find(&self) -> Option<&FindState> {
         self.find.as_ref()
@@ -380,6 +404,7 @@ impl EditorView {
             Effect::RevealLine(l) => self.reveal = Some(Reveal::Line(*l)),
             Effect::SetFind(q) => self.set_find(doc, q.clone()),
             Effect::ViewSession(s) => self.session = Some(s.clone()),
+            Effect::SetFolds(f) => self.set_folds(f.clone()),
             Effect::AutoClosed(list) => {
                 self.auto_closed.extend(list.iter().cloned());
                 self.prune_auto_closed();

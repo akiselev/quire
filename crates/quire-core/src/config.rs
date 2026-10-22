@@ -90,6 +90,8 @@ pub struct EditorConfig {
     /// Copy or cut the whole line when the selection is empty (VS Code
     /// `editor.emptySelectionClipboard`).
     pub empty_selection_clipboard: bool,
+    /// The large-file thresholds ([`LargeFilePolicy`](crate::LargeFilePolicy)).
+    pub large_file: crate::large::LargeFilePolicy,
 }
 
 impl Default for EditorConfig {
@@ -140,6 +142,7 @@ impl Default for EditorConfig {
             recent_changes_window: 64,
             undo_pause_ms: 1000,
             empty_selection_clipboard: true,
+            large_file: crate::large::LargeFilePolicy::default(),
         }
     }
 }

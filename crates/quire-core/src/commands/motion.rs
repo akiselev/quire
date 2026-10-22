@@ -105,7 +105,7 @@ fn vertical(ctx: &Ctx, m: &Model, r: SelRange, delta: isize, select: bool) -> Se
     }
     .unwrap_or(cur_vis);
     let line_count = m.line_count() as isize;
-    let target = p.line as isize + delta;
+    let target = step_lines(m.text, ctx.folds, p.line, delta);
     let was_first = p.line == 0 && p.col == 0;
     let was_last = p.line as isize == line_count - 1 && p.col == chars.len();
     let at_edge = if delta < 0 { was_first } else { was_last };
@@ -128,6 +128,42 @@ fn vertical(ctx: &Ctx, m: &Model, r: SelRange, delta: isize, select: bool) -> Se
     let goal = if at_edge { None } else { Some(goal) };
     let anchor = if select { r.anchor } else { head };
     SelRange::new(anchor, head).with_goal(goal)
+}
+
+/// The line `delta` visible lines away (lines hidden in folds are skipped); may lie outside the
+/// document, which callers treat as the edge.
+pub(crate) fn step_lines(
+    text: &Text,
+    folds: &[std::ops::Range<usize>],
+    line: usize,
+    delta: isize,
+) -> isize {
+    if folds.is_empty() {
+        return line as isize + delta;
+    }
+    let count = text.len_lines() as isize;
+    let hidden_by = |l: usize| {
+        let (s, e) = (text.line_to_byte(l), text.line_range(l).end);
+        folds.iter().find(|f| f.start < s && e <= f.end).cloned()
+    };
+    let mut l = line as isize;
+    for _ in 0..delta.unsigned_abs() {
+        l += delta.signum();
+        if l < 0 || l >= count {
+            return l;
+        }
+        if let Some(f) = hidden_by(l as usize) {
+            l = if delta > 0 {
+                text.byte_to_line(f.end) as isize + 1
+            } else {
+                text.byte_to_line(f.start) as isize
+            };
+            if l >= count {
+                return l;
+            }
+        }
+    }
+    l
 }
 
 /// `expandLineSelection`: select the current line(s) including the line break; again: extend by

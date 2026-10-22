@@ -129,6 +129,9 @@ pub enum Effect {
     /// Column-select or add-next-match state for the acting view, kept while its selection is
     /// unchanged.
     ViewSession(crate::view::ViewSession),
+    /// Replace the view's folds (byte ranges hidden after the changes, each from a header
+    /// line's end to its last line's end).
+    SetFolds(Vec<std::ops::Range<usize>>),
 }
 
 /// An edit (or a selection change) against one version of a document.

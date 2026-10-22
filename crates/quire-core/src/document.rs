@@ -27,16 +27,17 @@ use crate::command::{CommandOutput, EditorCommand, HostRequest};
 use crate::config::EditorConfig;
 use crate::diagnostics::{Diagnostic, Diagnostics, SourceId};
 use crate::history::{History, Record, UndoGroupClosed, UndoMode};
+use crate::large::Degraded;
 use crate::recent::{LineEdit, RecentChanges, Stale};
 use crate::selection::Selection;
-use crate::syntax::{PendingWork, TokenRuns, TokenStore};
+use crate::syntax::{FoldRange, PendingWork, TokenRuns, TokenStore};
 use crate::text::Text;
 use crate::transaction::{Origin, Transaction};
 use crate::version::Version;
 use crate::view::EditorView;
 use smallvec::SmallVec;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 
 /// An immutable view of the text at a version. Cloning is O(1); `Send + Sync`, for background
 /// work (parsing, compiling, saving).
@@ -165,6 +166,9 @@ pub struct Document {
     config: EditorConfig,
     pending: PendingWork,
     open_group: Arc<AtomicBool>,
+    syntax_folds: Option<Vec<FoldRange>>,
+    indent_folds: OnceLock<Vec<FoldRange>>,
+    degraded: Option<Degraded>,
 }
 
 impl Document {
@@ -186,10 +190,13 @@ impl Document {
             saved_text: Some(text.clone()),
             dirty: false,
             version: Version::INITIAL,
-            text,
-            config,
             pending: PendingWork::default(),
             open_group: Arc::new(AtomicBool::new(false)),
+            syntax_folds: None,
+            indent_folds: OnceLock::new(),
+            degraded: crate::large::check(&text, &config.large_file),
+            text,
+            config,
         }
     }
 
@@ -252,7 +259,55 @@ impl Document {
             }
             self.recent = r;
         }
+        if config.large_file != self.config.large_file {
+            self.degraded = crate::large::check(&self.text, &config.large_file);
+        }
+        if config.tab_size != self.config.tab_size {
+            self.indent_folds = OnceLock::new();
+        }
         self.config = config;
+    }
+
+    /// Why the document is past the large-file thresholds, if it is (decided at load and on a
+    /// reload, as in Monaco).
+    pub fn degraded(&self) -> Option<&Degraded> {
+        self.degraded.as_ref()
+    }
+
+    /// Stores fold ranges from a syntax provider, computed at version `at` (mapped forward by
+    /// lines if older; refused outside the recent-changes window). They replace the indentation
+    /// ranges until [`Document::clear_fold_ranges`].
+    pub fn set_fold_ranges(
+        &mut self,
+        at: Version,
+        mut ranges: Vec<FoldRange>,
+    ) -> Result<(), Stale> {
+        for e in self.recent.since(at)? {
+            crate::folding::map_fold_ranges(&mut ranges, &e.line_edits);
+        }
+        let last = self.text.len_lines().saturating_sub(1);
+        ranges.retain(|r| r.start_line < r.end_line && r.end_line <= last);
+        ranges.sort_by_key(|r| (r.start_line, std::cmp::Reverse(r.end_line)));
+        self.syntax_folds = Some(ranges);
+        Ok(())
+    }
+
+    /// Drops syntax fold ranges (back to indentation ranges).
+    pub fn clear_fold_ranges(&mut self) {
+        self.syntax_folds = None;
+    }
+
+    /// The fold ranges: the syntax provider's if set, else ranges from indentation (computed
+    /// once per version). Empty when the document is degraded past syntax features.
+    pub fn fold_ranges(&self) -> &[FoldRange] {
+        if self.degraded.as_ref().is_some_and(Degraded::syntax_off) {
+            return &[];
+        }
+        if let Some(r) = &self.syntax_folds {
+            return r;
+        }
+        self.indent_folds
+            .get_or_init(|| crate::folding::indent_fold_ranges(&self.text, self.config.tab_size))
     }
 
     /// The history.
@@ -554,8 +609,15 @@ impl Document {
             let old_text = std::mem::replace(&mut self.text, new_text);
             self.version = self.version.next();
             self.tokens.shift(&line_edits);
+            if let Some(f) = &mut self.syntax_folds {
+                crate::folding::map_fold_ranges(f, &line_edits);
+            }
+            self.indent_folds = OnceLock::new();
             self.recent.push(tr.changes.clone(), line_edits);
             self.diagnostics.map(&tr.changes);
+            if matches!(tr.origin, Origin::Reload) {
+                self.degraded = crate::large::check(&self.text, &self.config.large_file);
+            }
 
             let sel_before = selection_before
                 .clone()

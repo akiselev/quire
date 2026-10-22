@@ -220,6 +220,21 @@ pub enum EditorCommand {
         /// Head visual column.
         head_column: u32,
     },
+    /// Fold the innermost unfolded range at each cursor's line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.fold"))]
+    Fold,
+    /// Unfold the innermost folded range at each cursor's line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.unfold"))]
+    Unfold,
+    /// Fold or unfold the innermost range at each cursor's line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.toggleFold"))]
+    ToggleFold,
+    /// Fold every range.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.foldAll"))]
+    FoldAll,
+    /// Unfold everything.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.unfoldAll"))]
+    UnfoldAll,
     /// Undo (a host request in host mode).
     #[cfg_attr(feature = "serde", serde(rename = "undo"))]
     Undo,
@@ -311,6 +326,11 @@ impl EditorCommand {
             ColumnSelectPageUp { .. } => "cursorColumnSelectPageUp",
             ColumnSelectPageDown { .. } => "cursorColumnSelectPageDown",
             ColumnSelect { .. } => "columnSelect",
+            Fold => "editor.fold",
+            Unfold => "editor.unfold",
+            ToggleFold => "editor.toggleFold",
+            FoldAll => "editor.foldAll",
+            UnfoldAll => "editor.unfoldAll",
             Undo => "undo",
             Redo => "redo",
             Save => "workbench.action.files.save",
@@ -389,6 +409,11 @@ impl EditorCommand {
             "cursorColumnSelectDown" => ColumnSelectDown,
             "cursorColumnSelectPageUp" => ColumnSelectPageUp { lines: page_lines },
             "cursorColumnSelectPageDown" => ColumnSelectPageDown { lines: page_lines },
+            "editor.fold" => Fold,
+            "editor.unfold" => Unfold,
+            "editor.toggleFold" => ToggleFold,
+            "editor.foldAll" => FoldAll,
+            "editor.unfoldAll" => UnfoldAll,
             "undo" => Undo,
             "redo" => Redo,
             "workbench.action.files.save" => Save,

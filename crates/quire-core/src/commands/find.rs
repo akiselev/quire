@@ -35,14 +35,6 @@ fn next_from(ms: &[Range<usize>], pos: usize) -> Option<Range<usize>> {
     ms.iter().find(|m| m.start >= pos).or(ms.first()).cloned()
 }
 
-fn prev_from(ms: &[Range<usize>], pos: usize) -> Option<Range<usize>> {
-    ms.iter()
-        .rev()
-        .find(|m| m.end <= pos)
-        .or(ms.last())
-        .cloned()
-}
-
 pub(crate) fn find(
     doc: &Document,
     view: &EditorView,
