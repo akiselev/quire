@@ -137,8 +137,8 @@ pub(crate) struct Mem {
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
     pub last_caret: Option<Rect>,
-    /// First chord of a two-chord binding and when it was pressed.
-    pub pending_chord: Option<(crate::chord::Chord, f64)>,
+    /// First chord of a two-chord binding, waiting for the second.
+    pub pending_chord: Option<crate::chord::Chord>,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
 }
@@ -495,10 +495,6 @@ impl<'a> CodeEditor<'a> {
 
 const PAD_Y: f32 = 2.0;
 
-/// How long the first chord of a two-chord binding waits for the second (VS Code waits
-/// indefinitely; quire drops it after this, so a stray prefix cannot capture a later key).
-pub(crate) const CHORD_TIMEOUT_S: f64 = 3.0;
-
 /// Gutter width for `lines` lines: diagnostic mark, digits, padding.
 fn gutter_width(lines: usize, adv: f32) -> f32 {
     let digits = (lines.max(1).ilog10() + 1).max(2) as f32;
@@ -686,8 +682,8 @@ impl FrameCx<'_> {
     }
 
     /// One key press through the keymap, with the pending first chord of a two-chord binding.
-    /// A pending chord older than [`CHORD_TIMEOUT_S`] is dropped; Escape or any key that does not
-    /// complete the sequence cancels it and is consumed (VS Code swallows it too).
+    /// As in VS Code, the first chord waits indefinitely; Escape or any key that does not
+    /// complete the sequence cancels it and is consumed. Losing focus also cancels it.
     fn handle_key(
         &mut self,
         map: &Keymap,
@@ -695,13 +691,7 @@ impl FrameCx<'_> {
         key: Key,
         mods: egui::Modifiers,
     ) -> bool {
-        let now = self.now();
-        let pending = self
-            .mem
-            .pending_chord
-            .take()
-            .filter(|&(_, t)| now - t <= CHORD_TIMEOUT_S)
-            .map(|(c, _)| c);
+        let pending = self.mem.pending_chord.take();
         if pending.is_some() && key == Key::Escape {
             return true;
         }
@@ -711,7 +701,7 @@ impl FrameCx<'_> {
                 KeyAction::Widget(a) => self.widget_action(a),
             },
             KeyLookup::Prefix(c) => {
-                self.mem.pending_chord = Some((c, now));
+                self.mem.pending_chord = Some(c);
             }
             KeyLookup::Unbound => return pending.is_some(),
         }

@@ -1310,16 +1310,26 @@ fn escape_or_another_key_cancels_a_pending_chord() {
 }
 
 #[test]
-fn pending_chord_times_out() {
+fn pending_chord_waits_indefinitely_but_not_across_focus_loss() {
     let mut h = harness(chord_state("let a;"));
     h.run();
     focus(&mut h);
     h.key_press_modifiers(cmd(), Key::K);
     h.run();
-    h.run_steps(200); // 3.3 s at 60 Hz
+    h.run_steps(600); // 10 s at 60 Hz: still pending, as in VS Code
     h.key_press_modifiers(cmd(), Key::C);
     h.run();
-    assert_eq!(h.state().text(), "let a;");
+    assert_eq!(h.state().text(), "// let a;");
+    // Focus loss cancels.
+    h.key_press_modifiers(cmd(), Key::K);
+    h.run();
+    h.ctx
+        .memory_mut(|m| m.surrender_focus(CodeEditor::id_for(("ed", 0usize))));
+    h.run();
+    focus(&mut h);
+    h.key_press_modifiers(cmd(), Key::C);
+    h.run();
+    assert_eq!(h.state().text(), "// let a;");
 }
 
 #[test]
