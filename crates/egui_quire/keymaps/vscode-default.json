@@ -49,6 +49,9 @@
   { "key": "ctrl+s", "mac": "cmd+s", "command": "workbench.action.files.save" },
 
   { "key": "ctrl+/", "mac": "cmd+/", "command": "editor.action.commentLine" },
+  { "key": "ctrl+k ctrl+c", "mac": "cmd+k cmd+c", "command": "editor.action.addCommentLine" },
+  { "key": "ctrl+k ctrl+u", "mac": "cmd+k cmd+u", "command": "editor.action.removeCommentLine" },
+  { "mac": "ctrl+k", "command": "deleteAllRight" },
   { "key": "ctrl+]", "mac": "cmd+]", "command": "editor.action.indentLines" },
   { "key": "ctrl+[", "mac": "cmd+[", "command": "editor.action.outdentLines" },
   { "key": "ctrl+shift+k", "mac": "cmd+shift+k", "command": "editor.action.deleteLines" },

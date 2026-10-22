@@ -14,6 +14,8 @@ struct St {
     /// How many views to show (side by side).
     shown: usize,
     host_mode: bool,
+    /// Keymap for editor 0 (default: the bundled VS Code keymap).
+    keymap: Option<egui_quire::Keymap>,
     /// Per frame, per view: events.
     events: Vec<EditorEvent>,
     applied: usize,
@@ -36,6 +38,7 @@ impl St {
             views,
             shown: 1,
             host_mode: false,
+            keymap: None,
             events: Vec::new(),
             applied: 0,
             left_keys: Vec::new(),
@@ -70,6 +73,8 @@ fn app(ui: &mut egui::Ui, st: &mut St) {
         let mut ed = CodeEditor::new(&mut st.doc, &mut st.views[i], ("ed", i), name);
         if st.host_mode {
             ed = ed.key_handling(KeyHandling::Host);
+        } else if let Some(map) = st.keymap.clone().filter(|_| i == 0) {
+            ed = ed.key_handling(KeyHandling::Builtin(map));
         }
         let out: EditorOutput = ed.show_in(ui, rect);
         st.applied += out.applied.len();
@@ -634,6 +639,8 @@ fn keymap_resolves_against_core_commands() {
         unresolved,
         vec![
             "deleteAllLeft",
+            "deleteAllRight",
+            "editor.action.addCommentLine",
             "editor.action.addSelectionToNextFindMatch",
             "editor.action.copyLinesDownAction",
             "editor.action.copyLinesUpAction",
@@ -641,6 +648,7 @@ fn keymap_resolves_against_core_commands() {
             "editor.action.insertCursorBelow",
             "editor.action.moveLinesDownAction",
             "editor.action.moveLinesUpAction",
+            "editor.action.removeCommentLine",
         ]
     );
     let os = egui::os::OperatingSystem::Nix;
@@ -1170,4 +1178,176 @@ fn editor_caret_and_clicks_honour_tab_size() {
     click_at(&mut h, pos2(left + 30.0 * adv, y2));
     let c = h.state().caret.unwrap();
     assert!((c.left() - (left + 11.0 * adv)).abs() < 0.6);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Horizontal extent from the longest line.
+
+fn wheel(h: &mut Harness<'_, St>, delta: Vec2) {
+    let r = h.state().rects[0];
+    h.event(Event::PointerMoved(r.center()));
+    h.event(Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta,
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Wheel,
+        modifiers: Modifiers::NONE,
+    });
+    h.run_steps(40);
+}
+
+#[test]
+fn horizontal_extent_is_the_longest_line_even_off_screen() {
+    // The long line is far below the viewport: never laid out, still scrollable to.
+    let mut text: String = (0..300).map(|i| format!("{i}\n")).collect();
+    text.push_str(&"x".repeat(400));
+    text.push('\n');
+    let mut h = harness(St::new(&text));
+    h.run();
+    wheel(&mut h, vec2(-100_000.0, 0.0));
+    let x = h.state().views[0].scroll().horizontal;
+    let adv = egui_quire::layout::mono(&h.ctx, &egui::FontId::monospace(13.0)).advance();
+    let view_w = h.state().rects[0].width();
+    // 400 columns plus margin, minus the visible text width (gutter excluded): at least
+    // 400 columns minus the whole editor width.
+    assert!(
+        x > 400.0 * adv - view_w && x < 410.0 * adv,
+        "scroll x {x} (adv {adv})"
+    );
+    // Another party deletes the long line; the extent shrinks and the scroll clamps.
+    let start = h.state().doc.text().line_to_byte(300);
+    let len = h.state().doc.text().len_bytes();
+    {
+        let st = h.state_mut();
+        let cs = quire_core::ChangeSet::replace(len, [(start..len, "")]).unwrap();
+        let tr = quire_core::Transaction::new(st.doc.version(), cs);
+        let St { doc, views, .. } = st;
+        doc.apply(tr, &mut views[1]).unwrap();
+    }
+    h.run();
+    assert_eq!(h.state().views[0].scroll().horizontal, 0.0);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Two-chord bindings.
+
+fn chord_state(text: &str) -> St {
+    let mut st = St::new(text);
+    let cfg = quire_core::EditorConfig {
+        line_comment: Some("//".into()),
+        ..Default::default()
+    };
+    st.doc.set_config(cfg);
+    st.keymap = Some(
+        egui_quire::Keymap::from_json(
+            r#"[
+                { "key": "ctrl+k ctrl+c", "mac": "cmd+k cmd+c", "command": "editor.action.commentLine" },
+                { "key": "ctrl+k", "mac": "cmd+k", "command": "cursorEnd" },
+                { "key": "left", "command": "cursorLeft" }
+            ]"#,
+        )
+        .unwrap(),
+    );
+    st
+}
+
+#[test]
+fn two_chord_binding_runs_after_both_chords() {
+    let mut h = harness(chord_state("let a;"));
+    h.run();
+    focus(&mut h);
+    h.state_mut().left_keys.clear();
+    h.key_press_modifiers(cmd(), Key::K);
+    h.run_steps(5);
+    assert_eq!(h.state().text(), "let a;", "the prefix alone does nothing");
+    assert!(
+        h.state().left_keys.is_empty(),
+        "the prefix is consumed (and wins over the one-chord binding of the same keys)"
+    );
+    h.key_press_modifiers(cmd(), Key::C);
+    h.run();
+    assert_eq!(h.state().text(), "// let a;");
+    assert!(h.state().left_keys.is_empty());
+}
+
+#[test]
+fn escape_or_another_key_cancels_a_pending_chord() {
+    let mut h = harness(chord_state("let a;"));
+    h.run();
+    focus(&mut h);
+    let caret = h.state().sel(0);
+    // Escape cancels and is consumed; focus stays.
+    h.key_press_modifiers(cmd(), Key::K);
+    h.run();
+    h.state_mut().left_keys.clear();
+    h.key_press(Key::Escape);
+    h.run();
+    assert!(!h.state().left_keys.contains(&Key::Escape));
+    assert!(
+        h.ctx
+            .memory(|m| m.has_focus(CodeEditor::id_for(("ed", 0usize))))
+    );
+    h.key_press_modifiers(cmd(), Key::C);
+    h.run();
+    assert_eq!(
+        h.state().text(),
+        "let a;",
+        "second chord alone is not the sequence"
+    );
+    // A key that does not complete the sequence cancels it and is swallowed, not run.
+    h.key_press_modifiers(cmd(), Key::K);
+    h.run();
+    h.key_press(Key::ArrowLeft);
+    h.run();
+    assert_eq!(
+        h.state().sel(0),
+        caret,
+        "Left was swallowed by the cancelled sequence"
+    );
+    h.key_press(Key::ArrowLeft);
+    h.run();
+    assert_ne!(h.state().sel(0), caret, "and works again afterwards");
+}
+
+#[test]
+fn pending_chord_times_out() {
+    let mut h = harness(chord_state("let a;"));
+    h.run();
+    focus(&mut h);
+    h.key_press_modifiers(cmd(), Key::K);
+    h.run();
+    h.run_steps(200); // 3.3 s at 60 Hz
+    h.key_press_modifiers(cmd(), Key::C);
+    h.run();
+    assert_eq!(h.state().text(), "let a;");
+}
+
+#[test]
+fn keymap_parses_two_chord_entries() {
+    let map = egui_quire::Keymap::vscode_default();
+    let os = egui::os::OperatingSystem::Nix;
+    let ctx = egui_quire::keymap::WhenContext::default();
+    // Only resolved bindings make prefixes: ctrl+k starts nothing until core has the commands.
+    assert!(matches!(
+        map.lookup_seq(os, None, Key::K, Modifiers::CTRL, &ctx),
+        egui_quire::KeyLookup::Unbound
+    ));
+    let custom = chord_state("").keymap.unwrap();
+    let k = egui_quire::Chord::parse("ctrl+k").unwrap();
+    assert!(matches!(
+        custom.lookup_seq(os, None, Key::K, Modifiers::CTRL, &ctx),
+        egui_quire::KeyLookup::Prefix(c) if c == k
+    ));
+    match custom.lookup_seq(os, Some(k), Key::C, Modifiers::CTRL, &ctx) {
+        egui_quire::KeyLookup::Bound(b) => assert_eq!(b.command_id, "editor.action.commentLine"),
+        other => panic!("{other:?}"),
+    }
+    // The one-step lookup still sees the one-chord binding.
+    assert_eq!(
+        custom
+            .lookup(os, Key::K, Modifiers::CTRL, &ctx)
+            .unwrap()
+            .command_id,
+        "cursorEnd"
+    );
 }

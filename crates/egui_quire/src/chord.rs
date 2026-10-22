@@ -16,11 +16,11 @@ pub struct Chord {
 impl Chord {
     /// Parse `ctrl+shift+left`. Modifier names: `ctrl`, `shift`, `alt` (`option`), `cmd`
     /// (`meta`, `win`, `super`). Key names: VS Code's (`left`, `pageup`, `backspace`, `f3`, `/`)
-    /// or egui's [`Key::from_name`]. Two-step chords (`ctrl+k ctrl+c`) are not supported.
+    /// or egui's [`Key::from_name`]. Two-step chords (`ctrl+k ctrl+c`) are [`KeySeq`]s.
     pub fn parse(s: &str) -> Result<Self, String> {
         let s = s.trim();
         if s.contains(' ') {
-            return Err(format!("two-step chord not supported: {s:?}"));
+            return Err(format!("two-step chord, use KeySeq::parse: {s:?}"));
         }
         let mut c = Self {
             key: Key::Escape,
@@ -69,6 +69,35 @@ impl Chord {
     }
 }
 
+/// A key binding: one chord, or two pressed one after the other (`ctrl+k ctrl+c`).
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct KeySeq {
+    pub first: Chord,
+    pub second: Option<Chord>,
+}
+
+impl KeySeq {
+    /// Parse `ctrl+s` or `ctrl+k ctrl+c` (VS Code notation; at most two chords).
+    pub fn parse(s: &str) -> Result<Self, String> {
+        let mut parts = s.split_whitespace();
+        let first = Chord::parse(parts.next().ok_or_else(|| format!("empty key {s:?}"))?)?;
+        let second = parts.next().map(Chord::parse).transpose()?;
+        if parts.next().is_some() {
+            return Err(format!("more than two chords in {s:?}"));
+        }
+        Ok(Self { first, second })
+    }
+}
+
+impl From<Chord> for KeySeq {
+    fn from(first: Chord) -> Self {
+        Self {
+            first,
+            second: None,
+        }
+    }
+}
+
 fn parse_key(name: &str) -> Option<Key> {
     let lower = name.to_ascii_lowercase();
     let mapped = match lower.as_str() {
@@ -112,6 +141,11 @@ mod tests {
         assert_eq!(Chord::parse("ctrl+/").unwrap().key, Key::Slash);
         assert_eq!(Chord::parse("pagedown").unwrap().key, Key::PageDown);
         assert!(Chord::parse("ctrl+k ctrl+c").is_err());
+        let seq = KeySeq::parse("ctrl+k  ctrl+c").unwrap();
+        assert_eq!(seq.first, Chord::parse("ctrl+k").unwrap());
+        assert_eq!(seq.second, Some(Chord::parse("ctrl+c").unwrap()));
+        assert_eq!(KeySeq::parse("f3").unwrap().second, None);
+        assert!(KeySeq::parse("a b c").is_err());
         assert!(Chord::parse("hyper+a").is_err());
     }
 

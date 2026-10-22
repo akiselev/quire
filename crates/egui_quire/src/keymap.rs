@@ -11,7 +11,7 @@ use egui::os::OperatingSystem;
 use egui::{Key, Modifiers};
 use serde::Deserialize;
 
-use crate::chord::Chord;
+use crate::chord::{Chord, KeySeq};
 use crate::command::KeyAction;
 
 /// The VS Code default keymap shipped with the crate.
@@ -93,17 +93,17 @@ pub struct WhenContext {
 /// One resolved binding.
 #[derive(Clone, Debug)]
 pub struct Binding {
-    /// Chord on Linux / Windows / macOS (None: not bound on that platform).
-    pub linux: Option<Chord>,
-    pub win: Option<Chord>,
-    pub mac: Option<Chord>,
+    /// Keys on Linux / Windows / macOS (None: not bound on that platform).
+    pub linux: Option<KeySeq>,
+    pub win: Option<KeySeq>,
+    pub mac: Option<KeySeq>,
     pub when: When,
     pub command_id: String,
     pub action: KeyAction,
 }
 
 impl Binding {
-    pub fn chord(&self, os: OperatingSystem) -> Option<Chord> {
+    pub fn keys(&self, os: OperatingSystem) -> Option<KeySeq> {
         match os {
             OperatingSystem::Mac | OperatingSystem::IOS => self.mac,
             OperatingSystem::Windows => self.win,
@@ -138,7 +138,7 @@ impl Keymap {
 
     /// Add one entry (later entries take precedence).
     pub fn push_raw(&mut self, r: RawBinding) -> Result<(), String> {
-        let parse = |s: &Option<String>| s.as_deref().map(Chord::parse).transpose();
+        let parse = |s: &Option<String>| s.as_deref().map(KeySeq::parse).transpose();
         let key = parse(&r.key)?;
         let mac = parse(&r.mac)?.or(key);
         let linux = parse(&r.linux)?.or(key);
@@ -167,7 +167,8 @@ impl Keymap {
         &self.bindings
     }
 
-    /// The action bound to `key` with `mods` on `os` when `ctx` holds (last matching entry wins).
+    /// The one-chord action bound to `key` with `mods` on `os` when `ctx` holds (last matching
+    /// entry wins). Two-chord bindings go through [`Self::lookup_seq`].
     pub fn lookup(
         &self,
         os: OperatingSystem,
@@ -175,18 +176,78 @@ impl Keymap {
         mods: Modifiers,
         ctx: &WhenContext,
     ) -> Option<&Binding> {
-        let mods = normalize(os, mods);
-        self.bindings
-            .iter()
-            .rev()
-            .find(|b| b.chord(os).is_some_and(|c| c.matches(key, mods)) && b.when.holds(ctx))
+        self.find_single(os, key, normalize(os, mods), ctx)
     }
 
-    /// The chord bound to a command id on `os` (first entry), for menus and tests.
-    pub fn chord_for(&self, os: OperatingSystem, command_id: &str) -> Option<Chord> {
+    fn find_single(
+        &self,
+        os: OperatingSystem,
+        key: Key,
+        mods: Modifiers,
+        ctx: &WhenContext,
+    ) -> Option<&Binding> {
+        self.bindings.iter().rev().find(|b| {
+            b.keys(os)
+                .is_some_and(|k| k.second.is_none() && k.first.matches(key, mods))
+                && b.when.holds(ctx)
+        })
+    }
+
+    /// Resolve a key press given the first chord of a pending two-chord sequence (if any).
+    ///
+    /// Without `pending`, a chord that starts a two-chord binding returns [`KeyLookup::Prefix`]
+    /// (the prefix wins over a one-chord binding of the same keys, as in VS Code). With
+    /// `pending`, only the second chords of bindings starting with it match; anything else is
+    /// [`KeyLookup::Unbound`] (the sequence is cancelled).
+    pub fn lookup_seq(
+        &self,
+        os: OperatingSystem,
+        pending: Option<Chord>,
+        key: Key,
+        mods: Modifiers,
+        ctx: &WhenContext,
+    ) -> KeyLookup<'_> {
+        let mods = normalize(os, mods);
+        if let Some(p) = pending {
+            return self
+                .bindings
+                .iter()
+                .rev()
+                .find(|b| {
+                    b.keys(os).is_some_and(|k| {
+                        k.first == p && k.second.is_some_and(|c| c.matches(key, mods))
+                    }) && b.when.holds(ctx)
+                })
+                .map_or(KeyLookup::Unbound, KeyLookup::Bound);
+        }
+        let prefix = self.bindings.iter().find_map(|b| {
+            b.keys(os)
+                .filter(|k| k.second.is_some() && k.first.matches(key, mods) && b.when.holds(ctx))
+                .map(|k| k.first)
+        });
+        if let Some(p) = prefix {
+            return KeyLookup::Prefix(p);
+        }
+        self.find_single(os, key, mods, ctx)
+            .map_or(KeyLookup::Unbound, KeyLookup::Bound)
+    }
+
+    /// The keys bound to a command id on `os` (first entry), for menus and tests.
+    pub fn keys_for(&self, os: OperatingSystem, command_id: &str) -> Option<KeySeq> {
         self.bindings
             .iter()
             .find(|b| b.command_id == command_id)
-            .and_then(|b| b.chord(os))
+            .and_then(|b| b.keys(os))
     }
+}
+
+/// What a key press resolves to.
+#[derive(Clone, Copy, Debug)]
+pub enum KeyLookup<'a> {
+    /// A complete binding.
+    Bound(&'a Binding),
+    /// The first chord of a two-chord binding: wait for the second.
+    Prefix(Chord),
+    /// Nothing (with a pending first chord: the sequence is cancelled).
+    Unbound,
 }
