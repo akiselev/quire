@@ -44,6 +44,8 @@ quire depends on neither.
 - Commit early. To land: `git fetch && git rebase origin/master`, run the touched crate's
   tests, then `git push origin HEAD:master` (fast-forward only; never force-push master).
 - Commit messages say what changed and which milestone (QE0, QE1, QE2, QE4).
+- **Master stays green:** only work that passes the full `scripts/check.sh` lands on master.
+  Unfinished code stays on your branch.
 
 ## Handoff
 
@@ -51,7 +53,13 @@ An agent past about 400k tokens of context, or at the end of its task, writes
 `docs/handoff/<branch>.md` (what is done, what is next, open problems, test counts) and commits
 it, so a fresh agent can continue.
 
-## Questions
+## Questions and approvals
+
+- **Needs approval before it lands on master** (main-cadatomic takes it to the user): a new
+  public command, type, trait, method, enum variant or event, or behaviour that differs from VS
+  Code or `docs/design/ARCH-QUIRE.md` §3. Send the proposal (signature, rationale,
+  recommendation) to the coordinator, keep it on your branch, and keep working meanwhile.
+- Internal representation and test-port mechanics need no approval.
 
 Workers send questions to the coordinator (macbook-cadatomic) with a recommendation and keep
 working on something else meanwhile. Nobody asks the user.
