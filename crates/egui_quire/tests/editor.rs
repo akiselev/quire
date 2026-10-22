@@ -20,6 +20,8 @@ struct St {
     /// Keys still pressed in egui input after the editors ran.
     left_keys: Vec<Key>,
     left_text: Vec<String>,
+    /// `TextSelectionSettled` texts sent (accumulated; tests clear it).
+    primary: Vec<String>,
     rects: Vec<Rect>,
     caret: Option<Rect>,
     settled: bool,
@@ -38,6 +40,7 @@ impl St {
             applied: 0,
             left_keys: Vec::new(),
             left_text: Vec::new(),
+            primary: Vec::new(),
             rects: Vec::new(),
             caret: None,
             settled: true,
@@ -77,6 +80,13 @@ fn app(ui: &mut egui::Ui, st: &mut St) {
             st.settled = out.settled;
         }
     }
+    ui.ctx().output(|o| {
+        for c in &o.commands {
+            if let egui::OutputCommand::TextSelectionSettled(t) = c {
+                st.primary.push(t.clone());
+            }
+        }
+    });
     // What the host would still see (accumulated; tests clear it).
     ui.input(|inp| {
         for e in &inp.events {
@@ -1078,4 +1088,77 @@ fn horizontal_extent_is_the_longest_line_even_off_screen() {
     }
     h.run();
     assert_eq!(h.state().views[0].scroll().horizontal, 0.0);
+}
+
+// ---------------------------------------------------------------------------------------------
+// X11/Wayland PRIMARY selection.
+
+fn settled_selections(h: &mut Harness<'_, St>) -> Vec<String> {
+    std::mem::take(&mut h.state_mut().primary)
+}
+
+#[test]
+fn settled_selection_is_reported_once_for_primary() {
+    let mut h = harness(St::new("alpha beta\n"));
+    h.run();
+    focus(&mut h);
+    settled_selections(&mut h);
+    h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowLeft);
+    h.step();
+    assert_eq!(settled_selections(&mut h), vec!["\n".to_owned()]);
+    h.step();
+    assert!(
+        settled_selections(&mut h).is_empty(),
+        "not re-sent while unchanged"
+    );
+    h.key_press_modifiers(cmd(), Key::A);
+    h.step();
+    assert_eq!(settled_selections(&mut h), vec!["alpha beta\n".to_owned()]);
+    // While a drag is in progress nothing is sent; on release the final selection is.
+    let r = h.state().rects[0];
+    let p0 = pos2(r.right() - 30.0, r.top() + 8.0);
+    h.event(Event::PointerMoved(p0));
+    h.event(Event::PointerButton {
+        pos: p0,
+        button: PointerButton::Primary,
+        pressed: true,
+        modifiers: Modifiers::NONE,
+    });
+    h.step();
+    let p1 = pos2(r.left() + 60.0, r.top() + 8.0);
+    for i in 1..=4 {
+        h.event(Event::PointerMoved(p0 + (p1 - p0) * (i as f32 / 4.0)));
+        h.step();
+    }
+    assert!(
+        settled_selections(&mut h).is_empty(),
+        "nothing while dragging"
+    );
+    h.event(Event::PointerButton {
+        pos: p1,
+        button: PointerButton::Primary,
+        pressed: false,
+        modifiers: Modifiers::NONE,
+    });
+    h.run();
+    let (a, b) = h.state().sel(0);
+    assert!(a != b);
+    let expect = h.state().text()[b.min(a)..a.max(b)].to_owned();
+    assert_eq!(settled_selections(&mut h), vec![expect]);
+}
+
+#[test]
+fn middle_click_pastes_primary_at_the_pointer() {
+    let mut h = harness(St::new("abcdefgh\nab\n"));
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 8, 2);
+    let p = pos2(left + 4.0 * adv, row0.center().y);
+    h.event(Event::PointerMoved(p));
+    h.event(Event::MiddleClickPaste {
+        pos: p,
+        text: "XY".into(),
+    });
+    h.run();
+    assert_eq!(h.state().text(), "abcdXYefgh\nab\n");
+    assert_eq!(h.state().sel(0), (6, 6));
 }

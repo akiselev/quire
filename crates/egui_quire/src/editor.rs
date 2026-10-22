@@ -137,6 +137,8 @@ pub(crate) struct Mem {
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
     pub last_caret: Option<Rect>,
+    /// Selection ranges last reported with `TextSelectionSettled` (Linux PRIMARY).
+    pub reported_selection: Option<Vec<Range<usize>>>,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
 }
@@ -401,6 +403,7 @@ impl<'a> CodeEditor<'a> {
         frame.handle_accesskit_actions(ui);
 
         // Mouse.
+        frame.handle_middle_click_paste(ui, &response);
         frame.handle_pointer(ui, &response);
         frame.handle_scroll(ui, &response);
 
@@ -451,6 +454,7 @@ impl<'a> CodeEditor<'a> {
             });
         }
 
+        frame.report_settled_selection(ui);
         crate::a11y::update(&mut frame, ui, a11y_name);
         glue::set_scroll_px(frame.view, frame.doc, &frame.mem.heights, frame.mem.scroll);
 
@@ -1012,6 +1016,68 @@ impl FrameCx<'_> {
         } else {
             self.mem.hover = None;
         }
+    }
+
+    /// X11/Wayland PRIMARY paste: egui-winit turns a middle click into `MiddleClickPaste` with
+    /// the PRIMARY contents; insert them where the pointer is, as `TextEdit` does (VS Code's
+    /// `editor.selectionClipboard` on Linux).
+    fn handle_middle_click_paste(&mut self, ui: &Ui, response: &Response) {
+        if !response.contains_pointer() || self.read_only {
+            return;
+        }
+        let Some((pos, text)) = ui.input_mut(|i| {
+            let k = i
+                .events
+                .iter()
+                .position(|e| matches!(e, Event::MiddleClickPaste { .. }))?;
+            match i.events.remove(k) {
+                Event::MiddleClickPaste { pos, text } => Some((pos, text)),
+                _ => None,
+            }
+        }) else {
+            return;
+        };
+        let pos = self
+            .ctx
+            .layer_transform_from_global(ui.layer_id())
+            .map_or(pos, |t| t * pos);
+        if !self.geom.text.contains(pos) {
+            return;
+        }
+        response.request_focus();
+        let at = self.pos_at(pos);
+        self.set_selection(glue::single(at, at));
+        self.dispatch(glue::paste_cmd(&text));
+    }
+
+    /// Report the selection once it settles (no pointer button down) and only when it changed,
+    /// with `OutputCommand::TextSelectionSettled`; egui-winit puts it in the X11/Wayland PRIMARY
+    /// selection. Ranges are joined by newlines, as Copy does.
+    fn report_settled_selection(&mut self, ui: &Ui) {
+        // Only the focused view reports (another view's selection moving with an edit is not
+        // the user selecting).
+        if !self.mem.focused || ui.input(|i| i.pointer.any_down()) {
+            return;
+        }
+        let ranges: Vec<Range<usize>> = glue::ranges(glue::selection(self.view))
+            .iter()
+            .filter(|r| !r.is_empty())
+            .map(|r| r.range())
+            .collect();
+        let now = (!ranges.is_empty()).then_some(ranges);
+        if now == self.mem.reported_selection {
+            return;
+        }
+        if let Some(ranges) = &now {
+            let t = glue::text(self.doc);
+            let s: Vec<String> = ranges
+                .iter()
+                .map(|r| t.slice(r.clone()).to_string())
+                .collect();
+            self.ctx
+                .send_cmd(egui::OutputCommand::TextSelectionSettled(s.join("\n")));
+        }
+        self.mem.reported_selection = now;
     }
 
     /// Mouse selection: recorded as `setSelection`, applied as a selection-only transaction (the
