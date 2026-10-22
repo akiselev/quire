@@ -137,6 +137,8 @@ pub(crate) struct Mem {
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
     pub last_caret: Option<Rect>,
+    /// Selection ranges last reported with `TextSelectionSettled` (Linux PRIMARY).
+    pub reported_selection: Option<Vec<Range<usize>>>,
     /// First chord of a two-chord binding, waiting for the second.
     pub pending_chord: Option<crate::chord::Chord>,
     /// `theme.galley_hash()` of this frame.

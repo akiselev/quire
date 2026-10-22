@@ -31,7 +31,7 @@ pub fn line_job(
 
 /// A layout job for `text` with formats `spans` (`(start_byte, format)`, sorted) and, after the
 /// `i`-th tab, `tab_extra[i]` points of extra leading space (missing entries are 0).
-pub fn build_job(
+pub(crate) fn build_job(
     text: &str,
     spans: &[(usize, TextFormat)],
     default: &TextFormat,
@@ -86,25 +86,25 @@ fn clamp_boundary(text: &str, mut b: usize) -> usize {
 
 /// Tab stops: every `tab_size` columns of the font's space advance (VS Code's `tabSize`).
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct TabStops {
+pub(crate) struct TabStops {
     /// Columns per tab stop (≥ 1).
-    pub tab_size: u32,
+    pub(crate) tab_size: u32,
     /// Width of one column (the space advance) in points.
-    pub column: f32,
+    pub(crate) column: f32,
     /// egui's own advance of a tab character in points (`FontTweak::tab_size` spaces).
-    pub egui_tab: f32,
+    pub(crate) egui_tab: f32,
 }
 
 impl TabStops {
     /// Distance between stops in points.
-    pub fn stop(&self) -> f32 {
+    pub(crate) fn stop(&self) -> f32 {
         self.tab_size.max(1) as f32 * self.column
     }
 
     /// x where a tab that starts at `x` ends: the next stop strictly after `x`. `x` may be off by
     /// a fraction of a pixel (glyph origins are snapped), so a tab starting within a quarter
     /// column below a stop is treated as starting on it.
-    pub fn next_stop(&self, x: f32) -> f32 {
+    pub(crate) fn next_stop(&self, x: f32) -> f32 {
         let stop = self.stop();
         ((x / stop + 0.25 / self.tab_size.max(1) as f32).floor() + 1.0) * stop
     }
@@ -114,7 +114,7 @@ impl TabStops {
 /// sections and the text after each gets the leading space that moves it to the next stop. ASCII
 /// lines compute the stops from columns; other lines are laid out once to find where each tab
 /// starts, then again with the corrections.
-pub fn layout_line_job(
+pub(crate) fn layout_line_job(
     ctx: &Context,
     text: &str,
     spans: &[(usize, TextFormat)],
@@ -162,7 +162,7 @@ pub struct LineLayout {
     /// Set when the line is ASCII: column → x is arithmetic (the fast path), tabs included.
     pub mono: Option<Mono>,
     /// Tab stops the line was laid out with.
-    pub tabs: TabStops,
+    pub(crate) tabs: TabStops,
     /// x of the end of the line (after a trailing tab's stop).
     end_x: f32,
 }
@@ -198,7 +198,7 @@ impl Mono {
     }
 
     /// Tab stops every `tab_size` columns of this font.
-    pub fn tab_stops(&self, tab_size: u32) -> TabStops {
+    pub(crate) fn tab_stops(&self, tab_size: u32) -> TabStops {
         TabStops {
             tab_size: tab_size.max(1),
             column: self.advance(),
@@ -210,7 +210,7 @@ impl Mono {
 impl LineLayout {
     /// Wrap a galley laid out by [`layout_line_job`] with `tabs`; `mono` is used only for ASCII
     /// text.
-    pub fn new(galley: Arc<Galley>, mono: Mono, tabs: TabStops) -> Self {
+    pub(crate) fn new(galley: Arc<Galley>, mono: Mono, tabs: TabStops) -> Self {
         let mono = galley.text().is_ascii().then_some(mono);
         let end_x = match galley.rows.first().and_then(|r| r.glyphs.last()) {
             Some(g) if g.chr == '\t' => tabs.next_stop(g.pos.x),
@@ -285,7 +285,7 @@ impl LineLayout {
 
     /// x of each character's start and of the line end (`chars + 1` entries), for hit tests
     /// and accessibility.
-    pub fn char_xs(&self) -> Vec<f32> {
+    pub(crate) fn char_xs(&self) -> Vec<f32> {
         let text = self.galley.text();
         let mut v = Vec::with_capacity(text.len() + 1);
         if let Some(m) = self.mono {
@@ -317,7 +317,7 @@ impl LineLayout {
 
 /// Visible column after `bytes` with tabs at stops every `tab_size` columns, one column per
 /// other byte (callers pass ASCII).
-pub fn visual_col(bytes: &[u8], tab_size: u32) -> u32 {
+fn visual_col(bytes: &[u8], tab_size: u32) -> u32 {
     let ts = tab_size.max(1);
     bytes.iter().fold(0u32, |col, &b| {
         if b == b'\t' {

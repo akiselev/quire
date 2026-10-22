@@ -1137,15 +1137,20 @@ fn tabs_after_non_ascii_use_glyph_positions() {
         let x = ll.x_of("Wé\t".len());
         let stop = 4.0 * adv;
         let k = (x / stop).round();
-        assert!(k >= 1.0 && (x - k * stop).abs() <= 1.0, "{x} not on a stop of {stop}");
+        assert!(
+            k >= 1.0 && (x - k * stop).abs() <= 1.0,
+            "{x} not on a stop of {stop}"
+        );
         assert!(x > ll.x_of("Wé".len()));
     });
 }
 
 #[test]
 fn editor_caret_and_clicks_honour_tab_size() {
-    let mut cfg = quire_core::EditorConfig::default();
-    cfg.tab_size = 4;
+    let cfg = quire_core::EditorConfig {
+        tab_size: 4,
+        ..Default::default()
+    };
     let mut st = St::new("abcdefgh\nab\n\tfoo\n");
     st.doc.set_config(cfg);
     let mut h = harness(st);
@@ -1158,7 +1163,12 @@ fn editor_caret_and_clicks_honour_tab_size() {
     let start2 = "abcdefgh\nab\n".len();
     assert_eq!(h.state().sel(0).1, start2 + 4);
     let c = h.state().caret.unwrap();
-    assert!((c.left() - (left + 7.0 * adv)).abs() < 0.6, "{} vs {}", c.left(), left + 7.0 * adv);
+    assert!(
+        (c.left() - (left + 7.0 * adv)).abs() < 0.6,
+        "{} vs {}",
+        c.left(),
+        left + 7.0 * adv
+    );
     // Click a column inside the tab: left half → before it, right half → after it.
     click_at(&mut h, pos2(left + 1.0 * adv, y2));
     assert_eq!(h.state().sel(0).1, start2);
