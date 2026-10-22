@@ -14,6 +14,17 @@ fi
 export RUSTC_WRAPPER=${RUSTC_WRAPPER:-$(command -v sccache || true)}
 export SCCACHE_CACHE_SIZE=${SCCACHE_CACHE_SIZE:-20G}
 cd "$here"
+# Worktrees may share a target directory (CARGO_TARGET_DIR). Cargo can reuse a workspace crate's
+# artifacts built from another worktree's sources (cadatomic, 2026-10-17: impossible "unresolved
+# import" errors). If the previous build in this target came from another worktree, clean the
+# quire packages first; dependency artifacts stay shared. (As cadatomic's cargo.sh.)
+target=${CARGO_TARGET_DIR:-$here/target}
+last=$target/.last-worktree
+if [ "${1:-}" != "clean" ] && [ -f "$last" ] && [ "$(cat "$last")" != "$here" ]; then
+  echo "cargo.sh: previous build was from $(cat "$last"); cleaning quire packages" >&2
+  cargo clean -p quire-core -p quire-syntax -p egui_quire >/dev/null 2>&1 || true
+fi
+mkdir -p "$target" && echo "$here" > "$last"
 # check/clippy/fmt and other non-building subcommands take no slot (user, 2026-10-22, as
 # svelters' cargo-slot and cadatomic's cargo.sh): they run niced with few jobs so builds in the
 # slots keep the CPU.
