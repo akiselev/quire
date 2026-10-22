@@ -14,6 +14,13 @@ fi
 export RUSTC_WRAPPER=${RUSTC_WRAPPER:-$(command -v sccache || true)}
 export SCCACHE_CACHE_SIZE=${SCCACHE_CACHE_SIZE:-20G}
 cd "$here"
+# check/clippy/fmt and other non-building subcommands take no slot (user, 2026-10-22, as
+# svelters' cargo-slot and cadatomic's cargo.sh): they run niced with few jobs so builds in the
+# slots keep the CPU.
+if [ -z "${BUILD_SLOT_HELD:-}" ] && [[ "${1:-}" =~ ^(check|clippy|fmt|metadata|tree|locate-project)$ ]]; then
+  export CARGO_BUILD_JOBS="${CHECK_JOBS:-3}"
+  exec nice -n 10 cargo "$@"
+fi
 if [ -x "$slot" ]; then
   exec "$slot" cargo "$@"
 fi

@@ -31,7 +31,9 @@ quire depends on neither.
 
 ## Builds (shared machine slots)
 
-- Every cargo command goes through `scripts/cargo.sh` (it takes a machine build slot).
+- Every cargo command goes through `scripts/cargo.sh`. Builds and tests take a machine build slot;
+  check, clippy and fmt run niced with 3 jobs and no slot.
+- After a branch merges, delete its worktree's `target/`.
 - While writing: `scripts/cargo.sh check -p <crate>` and only the touched tests
   (`scripts/cargo.sh test -p <crate> --test <name>` or a name filter).
 - `scripts/check.sh` once per milestone, never on unchanged code.
