@@ -22,11 +22,11 @@ pub mod theme;
 mod widths;
 
 pub use a11y::{page_size as a11y_page_size, run_id as a11y_run_id};
-pub use chord::Chord;
+pub use chord::{Chord, KeySeq};
 pub use command::{KeyAction, WidgetAction};
 pub use editor::{CodeEditor, EditorEvent, EditorOutput, KeyHandling, default_keymap};
 pub use find_bar::{query_id as find_query_id, replace_id as find_replace_id};
 pub use glue::FindOptions;
 pub use height::HeightIndex;
-pub use keymap::Keymap;
+pub use keymap::{KeyLookup, Keymap};
 pub use theme::{EditorText, EditorTheme};

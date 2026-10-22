@@ -21,7 +21,7 @@ use crate::find_bar::FindBar;
 use crate::galley_cache::GalleyCache;
 use crate::glue;
 use crate::height::HeightIndex;
-use crate::keymap::{Keymap, WhenContext};
+use crate::keymap::{KeyLookup, Keymap, WhenContext};
 use crate::layout::{self, LineLayout, LineShaper};
 use crate::theme::{EditorText, EditorTheme};
 
@@ -137,8 +137,8 @@ pub(crate) struct Mem {
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
     pub last_caret: Option<Rect>,
-    /// Selection ranges last reported with `TextSelectionSettled` (Linux PRIMARY).
-    pub reported_selection: Option<Vec<Range<usize>>>,
+    /// First chord of a two-chord binding and when it was pressed.
+    pub pending_chord: Option<(crate::chord::Chord, f64)>,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
 }
@@ -390,6 +390,7 @@ impl<'a> CodeEditor<'a> {
             frame.out.events.push(EditorEvent::FocusChanged(focused));
             frame.mem.last_interaction = ctx.input(|i| i.time);
             glue::set_focused(frame.view, focused);
+            frame.mem.pending_chord = None;
             if !focused && glue::preedit(frame.view).is_some() {
                 glue::set_preedit(frame.view, None);
             }
@@ -440,7 +441,9 @@ impl<'a> CodeEditor<'a> {
         // Focus filter for the next frame's events, from the state after this frame's input:
         // Escape stays with the editor only while it has a use for it (preedit, find bar).
         if ctx.memory(|m| m.has_focus(id)) {
-            let escape = glue::preedit(frame.view).is_some() || frame.mem.find.open;
+            let escape = glue::preedit(frame.view).is_some()
+                || frame.mem.find.open
+                || frame.mem.pending_chord.is_some();
             ctx.memory_mut(|m| {
                 m.set_focus_lock_filter(
                     id,
@@ -491,6 +494,10 @@ impl<'a> CodeEditor<'a> {
 }
 
 const PAD_Y: f32 = 2.0;
+
+/// How long the first chord of a two-chord binding waits for the second (VS Code waits
+/// indefinitely; quire drops it after this, so a stray prefix cannot capture a later key).
+pub(crate) const CHORD_TIMEOUT_S: f64 = 3.0;
 
 /// Gutter width for `lines` lines: diagnostic mark, digits, padding.
 fn gutter_width(lines: usize, adv: f32) -> f32 {
@@ -661,20 +668,7 @@ impl FrameCx<'_> {
                     ..
                 } => match keys {
                     KeyHandling::Builtin(map) if glue::preedit(self.view).is_none() => {
-                        match map
-                            .lookup(os, *key, *modifiers, &self.when_context())
-                            .map(|b| b.action.clone())
-                        {
-                            Some(KeyAction::Command(c)) => {
-                                self.dispatch(c);
-                                true
-                            }
-                            Some(KeyAction::Widget(a)) => {
-                                self.widget_action(a);
-                                true
-                            }
-                            None => false,
-                        }
+                        self.handle_key(map, os, *key, *modifiers)
                     }
                     _ => false,
                 },
@@ -691,7 +685,39 @@ impl FrameCx<'_> {
         });
     }
 
-    /// Copy the selection (ranges joined by newlines). Returns whether anything was copied.
+    /// One key press through the keymap, with the pending first chord of a two-chord binding.
+    /// A pending chord older than [`CHORD_TIMEOUT_S`] is dropped; Escape or any key that does not
+    /// complete the sequence cancels it and is consumed (VS Code swallows it too).
+    fn handle_key(
+        &mut self,
+        map: &Keymap,
+        os: egui::os::OperatingSystem,
+        key: Key,
+        mods: egui::Modifiers,
+    ) -> bool {
+        let now = self.now();
+        let pending = self
+            .mem
+            .pending_chord
+            .take()
+            .filter(|&(_, t)| now - t <= CHORD_TIMEOUT_S)
+            .map(|(c, _)| c);
+        if pending.is_some() && key == Key::Escape {
+            return true;
+        }
+        match map.lookup_seq(os, pending, key, mods, &self.when_context()) {
+            KeyLookup::Bound(b) => match b.action.clone() {
+                KeyAction::Command(c) => self.dispatch(c),
+                KeyAction::Widget(a) => self.widget_action(a),
+            },
+            KeyLookup::Prefix(c) => {
+                self.mem.pending_chord = Some((c, now));
+            }
+            KeyLookup::Unbound => return pending.is_some(),
+        }
+        true
+    }
+
     /// Copy the selection (ranges joined by newlines). With every range empty and
     /// `empty_selection_clipboard` on, copy the cursors' whole lines (VS Code), which is also
     /// what Cut then deletes. Returns whether anything was copied.
