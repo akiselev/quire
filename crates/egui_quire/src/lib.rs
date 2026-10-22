@@ -12,10 +12,13 @@ pub mod chord;
 pub mod command;
 mod editor;
 mod find_bar;
+#[doc(hidden)]
 pub mod galley_cache;
 mod glue;
+#[doc(hidden)]
 pub mod height;
 pub mod keymap;
+#[doc(hidden)]
 pub mod layout;
 mod paint;
 pub mod theme;

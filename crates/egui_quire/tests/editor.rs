@@ -1231,6 +1231,7 @@ fn multiple_cursors_and_selections_are_drawn_and_typed_into() {
     h.run();
     assert_eq!(h.state().text(), "oXne\ntXwo\nX\n");
     assert_eq!(rects_of(&h, theme.caret).len(), 3);
+}
 
 // ---------------------------------------------------------------------------------------------
 // Horizontal extent from the longest line.
