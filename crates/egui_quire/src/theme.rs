@@ -61,7 +61,7 @@ impl EditorTheme {
             warning: v.warn_fg_color,
             info: Color32::from_rgb(55, 148, 255),
             hint: v.weak_text_color(),
-            token_colors: Vec::new(),
+            token_colors: default_token_colors(v.dark_mode, fg),
             blink_on: v.text_cursor.on_duration,
             blink_off: v.text_cursor.off_duration,
             blink_idle_stop: 5.0,
@@ -80,6 +80,56 @@ impl EditorTheme {
     pub(crate) fn galley_hash(&self) -> u64 {
         hash_one((self.foreground, &self.token_colors))
     }
+}
+
+/// A VS Code Dark+/Light+-like palette indexed by `quire_core::syntax::TokenType`.
+fn default_token_colors(dark: bool, fg: Color32) -> Vec<Color32> {
+    use quire_core::syntax::TokenType as T;
+    let rgb = |d: (u8, u8, u8), l: (u8, u8, u8)| {
+        let (r, g, b) = if dark { d } else { l };
+        Color32::from_rgb(r, g, b)
+    };
+    let keyword = rgb((86, 156, 214), (0, 0, 255));
+    let control = rgb((197, 134, 192), (175, 0, 219));
+    let ty = rgb((78, 201, 176), (38, 127, 153));
+    let func = rgb((220, 220, 170), (121, 94, 38));
+    let var = rgb((156, 220, 254), (0, 16, 128));
+    let string = rgb((206, 145, 120), (163, 21, 21));
+    let number = rgb((181, 206, 168), (9, 134, 88));
+    let comment = rgb((106, 153, 85), (0, 128, 0));
+    let constant = rgb((79, 193, 255), (0, 112, 193));
+    let tag = rgb((86, 156, 214), (128, 0, 0));
+    let attr = rgb((156, 220, 254), (229, 0, 0));
+    let punct = rgb((212, 212, 212), (0, 0, 0));
+    let error = rgb((244, 71, 71), (205, 49, 49));
+    T::ALL
+        .iter()
+        .map(|t| match t {
+            T::Text | T::Embedded => fg,
+            T::Namespace
+            | T::Type
+            | T::Class
+            | T::Enum
+            | T::Interface
+            | T::Struct
+            | T::TypeParameter => ty,
+            T::Constructor => ty,
+            T::Parameter | T::Variable | T::Property => var,
+            T::EnumMember | T::Constant | T::Boolean => constant,
+            T::Event | T::Function | T::Method | T::Macro | T::Decorator => func,
+            T::Keyword => keyword,
+            T::Modifier => keyword,
+            T::Label => control,
+            T::Comment => comment,
+            T::String | T::StringSpecial => string,
+            T::StringEscape | T::Regexp => rgb((215, 186, 125), (238, 0, 0)),
+            T::Number => number,
+            T::Operator | T::Punctuation | T::PunctuationBracket | T::PunctuationDelimiter => punct,
+            T::Tag => tag,
+            T::Attribute => attr,
+            T::Error => error,
+        })
+        .collect()
 }
 
 impl Default for EditorTheme {

@@ -891,3 +891,144 @@ fn mono_fast_path_at(ppp: f32) {
     drop(h);
     assert!(checked);
 }
+
+#[test]
+fn a11y_selection_maps_and_page_follows_caret() {
+    let text: String = (0..200).map(|i| format!("line {i}\n")).collect();
+    let mut h = harness(St::new(&text));
+    h.run();
+    focus(&mut h);
+    let id = CodeEditor::id_for(("ed", 0usize));
+    h.key_press_modifiers(cmd(), Key::End);
+    h.run();
+    let head = h.state().sel(0).1;
+    assert_eq!(
+        h.state().doc.text().byte_to_line(head),
+        200,
+        "caret on the last (empty) line"
+    );
+    let node = h.get_by_label("Source");
+    let runs: Vec<_> = node
+        .accesskit_node()
+        .children()
+        .filter(|c| c.role() == Role::TextRun)
+        .collect();
+    assert_eq!(runs.len(), 1, "page 200..250 holds only the last line");
+    let sel = node
+        .accesskit_node()
+        .data()
+        .text_selection()
+        .copied()
+        .expect("selection mapped");
+    assert_eq!(
+        sel.focus.node,
+        egui_quire::a11y_run_id(id, 200, 0).accesskit_id()
+    );
+    assert_eq!(sel.focus.character_index, 0);
+    // Back up a few lines: the page shifts to 150..200.
+    for _ in 0..3 {
+        h.key_press(Key::ArrowUp);
+    }
+    h.run();
+    let node = h.get_by_label("Source");
+    let runs: Vec<_> = node
+        .accesskit_node()
+        .children()
+        .filter(|c| c.role() == Role::TextRun)
+        .collect();
+    assert_eq!(runs.len(), 50);
+    assert_eq!(runs[0].value().as_deref(), Some("line 150\n"));
+}
+
+#[test]
+fn a11y_page_is_500_lines_with_a_screen_reader() {
+    let text: String = (0..800).map(|i| format!("{i}\n")).collect();
+    let mut h = harness(St::new(&text));
+    h.ctx.options_mut(|o| o.screen_reader = true);
+    h.run();
+    let node = h.get_by_label("Source");
+    assert_eq!(
+        node.accesskit_node()
+            .children()
+            .filter(|c| c.role() == Role::TextRun)
+            .count(),
+        500
+    );
+}
+
+#[test]
+fn host_undo_mode_emits_undo_requested() {
+    let mut st = St::new("abc");
+    st.doc = Document::new("abc", Default::default()).with_undo_mode(quire_core::UndoMode::Host);
+    st.views = vec![EditorView::new(&st.doc), EditorView::new(&st.doc)];
+    let mut h = harness(st);
+    h.run();
+    focus(&mut h);
+    h.event(Event::Text("d".into()));
+    h.run();
+    assert_eq!(h.state().text(), "abcd");
+    h.key_press_modifiers(cmd(), Key::Z);
+    h.key_press_modifiers(cmd(), Key::Y);
+    h.run();
+    assert!(h.state().events.contains(&EditorEvent::UndoRequested));
+    assert!(h.state().events.contains(&EditorEvent::RedoRequested));
+    assert_eq!(
+        h.state().text(),
+        "abcd",
+        "the host answers undo, not the widget"
+    );
+}
+
+#[test]
+fn local_undo_redo_and_dirty() {
+    let mut h = harness(St::new("abc"));
+    h.run();
+    focus(&mut h);
+    h.event(Event::Text("d".into()));
+    h.run();
+    assert!(h.state().doc.is_dirty());
+    h.key_press_modifiers(cmd(), Key::Z);
+    h.run();
+    assert_eq!(h.state().text(), "abc");
+    h.key_press_modifiers(cmd(), Key::Y);
+    h.run();
+    assert_eq!(h.state().text(), "abcd");
+}
+
+#[test]
+fn default_theme_colours_tokens() {
+    use quire_core::syntax::TokenType;
+    let t = egui_quire::EditorTheme::default();
+    assert_ne!(t.token_color(TokenType::Keyword as usize), t.foreground);
+    assert_eq!(t.token_color(TokenType::Text as usize), t.foreground);
+    assert_eq!(t.token_colors.len(), TokenType::ALL.len());
+}
+
+#[test]
+fn cut_with_empty_selection_copies_the_line_it_deletes() {
+    let mut h = harness(St::new("one\ntwo\nthree"));
+    h.run();
+    // Put the caret on line 1 ("two"): click line 0, then one row below it.
+    let r = h.state().rects[0];
+    click_at(&mut h, pos2(r.right() - 30.0, r.top() + 8.0));
+    let c0 = h.state().caret.unwrap();
+    click_at(
+        &mut h,
+        pos2(r.right() - 30.0, c0.bottom() + c0.height() * 0.5),
+    );
+    assert_eq!(h.state().sel(0), (7, 7));
+    h.event(Event::Cut);
+    h.step();
+    let copied: Vec<_> = h
+        .output()
+        .platform_output
+        .commands
+        .iter()
+        .filter_map(|c| match c {
+            egui::OutputCommand::CopyText(t) => Some(t.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(copied, vec!["two\n".to_owned()]);
+    assert_eq!(h.state().text(), "one\nthree");
+}

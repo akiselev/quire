@@ -678,17 +678,46 @@ impl FrameCx<'_> {
     }
 
     /// Copy the selection (ranges joined by newlines). Returns whether anything was copied.
+    /// Copy the selection (ranges joined by newlines). With every range empty and
+    /// `empty_selection_clipboard` on, copy the cursors' whole lines (VS Code), which is also
+    /// what Cut then deletes. Returns whether anything was copied.
     fn copy(&mut self) -> bool {
         let text = glue::text(self.doc);
-        let parts: Vec<String> = glue::ranges(glue::selection(self.view))
-            .iter()
-            .filter(|r| !r.is_empty())
-            .map(|r| text.slice(r.range()).to_string())
-            .collect();
+        let ranges = glue::ranges(glue::selection(self.view));
+        let parts: Vec<String> = if ranges.iter().all(|r| r.is_empty()) {
+            if !self.doc.config().empty_selection_clipboard {
+                return false;
+            }
+            let mut lines: Vec<usize> = ranges
+                .iter()
+                .map(|r| text.byte_to_line(r.head.min(text.len_bytes())))
+                .collect();
+            lines.dedup();
+            lines
+                .into_iter()
+                .map(|l| {
+                    let mut s = glue::line_str(text, l).into_owned();
+                    s.push('\n');
+                    s
+                })
+                .collect()
+        } else {
+            ranges
+                .iter()
+                .filter(|r| !r.is_empty())
+                .map(|r| text.slice(r.range()).to_string())
+                .collect()
+        };
         if parts.is_empty() {
             return false;
         }
-        self.ctx.copy_text(parts.join("\n"));
+        let joined =
+            if parts.iter().all(|p| p.ends_with('\n')) && ranges.iter().all(|r| r.is_empty()) {
+                parts.concat()
+            } else {
+                parts.join("\n")
+            };
+        self.ctx.copy_text(joined);
         true
     }
 
@@ -956,6 +985,10 @@ impl FrameCx<'_> {
         }
         if !down {
             self.mem.drag = None;
+        }
+
+        if response.hovered() && self.geom.text.contains(ptr) {
+            self.ctx.set_cursor_icon(egui::CursorIcon::Text);
         }
 
         // Hover: emit HoverAt once the pointer has rested over a position for 0.5 s.

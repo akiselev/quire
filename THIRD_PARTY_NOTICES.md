@@ -8,6 +8,8 @@ from, the projects below. Each translated file also carries the notice in its he
 Test cases under `fixtures/monaco/` and tests under `crates/*/tests/vscode_*` are translated from
 <https://github.com/microsoft/vscode> (`src/vs/editor/test/**`, `src/vs/editor/contrib/**/test/**`).
 Algorithms translated from VS Code are marked in their file headers.
+`crates/egui_quire/keymaps/vscode-default.json` is a subset of VS Code's default editor key
+bindings (JSON has no comments, so its notice is this entry).
 
 ```
 MIT License
