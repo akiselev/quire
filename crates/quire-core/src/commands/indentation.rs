@@ -28,13 +28,13 @@ type Edit = (Range<usize>, String);
 
 /// `adjustMarkerBeforeColumn`.
 #[derive(Copy, Clone, PartialEq)]
-enum Move {
+enum MoveSemantics {
     MarkerDefined,
     ForceMove,
     ForceStay,
 }
 
-fn adjust_before(marker: usize, stick_prev: bool, check: usize, m: Move) -> bool {
+fn adjust_before(marker: usize, stick_prev: bool, check: usize, m: MoveSemantics) -> bool {
     if marker < check {
         return true;
     }
@@ -42,9 +42,9 @@ fn adjust_before(marker: usize, stick_prev: bool, check: usize, m: Move) -> bool
         return false;
     }
     match m {
-        Move::ForceMove => false,
-        Move::ForceStay => true,
-        Move::MarkerDefined => stick_prev,
+        MoveSemantics::ForceMove => false,
+        MoveSemantics::ForceStay => true,
+        MoveSemantics::MarkerDefined => stick_prev,
     }
 }
 
@@ -62,11 +62,11 @@ fn accept_edit(
     let (mut ns, mut ne) = node;
     let (mut s_done, mut e_done) = (false, false);
     let m = if force_move {
-        Move::ForceMove
+        MoveSemantics::ForceMove
     } else if deleting > 0 {
-        Move::ForceStay
+        MoveSemantics::ForceStay
     } else {
-        Move::MarkerDefined
+        MoveSemantics::MarkerDefined
     };
     if adjust_before(ns, stick.0, start, m) {
         s_done = true;
@@ -76,9 +76,9 @@ fn accept_edit(
     }
     if common > 0 && !force_move {
         let m = if deleting > ins {
-            Move::ForceStay
+            MoveSemantics::ForceStay
         } else {
-            Move::MarkerDefined
+            MoveSemantics::MarkerDefined
         };
         if !s_done && adjust_before(ns, stick.0, start + common, m) {
             s_done = true;
@@ -88,9 +88,9 @@ fn accept_edit(
         }
     }
     let m = if force_move {
-        Move::ForceMove
+        MoveSemantics::ForceMove
     } else {
-        Move::MarkerDefined
+        MoveSemantics::MarkerDefined
     };
     if !s_done && adjust_before(ns, stick.0, end, m) {
         ns = start + ins;

@@ -24,6 +24,9 @@ use std::sync::{Arc, Mutex};
 use quire_core::syntax::{CancelFlag, FoldRange, Highlighter, PendingToken, Spawner, TokenRuns};
 use quire_core::{Document, Version};
 
+/// The visible range used when the host passes none.
+const TOP: Range<usize> = 0..0;
+
 /// Default quiet time before a parse starts after an edit.
 pub const DEFAULT_DEBOUNCE_MS: u64 = 30;
 /// Lines highlighted beyond each side of the visible range.
@@ -143,9 +146,8 @@ impl<H: Highlighter> SyntaxDriver<H> {
     pub fn update(&mut self, doc: &mut Document, visible: &[Range<usize>], now_ms: u64) {
         self.poll(doc);
         let version = doc.version();
-        let top = [0..0];
         let visible = if visible.is_empty() {
-            &top[..]
+            std::slice::from_ref(&TOP)
         } else {
             visible
         };

@@ -1,4 +1,6 @@
 //! SyntaxDriver: debounce, jobs on a Spawner, results by version, settled probe.
+// One view shows one range of lines: `&[0..10]` is the visible ranges of one view.
+#![allow(clippy::single_range_in_vec_init)]
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
