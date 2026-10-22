@@ -862,6 +862,7 @@ impl FrameCx<'_> {
             font: &self.theme.font,
             pixels_per_point: self.ctx.pixels_per_point(),
             mono: self.geom.mono,
+            tab_size: self.doc.config().tab_size,
         };
         shaper.shape(&s, &runs, style_hash, self.theme.foreground)
     }
