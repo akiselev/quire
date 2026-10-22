@@ -114,6 +114,9 @@ pub struct EditorView {
     preedit: Option<Preedit>,
     auto_closed: Vec<AutoClosed>,
     session: Option<ViewSession>,
+    /// Byte ranges of the current text changed since the find matches were computed (`None`:
+    /// unknown, search everything), so a refresh re-searches only those lines.
+    find_dirty: Option<Vec<Range<usize>>>,
 }
 
 impl EditorView {
@@ -131,6 +134,7 @@ impl EditorView {
             preedit: None,
             auto_closed: Vec::new(),
             session: None,
+            find_dirty: Some(Vec::new()),
         }
     }
 
@@ -350,6 +354,21 @@ impl EditorView {
             }
             f.matches.retain(|m| m.start < m.end);
             f.stale = true;
+            if let Some(dirty) = &mut self.find_dirty {
+                for d in dirty.iter_mut() {
+                    *d = map_range(d, c);
+                }
+                // What this change inserted, in its after-text coordinates.
+                let mut delta = 0isize;
+                for e in c.edits() {
+                    let start = (e.range.start as isize + delta) as usize;
+                    dirty.push(start..start + e.insert.len());
+                    delta += e.insert.len() as isize - e.range.len() as isize;
+                }
+                if dirty.len() > 256 {
+                    self.find_dirty = None;
+                }
+            }
         }
         for a in &mut self.auto_closed {
             let len = a.close.end - a.close.start;
@@ -381,6 +400,7 @@ impl EditorView {
             f.matches.clear();
             f.stale = true;
         }
+        self.find_dirty = None;
         self.scroll.anchor = text.clamp_to_boundary(self.scroll.anchor);
         self.reveal = None;
         self.auto_closed.clear();
@@ -416,13 +436,25 @@ impl EditorView {
     pub fn set_find(&mut self, doc: &Document, q: Option<FindQuery>) {
         self.find =
             q.map(|q| FindState::new(q, doc.text(), doc.version(), &doc.config().word_separators));
+        self.find_dirty = Some(Vec::new());
     }
 
     /// Re-runs a stale find query at the document's version.
     pub fn refresh_find(&mut self, doc: &Document) {
-        if let Some(f) = &self.find
+        if let Some(f) = &mut self.find
             && (f.stale || f.version != doc.version())
         {
+            // Re-search only the edited lines when the matches were mapped up to now.
+            if let Some(mut dirty) = self.find_dirty.take()
+                && self.synced_at == doc.version()
+            {
+                dirty.sort_by_key(|d| d.start);
+                let ws = &doc.config().word_separators;
+                if crate::find::refresh_lines(f, doc.text(), &dirty, doc.version(), ws) {
+                    self.find_dirty = Some(Vec::new());
+                    return;
+                }
+            }
             let q = f.query.clone();
             self.set_find(doc, Some(q));
         }

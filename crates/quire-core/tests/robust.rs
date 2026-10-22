@@ -2,7 +2,7 @@
 //! `Document` and two `EditorView`s. After every step both views (synced) must hold:
 //! - every selection range inside the text and on char boundaries, sorted and non-overlapping,
 //!   with a valid primary index;
-//! - folds and fresh find matches inside the text, and the document's (incremental) indentation
+//! - folds and fresh find matches inside the text, refreshed find matches equal to a full search, and the document's (incremental) indentation
 //!   fold ranges equal to a fresh computation;
 //! - the document version never goes back, and moves whenever the text changes;
 //! - `is_dirty()` is true whenever the text differs from the saved (original) text.
@@ -188,6 +188,21 @@ fn check_view(doc: &Document, view: &EditorView, who: usize) -> Result<(), TestC
         prop_assert!(
             f.start <= f.end && f.end <= len,
             "view {who}: fold {f:?} outside {len}"
+        );
+    }
+    // A refresh (incremental for plain queries) gives what a full search gives.
+    v.refresh_find(doc);
+    if let Some(find) = v.find()
+        && find.error.is_none()
+    {
+        let full =
+            quire_core::find::find_all(&find.query, text, &doc.config().word_separators).unwrap();
+        prop_assert_eq!(
+            &find.matches,
+            &full,
+            "view {}: refreshed matches for {:?}",
+            who,
+            find.query
         );
     }
     if let Some(find) = v.find()

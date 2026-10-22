@@ -213,6 +213,22 @@ fn report(text: &str) {
         r.frame(vec![keystroke(i)])
     });
     run("idle after typing", &mut r, &mut |r, _| r.frame(vec![]));
+    // Typing with a plain find query active (the widget refreshes the matches every edit).
+    let caret = r.view.selection().primary();
+    r.doc
+        .execute(
+            &mut r.view,
+            &quire_core::EditorCommand::Find {
+                query: quire_core::FindQuery {
+                    search_string: "value_1".into(),
+                    ..Default::default()
+                },
+            },
+            None,
+        )
+        .unwrap();
+    r.caret_to(caret.head);
+    run("type with find active", &mut r, &mut |r, i| r.frame(vec![keystroke(i)]));
 }
 
 fn main() {

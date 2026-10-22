@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc a1ffd31bb71ad27eed6c10c3cc335002f1b8a1f050868218e6acda9d41717758 # shrinks to s = "", steps = [(0, Cmd(Paste { text: "(", per_cursor: false }), 0), (0, Cmd(Find { query: FindQuery { search_string: "(", is_regex: false, match_case: false, whole_word: false } }), 0), (0, Cmd(SelectAll), 0), (0, Cmd(Redo), 0)]

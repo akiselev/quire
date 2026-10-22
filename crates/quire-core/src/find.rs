@@ -166,6 +166,91 @@ pub fn find_all(
     Ok(out)
 }
 
+/// Brings `state` up to date after edits by re-searching only the lines that contain `dirty`
+/// (byte ranges of the current text that changed since `state.version`; the matches must already
+/// be mapped through the edits). Only for plain queries without a line break, whose matches
+/// cannot cross a line, so the result equals a full search. Returns `false` (and changes nothing)
+/// when the query does not qualify or the match limit was reached; search everything then.
+pub(crate) fn refresh_lines(
+    state: &mut FindState,
+    text: &Text,
+    dirty: &[Range<usize>],
+    version: Version,
+    word_separators: &str,
+) -> bool {
+    let q = &state.query;
+    if q.is_regex
+        || q.search_string.is_empty()
+        || q.search_string.contains('\n')
+        || state.error.is_some()
+        || state.matches.len() >= FIND_MATCH_LIMIT
+    {
+        return false;
+    }
+    let len = text.len_bytes();
+    // Whole lines around each dirty range, merged.
+    let mut regions: Vec<Range<usize>> = Vec::new();
+    for d in dirty {
+        let a = text.line_to_byte(text.byte_to_line(d.start.min(len)));
+        let b = text.line_range(text.byte_to_line(d.end.min(len))).end;
+        match regions.last_mut() {
+            Some(r) if a <= r.end + 1 => r.end = r.end.max(b),
+            _ => regions.push(a..b),
+        }
+    }
+    regions.sort_by_key(|r| r.start);
+    let mut merged: Vec<Range<usize>> = Vec::new();
+    for r in regions {
+        match merged.last_mut() {
+            Some(m) if r.start <= m.end + 1 => m.end = m.end.max(r.end),
+            _ => merged.push(r),
+        }
+    }
+    let Ok(re) = build_regex(q) else {
+        return false;
+    };
+    let mut out: Vec<Range<usize>> = Vec::with_capacity(state.matches.len());
+    let mut old = std::mem::take(&mut state.matches).into_iter().peekable();
+    for region in &merged {
+        // Keep the mapped matches before the region; drop those touching it.
+        while let Some(m) = old.peek() {
+            if m.end < region.start || (m.end == region.start && m.start < m.end) {
+                out.push(old.next().expect("peeked"));
+            } else if m.start <= region.end {
+                old.next();
+            } else {
+                break;
+            }
+        }
+        let hay = text.slice(region.clone()).to_string();
+        for m in re.find_iter(hay.as_bytes()) {
+            let r = m.range();
+            if q.whole_word {
+                // A region is whole lines, so its edges are line edges (boundaries) in the full
+                // text too.
+                let before = hay[..r.start].chars().next_back();
+                let after = hay[r.end..].chars().next();
+                let first = hay[r.start..].chars().next();
+                let last = hay[..r.end].chars().next_back();
+                let left_ok = is_boundary_char(before, word_separators)
+                    || is_boundary_char(first, word_separators);
+                let right_ok = is_boundary_char(after, word_separators)
+                    || is_boundary_char(last, word_separators);
+                if !(left_ok && right_ok) {
+                    continue;
+                }
+            }
+            out.push(region.start + r.start..region.start + r.end);
+        }
+    }
+    out.extend(old);
+    out.truncate(FIND_MATCH_LIMIT);
+    state.matches = out;
+    state.version = version;
+    state.stale = false;
+    true
+}
+
 /// Expands `$0`..`$9` and `$$` in a regex replacement for one match. Plain queries use the
 /// replacement literally.
 pub fn expand_replacement(

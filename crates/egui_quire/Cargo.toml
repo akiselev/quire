@@ -37,5 +37,9 @@ name = "playground"
 name = "e1"
 harness = false
 
+[[bench]]
+name = "e3"
+harness = false
+
 [lints]
 workspace = true
