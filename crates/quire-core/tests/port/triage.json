@@ -1,0 +1,3 @@
+{
+  "Editor Controller > issue #112039: shift-continuing a double/triple-click and drag selection does not remember its starting mode": "ours: word/line drag selection modes live in the widget's mouse handling, not in core commands"
+}

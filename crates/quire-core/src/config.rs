@@ -58,6 +58,9 @@ pub struct EditorConfig {
     pub use_tab_stops: bool,
     /// Bracket and quote pairs for auto-close, auto-surround and overtype.
     pub auto_closing_pairs: Vec<(String, String)>,
+    /// Pairs that wrap a selection when the opening character is typed over it (VS Code
+    /// `surroundingPairs`; usually the same as `auto_closing_pairs`).
+    pub surrounding_pairs: Vec<(String, String)>,
     /// Characters before which auto-closing happens (VS Code's `autoCloseBefore`).
     pub auto_close_before: String,
     /// Bracket auto-close policy.
@@ -102,6 +105,17 @@ impl Default for EditorConfig {
                 .collect(),
             use_tab_stops: true,
             auto_closing_pairs: [
+                ("(", ")"),
+                ("[", "]"),
+                ("{", "}"),
+                ("\"", "\""),
+                ("'", "'"),
+                ("`", "`"),
+            ]
+            .iter()
+            .map(|(a, b)| (a.to_string(), b.to_string()))
+            .collect(),
+            surrounding_pairs: [
                 ("(", ")"),
                 ("[", "]"),
                 ("{", "}"),

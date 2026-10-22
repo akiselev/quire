@@ -46,6 +46,8 @@ pub(crate) struct Out {
     pub sel: Selection,
     pub kind: InputKind,
     pub auto_closed: Vec<AutoClosed>,
+    /// Close the open undo group before this edit (VS Code `shouldPushStackElementBefore`).
+    pub close_before: bool,
 }
 
 /// An edit for one selection range; `anchor`/`head` are relative to the edit's start in the new
@@ -198,6 +200,9 @@ pub(crate) fn run(
             None => CommandOutput::Nothing,
             Some(o) => {
                 let mut tr = tr_from(doc, o.changes, o.sel, origin);
+                if o.close_before {
+                    tr = tr.with_group(GroupHint::Close);
+                }
                 if !o.auto_closed.is_empty() {
                     tr = tr.with_effect(Effect::AutoClosed(o.auto_closed));
                 }

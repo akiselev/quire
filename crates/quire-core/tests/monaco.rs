@@ -11,12 +11,18 @@
 //! setSelections 1 1 1 5; 2 1 2 1         selectionStart line col, position line col; ...
 //! cmd cursorRight                        a VS Code command id (EditorCommand::from_vscode_id)
 //! json {"id":"type","text":"x"}          an EditorCommand as JSON
-//! type "abc"                             shorthand for the `type` command
+//! type "abc"                             shorthand for the `type` command (keyboard: interceptors)
+//! typeRaw "abc"                          replace selections without interceptors (VS Code `type(text)`)
 //! time 1000                              host clock for the following commands (undo grouping)
 //! expectText "..."
 //! expectLine 2 "..."
 //! expectSel 1 1 1 5; 2 1 2 1             selections in order (sorted by start)
 //! expectCursor 1 5                       the primary selection is a cursor here
+//! expectPrimarySel 1 1 1 5               the primary selection
+//! expectHead 1 5                         the primary head
+//! expectLineCount 3
+//! wordSelect 1 5                         double-click word selection at a position
+//! closeUndoGroup                         VS Code pushStackElement / pushUndoStop
 //! ```
 //!
 //! A case with `status: fail-*` is expected to fail; if it passes, the harness says so (update
@@ -171,6 +177,24 @@ fn run_case(c: &Case) -> Result<(), String> {
                     serde_json::from_str(rest).map_err(|e| err(format!("string: {e}")))?;
                 exec(&mut doc, &mut view, EditorCommand::Type { text: s }, time)?;
             }
+            "typeRaw" => {
+                // VS Code `viewModel.type(text)` without the keyboard source: no interceptors.
+                let s: String =
+                    serde_json::from_str(rest).map_err(|e| err(format!("string: {e}")))?;
+                view.sync(&doc);
+                let ranges: Vec<_> = view.selection().ranges().to_vec();
+                let changes = quire_core::ChangeSet::replace(
+                    doc.text().len_bytes(),
+                    ranges.iter().map(|r| (r.range(), s.as_str())),
+                )
+                .map_err(|e| err(format!("{e}")))?;
+                let sel = view.selection().map(&changes, quire_core::Bias::After);
+                let tr = quire_core::Transaction::new(doc.version(), changes)
+                    .with_selection(sel)
+                    .with_origin(quire_core::Origin::Input(quire_core::InputKind::Typing));
+                doc.apply(tr, &mut view)
+                    .map_err(|e| err(format!("refused: {e}")))?;
+            }
             "time" => time = rest.parse().ok(),
             "closeUndoGroup" => {
                 doc.close_undo_group();
@@ -211,6 +235,51 @@ fn run_case(c: &Case) -> Result<(), String> {
                     )));
                 }
             }
+            "expectLineCount" => {
+                let n: usize = rest.parse().map_err(|_| err("number".into()))?;
+                if doc.text().len_lines() != n {
+                    return Err(err(format!(
+                        "line count: expected {n}, got {}",
+                        doc.text().len_lines()
+                    )));
+                }
+            }
+            "expectPrimarySel" => {
+                let want = parse_sels(doc.text(), rest)[0];
+                let got = view.selection().primary();
+                if got.anchor != want.anchor || got.head != want.head {
+                    return Err(err(format!(
+                        "primary selection: expected {rest}, got {} {}",
+                        fmt_pos(doc.text(), got.anchor),
+                        fmt_pos(doc.text(), got.head)
+                    )));
+                }
+            }
+            "expectHead" => {
+                let n = nums(rest);
+                let p = pos(doc.text(), n[0], n[1]);
+                let got = view.selection().primary().head;
+                if got != p {
+                    return Err(err(format!(
+                        "head: expected {rest}, got {}",
+                        fmt_pos(doc.text(), got)
+                    )));
+                }
+            }
+            "wordSelect" => {
+                let n = nums(rest);
+                let p = pos(doc.text(), n[0], n[1]);
+                let cls = quire_core::words::WordClassifier::new(&doc.config().word_separators);
+                let r = quire_core::words::word_range_at(doc.text(), p, &cls);
+                exec(
+                    &mut doc,
+                    &mut view,
+                    EditorCommand::SetSelection {
+                        selection: Selection::single(r.start, r.end),
+                    },
+                    time,
+                )?;
+            }
             "expectCursor" => {
                 let n = nums(rest);
                 let p = pos(doc.text(), n[0], n[1]);
@@ -245,6 +314,7 @@ fn monaco_fixtures() {
     files.sort();
     let (mut pass, mut expected_fail, mut unexpected_fail, mut unexpected_pass) = (0, 0, 0, 0);
     let mut report = String::new();
+    let mut tsv = String::new();
     for f in &files {
         for c in parse_file(f) {
             if let Some(flt) = &filter
@@ -255,6 +325,16 @@ fn monaco_fixtures() {
             }
             let result = run_case(&c);
             let expect_fail = c.status.starts_with("fail");
+            tsv.push_str(&format!(
+                "{}\t{}\t{}\t{}\n",
+                c.file,
+                c.name,
+                if result.is_ok() { "pass" } else { "fail" },
+                result
+                    .as_ref()
+                    .err()
+                    .map_or(String::new(), |e| e.replace(['\t', '\n'], " "))
+            ));
             match (result, expect_fail) {
                 (Ok(()), false) => pass += 1,
                 (Ok(()), true) => {
@@ -268,6 +348,9 @@ fn monaco_fixtures() {
                 }
             }
         }
+    }
+    if let Ok(path) = std::env::var("MONACO_REPORT") {
+        std::fs::write(path, &tsv).expect("write MONACO_REPORT");
     }
     println!("{report}");
     println!(

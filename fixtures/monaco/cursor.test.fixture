@@ -1,0 +1,1849 @@
+# Translated from Visual Studio Code, src/vs/editor/test/browser/controller/cursor.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Controller - Cursor > cursor initialized
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > no move
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 1
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 2
+expectSel 1 2 1 2
+
+=== Editor Controller - Cursor > move in selection mode
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 2 select
+expectSel 1 1 1 2
+
+=== Editor Controller - Cursor > move beyond line end
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 25
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move empty line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 4 20
+expectSel 4 1 4 1
+
+=== Editor Controller - Cursor > move one char line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 5 20
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > selection down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 2 1 select
+expectSel 1 1 2 1
+
+=== Editor Controller - Cursor > move and then select
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 2 3
+expectSel 2 3 2 3
+moveTo 2 15 select
+expectSel 2 3 2 15
+moveTo 1 2 select
+expectSel 2 3 1 2
+
+=== Editor Controller - Cursor > move left on top left position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorLeft
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move left
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 3
+expectSel 1 3 1 3
+cmd cursorLeft
+expectSel 1 2 1 2
+
+=== Editor Controller - Cursor > move left with surrogate pair
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 17
+expectSel 3 17 3 17
+cmd cursorLeft
+expectSel 3 15 3 15
+
+=== Editor Controller - Cursor > move left goes to previous row
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 2 1
+expectSel 2 1 2 1
+cmd cursorLeft
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move left selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 2 1
+expectSel 2 1 2 1
+cmd cursorLeftSelect
+expectSel 2 1 1 21
+
+=== Editor Controller - Cursor > move right on bottom right position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 5 2
+expectSel 5 2 5 2
+cmd cursorRight
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move right
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 3
+expectSel 1 3 1 3
+cmd cursorRight
+expectSel 1 4 1 4
+
+=== Editor Controller - Cursor > move right with surrogate pair
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 15
+expectSel 3 15 3 15
+cmd cursorRight
+expectSel 3 17 3 17
+
+=== Editor Controller - Cursor > move right goes to next row
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 21
+expectSel 1 21 1 21
+cmd cursorRight
+expectSel 2 1 2 1
+
+=== Editor Controller - Cursor > move right selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 21
+expectSel 1 21 1 21
+cmd cursorRightSelect
+expectSel 1 21 2 1
+
+=== Editor Controller - Cursor > move down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorDown
+expectSel 2 1 2 1
+cmd cursorDown
+expectSel 3 1 3 1
+cmd cursorDown
+expectSel 4 1 4 1
+cmd cursorDown
+expectSel 5 1 5 1
+cmd cursorDown
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move down with selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorDownSelect
+expectSel 1 1 2 1
+cmd cursorDownSelect
+expectSel 1 1 3 1
+cmd cursorDownSelect
+expectSel 1 1 4 1
+cmd cursorDownSelect
+expectSel 1 1 5 1
+cmd cursorDownSelect
+expectSel 1 1 5 2
+
+=== Editor Controller - Cursor > move down with tabs
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 5
+expectSel 1 5 1 5
+cmd cursorDown
+expectSel 2 2 2 2
+cmd cursorDown
+expectSel 3 5 3 5
+cmd cursorDown
+expectSel 4 1 4 1
+cmd cursorDown
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 5
+expectSel 3 5 3 5
+cmd cursorUp
+expectSel 2 2 2 2
+cmd cursorUp
+expectSel 1 5 1 5
+
+=== Editor Controller - Cursor > move up with selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 5
+expectSel 3 5 3 5
+cmd cursorUpSelect
+expectSel 3 5 2 2
+cmd cursorUpSelect
+expectSel 3 5 1 5
+
+=== Editor Controller - Cursor > move up and down with tabs
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 5
+expectSel 1 5 1 5
+cmd cursorDown
+cmd cursorDown
+cmd cursorDown
+cmd cursorDown
+expectSel 5 2 5 2
+cmd cursorUp
+expectSel 4 1 4 1
+cmd cursorUp
+expectSel 3 5 3 5
+cmd cursorUp
+expectSel 2 2 2 2
+cmd cursorUp
+expectSel 1 5 1 5
+
+=== Editor Controller - Cursor > move up and down with end of lines starting from a long one
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorEnd
+expectSel 1 21 1 21
+cmd cursorEnd
+expectSel 1 21 1 21
+cmd cursorDown
+expectSel 2 16 2 16
+cmd cursorDown
+expectSel 3 17 3 17
+cmd cursorDown
+expectSel 4 1 4 1
+cmd cursorDown
+expectSel 5 2 5 2
+cmd cursorUp
+cmd cursorUp
+cmd cursorUp
+cmd cursorUp
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > issue #44465: cursor position not correct when move
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+setSelections 1 5 1 5
+cmd cursorUp
+expectSel 1 1 1 1
+cmd cursorDown
+expectSel 2 2 2 2
+cmd cursorUp
+expectSel 1 5 1 5
+cmd cursorUp
+expectSel 1 1 1 1
+cmd cursorUp
+expectSel 1 1 1 1
+cmd cursorDown
+expectSel 2 1 2 1
+
+=== Editor Controller - Cursor > move to beginning of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorHome
+expectSel 1 6 1 6
+cmd cursorHome
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of line from within line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 8
+cmd cursorHome
+expectSel 1 6 1 6
+cmd cursorHome
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of line from whitespace at beginning of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 2
+cmd cursorHome
+expectSel 1 6 1 6
+cmd cursorHome
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of line from within line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 8
+cmd cursorHomeSelect
+expectSel 1 8 1 6
+cmd cursorHomeSelect
+expectSel 1 8 1 1
+
+=== Editor Controller - Cursor > move to beginning of line with selection multiline forward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 8
+moveTo 3 9 select
+cmd cursorHome
+expectSel 3 5 3 5
+
+=== Editor Controller - Cursor > move to beginning of line with selection multiline backward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 9
+moveTo 1 8 select
+cmd cursorHome
+expectSel 1 6 1 6
+
+=== Editor Controller - Cursor > move to beginning of line with selection single line forward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 2
+moveTo 3 9 select
+cmd cursorHome
+expectSel 3 5 3 5
+
+=== Editor Controller - Cursor > move to beginning of line with selection single line backward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 9
+moveTo 3 2 select
+cmd cursorHome
+expectSel 3 5 3 5
+
+=== Editor Controller - Cursor > issue #15401: "End" key is behaving weird when text is selected part 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 8
+moveTo 3 9 select
+cmd cursorHome
+expectSel 3 5 3 5
+
+=== Editor Controller - Cursor > issue #17011: Shift+home/end now go to the end of the selection start's line, not the selection's end
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 8
+moveTo 3 9 select
+cmd cursorHomeSelect
+expectSel 1 8 3 5
+
+=== Editor Controller - Cursor > move to end of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorEnd
+expectSel 1 21 1 21
+cmd cursorEnd
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move to end of line from within line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 6
+cmd cursorEnd
+expectSel 1 21 1 21
+cmd cursorEnd
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move to end of line from whitespace at end of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 20
+cmd cursorEnd
+expectSel 1 21 1 21
+cmd cursorEnd
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move to end of line from within line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 6
+cmd cursorEndSelect
+expectSel 1 6 1 21
+cmd cursorEndSelect
+expectSel 1 6 1 21
+
+=== Editor Controller - Cursor > move to end of line with selection multiline forward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 1
+moveTo 3 9 select
+cmd cursorEnd
+expectSel 3 17 3 17
+
+=== Editor Controller - Cursor > move to end of line with selection multiline backward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 9
+moveTo 1 1 select
+cmd cursorEnd
+expectSel 1 21 1 21
+
+=== Editor Controller - Cursor > move to end of line with selection single line forward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 1
+moveTo 3 9 select
+cmd cursorEnd
+expectSel 3 17 3 17
+
+=== Editor Controller - Cursor > move to end of line with selection single line backward
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 9
+moveTo 3 1 select
+cmd cursorEnd
+expectSel 3 17 3 17
+
+=== Editor Controller - Cursor > issue #15401: "End" key is behaving weird when text is selected part 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 1
+moveTo 3 9 select
+cmd cursorEnd
+expectSel 3 17 3 17
+
+=== Editor Controller - Cursor > move to beginning of buffer
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorTop
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of buffer from within first line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 3
+cmd cursorTop
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of buffer from within another line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 3
+cmd cursorTop
+expectSel 1 1 1 1
+
+=== Editor Controller - Cursor > move to beginning of buffer from within first line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 1 3
+cmd cursorTopSelect
+expectSel 1 3 1 1
+
+=== Editor Controller - Cursor > move to beginning of buffer from within another line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 3
+cmd cursorTopSelect
+expectSel 3 3 1 1
+
+=== Editor Controller - Cursor > move to end of buffer
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd cursorBottom
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move to end of buffer from within last line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 5 1
+cmd cursorBottom
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move to end of buffer from within another line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 3
+cmd cursorBottom
+expectSel 5 2 5 2
+
+=== Editor Controller - Cursor > move to end of buffer from within last line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 5 1
+cmd cursorBottomSelect
+expectSel 5 1 5 2
+
+=== Editor Controller - Cursor > move to end of buffer from within another line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+moveTo 3 3
+cmd cursorBottomSelect
+expectSel 3 3 5 2
+
+=== Editor Controller - Cursor > select all
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
+cmd editor.action.selectAll
+expectSel 1 1 5 2
+
+=== Editor Controller - Cursor > grapheme breaking
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abcabc\nãããããã\n辻󠄀辻󠄀辻󠄀\nபு"
+setSelections 2 1 2 1
+cmd cursorRight
+expectSel 2 3 2 3
+cmd cursorLeft
+expectSel 2 1 2 1
+setSelections 3 1 3 1
+cmd cursorRight
+expectSel 3 4 3 4
+cmd cursorLeft
+expectSel 3 1 3 1
+setSelections 4 1 4 1
+cmd cursorRight
+expectSel 4 3 4 3
+cmd cursorLeft
+expectSel 4 1 4 1
+setSelections 1 3 1 3
+cmd cursorDown
+expectSel 2 5 2 5
+cmd cursorDown
+expectSel 3 4 3 4
+cmd cursorUp
+expectSel 2 5 2 5
+cmd cursorUp
+expectSel 1 3 1 3
+
+=== Editor Controller > issue microsoft/monaco-editor#443: Indentation of a single row deletes selected text in some cases
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "Hello world!\nanother line"
+setSelections 1 1 1 13
+cmd tab
+expectPrimarySel 1 1 1 14
+
+=== Editor Controller > Bug 9121: Auto indent + undo + redo is funky
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: ""
+type "\n"
+expectText "\n"
+cmd tab
+expectText "\n\t"
+type "\n"
+expectText "\n\t\n\t"
+typeRaw "x"
+expectText "\n\t\n\tx"
+cmd cursorLeft
+expectText "\n\t\n\tx"
+cmd deleteLeft
+expectText "\n\t\nx"
+cmd deleteLeft
+expectText "\n\tx"
+cmd deleteLeft
+expectText "\nx"
+cmd deleteLeft
+expectText "x"
+cmd undo
+expectText "\nx"
+cmd undo
+expectText "\n\t\nx"
+cmd undo
+expectText "\n\t\n\tx"
+cmd redo
+expectText "\n\t\nx"
+cmd redo
+expectText "\nx"
+cmd redo
+expectText "x"
+
+=== Editor Controller > issue #47733: Undo mangles unicode characters
+config: {"autoClosingPairs":[],"surroundingPairs":[["%","%"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "'👁'"
+setSelections 1 1 1 2
+type "%"
+expectText "%'%👁'"
+cmd undo
+expectText "'👁'"
+
+=== Editor Controller > Bug #18293:[regression][editor] Can't outdent whitespace line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "      "
+moveTo 1 7
+expectSel 1 7 1 7
+cmd outdent
+expectLine 1 "    "
+expectSel 1 5 1 5
+
+=== Editor Controller > issue #95591: Unindenting moves cursor to beginning of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"useTabStops":false}
+text: "        "
+moveTo 1 9
+expectSel 1 9 1 9
+cmd outdent
+expectLine 1 "    "
+expectSel 1 5 1 5
+
+=== Editor Controller > Bug #16657: [editor] Tab on empty line of zero indentation moves cursor to position (1,1)
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "function baz() {\n\tfunction hello() { // something here\n\t\n\n\t}\n}\n"
+moveTo 7 1
+expectSel 7 1 7 1
+cmd tab
+expectLine 7 "\t"
+expectSel 7 2 7 2
+
+=== Editor Controller > issue #128602: When cutting multiple lines (ctrl x), the last line will not be erased
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "a1\na2\na3"
+setSelections 1 1 1 1; 2 1 2 1; 3 1 3 1
+cmd editor.action.clipboardCutAction
+expectLineCount 1
+expectLine 1 ""
+
+=== Editor Controller > Bug #11476: Double bracket surrounding + undo is broken
+config: {"autoClosingPairs":[["(",")"]],"surroundingPairs":[["(",")"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello"
+moveTo 1 3
+moveTo 1 5 select
+expectSel 1 3 1 5
+type "("
+expectSel 1 4 1 6
+type "("
+expectSel 1 5 1 7
+
+=== Editor Controller > issue #206774: SurroundSelectionCommand with empty charAfterSelection should not throw
+config: {"autoClosingPairs":[],"surroundingPairs":[["<",""]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+moveTo 1 1
+moveTo 1 6 select
+expectSel 1 1 1 6
+type "<"
+expectText "<hello world"
+
+=== Editor Controller > issue #1140: Backspace stops prematurely
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "function baz() {\n  return 1;\n};"
+moveTo 3 2
+moveTo 1 14 select
+expectSel 3 2 1 14
+cmd deleteLeft
+expectSel 1 14 1 14
+expectLineCount 1
+expectLine 1 "function baz(;"
+
+=== Editor Controller > issue #16155: Paste into multiple cursors has edge case when number of lines equals number of cursors - 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "test\ntest\ntest\ntest"
+setSelections 1 1 1 5; 2 1 2 5; 3 1 3 5; 4 1 4 5
+json {"id":"editor.action.clipboardPasteAction","text":"aaa\nbbb\nccc\n","per_cursor":true}
+expectText "aaa\nbbb\nccc\n\naaa\nbbb\nccc\n\naaa\nbbb\nccc\n\naaa\nbbb\nccc\n"
+
+=== Editor Controller > issue #43722: Multiline paste doesn't work anymore
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "test\ntest\ntest\ntest"
+setSelections 1 1 1 5; 2 1 2 5; 3 1 3 5; 4 1 4 5
+json {"id":"editor.action.clipboardPasteAction","text":"aaa\r\nbbb\r\nccc\r\nddd\r\n","per_cursor":true}
+expectText "aaa\nbbb\nccc\nddd"
+
+=== Editor Controller > issue #46440: (1) Pasting a multi-line selection pastes entire selection into every insertion point
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "line1\nline2\nline3"
+setSelections 1 1 1 1; 2 1 2 1; 3 1 3 1
+json {"id":"editor.action.clipboardPasteAction","text":"a\nb\nc","per_cursor":true}
+expectText "aline1\nbline2\ncline3"
+
+=== Editor Controller > issue #46440: (2) Pasting a multi-line selection pastes entire selection into every insertion point
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "line1\nline2\nline3"
+setSelections 1 1 1 1; 2 1 2 1; 3 1 3 1
+json {"id":"editor.action.clipboardPasteAction","text":"a\nb\nc\n","per_cursor":true}
+expectText "aline1\nbline2\ncline3"
+
+=== Editor Controller > issue #12950: Cannot Double Click To Insert Emoji Using OSX Emoji Panel
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "some lines\nand more lines\njust some text"
+moveTo 3 1
+type "😍"
+expectText "some lines\nand more lines\n😍just some text"
+
+=== Editor Controller > issue #3463: pressing tab adds spaces, but not as many as for a tab
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "function a() {\n\tvar a = {\n\t\tx: 3\n\t};\n}"
+moveTo 3 2
+cmd tab
+expectLine 3 "\t    \tx: 3"
+
+=== Editor Controller > issue #4312: trying to type a tab character over a sequence of spaces results in unexpected behaviour
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "var foo = 123;       // this is a comment\nvar bar = 4;       // another comment"
+moveTo 1 15
+moveTo 1 22 select
+cmd tab
+expectLine 1 "var foo = 123;\t// this is a comment"
+
+=== Editor Controller > issue #12887: Double-click highlighting separating white space
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc def"
+wordSelect 1 5
+expectPrimarySel 1 5 1 8
+
+=== Editor Controller > Double-click on punctuation should select the character, not adjacent space
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "// a b c 1 2 3 ~ ! @ # $ % ^ & * ( ) _ + \\ /"
+wordSelect 1 20
+expectPrimarySel 1 20 1 21
+wordSelect 1 22
+expectPrimarySel 1 22 1 23
+wordSelect 1 18
+expectPrimarySel 1 18 1 19
+wordSelect 1 1
+expectPrimarySel 1 1 1 3
+wordSelect 1 2
+expectPrimarySel 1 1 1 3
+wordSelect 1 42
+expectPrimarySel 1 42 1 43
+
+=== Editor Controller > issue #36740: wordwrap creates an extra step / character at the wrapping point
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Lorem ipsum dolor sit amet consectetur adipiscing elit"
+setSelections 1 7 1 7
+cmd cursorRight
+expectSel 1 8 1 8
+cmd cursorRight
+expectSel 1 9 1 9
+cmd cursorRight
+expectSel 1 10 1 10
+cmd cursorRight
+expectSel 1 11 1 11
+cmd cursorRight
+expectSel 1 12 1 12
+cmd cursorRight
+expectSel 1 13 1 13
+cmd cursorRight
+expectSel 1 14 1 14
+cmd cursorLeft
+expectSel 1 13 1 13
+cmd cursorLeft
+expectSel 1 12 1 12
+
+=== Editor Controller > issue #110376: multiple selections with wordwrap behave differently
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "just a sentence. just a sentence. just a sentence."
+setSelections 1 1 1 16; 1 18 1 33; 1 35 1 50
+cmd cursorLeft
+expectSel 1 1 1 1; 1 18 1 18; 1 35 1 35
+setSelections 1 1 1 16; 1 18 1 33; 1 35 1 50
+cmd cursorRight
+expectSel 1 16 1 16; 1 33 1 33; 1 50 1 50
+
+=== Editor Controller > issue #98320: Multi-Cursor, Wrap lines and cursorSelectRight ==> cursors out of sync
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "lorem_ipsum-1993x11x13\ndolor_sit_amet-1998x04x27\nconsectetur-2007x10x08\nadipiscing-2012x07x27\nelit-2015x02x27"
+setSelections 1 13 1 13; 2 16 2 16; 3 13 3 13; 4 12 4 12; 5 6 5 6
+expectSel 1 13 1 13; 2 16 2 16; 3 13 3 13; 4 12 4 12; 5 6 5 6
+cmd cursorRightSelect
+expectSel 1 13 1 14; 2 16 2 17; 3 13 3 14; 4 12 4 13; 5 6 5 7
+cmd cursorRightSelect
+expectSel 1 13 1 15; 2 16 2 18; 3 13 3 15; 4 12 4 14; 5 6 5 8
+cmd cursorRightSelect
+expectSel 1 13 1 16; 2 16 2 19; 3 13 3 16; 4 12 4 15; 5 6 5 9
+cmd cursorRightSelect
+expectSel 1 13 1 17; 2 16 2 20; 3 13 3 17; 4 12 4 16; 5 6 5 10
+
+=== Editor Controller > issue #22717: Moving text cursor cause an incorrect position in Chinese
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "一二三四五六七八九十\n12345678901234567890"
+setSelections 1 5 1 5
+cmd cursorDown
+expectSel 2 9 2 9
+cmd cursorRight
+expectSel 2 10 2 10
+cmd cursorRight
+expectSel 2 11 2 11
+cmd cursorUp
+expectSel 1 6 1 6
+
+=== Editor Controller > issue #112301: new stickyTabStops feature interferes with word wrap
+# features: view option wordWrap; view option wordWrapColumn; stickyTabStops
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "function hello() {\n        console.log(`this is a long console message`)\n}"
+setSelections 2 31 2 31
+cmd cursorRight
+expectSel 2 32 2 32
+cmd cursorRight
+expectSel 2 33 2 33
+cmd cursorRight
+expectSel 2 34 2 34
+cmd cursorLeft
+expectSel 2 33 2 33
+cmd cursorLeft
+expectSel 2 32 2 32
+cmd cursorLeft
+expectSel 2 31 2 31
+
+=== Editor Controller > issue #37967: problem replacing consecutive characters
+status: fail-ours needs editor option multiCursorMergeOverlapping
+# features: editor option multiCursorMergeOverlapping
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "const a = \"foo\";\nconst b = \"\""
+setSelections 1 12 1 12; 1 16 1 16; 2 12 2 12; 2 13 2 13
+cmd deleteLeft
+expectSel 1 11 1 11; 1 14 1 14; 2 11 2 11; 2 11 2 11
+type "'"
+expectLine 1 "const a = 'foo';"
+expectLine 2 "const b = ''"
+
+=== Editor Controller > issue #84897: Left delete behavior in some languages is changed
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "สวัสดี"
+setSelections 1 7 1 7
+cmd deleteLeft
+expectText "สวัสด"
+cmd deleteLeft
+expectText "สวัส"
+cmd deleteLeft
+expectText "สวั"
+cmd deleteLeft
+expectText "สว"
+cmd deleteLeft
+expectText "ส"
+cmd deleteLeft
+expectText ""
+
+=== Editor Controller > issue #122914: Left delete behavior in some languages is changed (useTabStops: false)
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"useTabStops":false}
+text: "สวัสดี"
+setSelections 1 7 1 7
+cmd deleteLeft
+expectText "สวัสด"
+cmd deleteLeft
+expectText "สวัส"
+cmd deleteLeft
+expectText "สวั"
+cmd deleteLeft
+expectText "สว"
+cmd deleteLeft
+expectText "ส"
+cmd deleteLeft
+expectText ""
+
+=== Editor Controller > issue #105730: move left behaves differently for multiple cursors
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "asdfghjkl, asdfghjkl, asdfghjkl, "
+setSelections 1 10 1 12; 1 21 1 23; 1 32 1 34
+cmd cursorLeft
+expectSel 1 10 1 10; 1 21 1 21; 1 32 1 32
+setSelections 1 10 1 12; 1 21 1 23; 1 32 1 34
+cmd cursorLeftSelect
+expectSel 1 10 1 11; 1 21 1 22; 1 32 1 33
+
+=== Editor Controller > issue #105730: move right should always skip wrap point
+# features: view option wordWrap; view option wordWrapColumn
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "asdfghjkl, asdfghjkl, asdfghjkl, \nasdfghjkl,"
+setSelections 1 22 1 22
+cmd cursorRight
+cmd cursorRight
+expectSel 1 24 1 24
+setSelections 1 22 1 22
+cmd cursorRightSelect
+cmd cursorRightSelect
+expectSel 1 22 1 24
+
+=== Editor Controller > issue #123178: sticky tab in consecutive wrapped lines
+# features: view option wordWrap; view option wordWrapColumn; stickyTabStops
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":4,"indentSize":4}
+text: "    aaaa        aaaa"
+setSelections 1 9 1 9
+cmd cursorRight
+expectSel 1 10 1 10
+cmd cursorLeft
+expectSel 1 9 1 9
+
+=== Editor Controller > Cursor honors insertSpaces configuration on new line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line\n\n1"
+moveTo 1 21
+type "\n"
+expectLine 1 "    \tMy First Line\t "
+expectLine 2 "        "
+
+=== Editor Controller > Cursor honors insertSpaces configuration on tab
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":13,"indentSize":13}
+text: "    \tMy First Line\t \nMy Second Line123\n    Third Line\n\n1"
+moveTo 2 1
+cmd tab
+expectLine 2 "             My Second Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 2
+cmd tab
+expectLine 2 "M            y Second Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 3
+cmd tab
+expectLine 2 "My            Second Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 4
+cmd tab
+expectLine 2 "My           Second Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 5
+cmd tab
+expectLine 2 "My S         econd Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 5
+cmd tab
+expectLine 2 "My S         econd Line123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 13
+cmd tab
+expectLine 2 "My Second Li ne123"
+cmd undo
+expectLine 2 "My Second Line123"
+moveTo 2 14
+cmd tab
+expectLine 2 "My Second Lin             e123"
+
+=== Editor Controller > issue #148256: Pressing Enter creates line with bad indent with insertSpaces: true
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "  \t"
+moveTo 1 4
+type "\n"
+expectText "  \t\n    "
+
+=== Editor Controller > UseTabStops is off
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"useTabStops":false}
+text: "    x\n        a    \n    "
+moveTo 2 9
+cmd deleteLeft
+expectLine 2 "       a    "
+
+=== Editor Controller > PR #5423: Auto indent + undo + redo is funky
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: ""
+type "\n"
+expectText "\n"
+cmd tab
+expectText "\n\t"
+type "y"
+expectText "\n\ty"
+type "\n"
+expectText "\n\ty\n\t"
+typeRaw "x"
+expectText "\n\ty\n\tx"
+cmd cursorLeft
+expectText "\n\ty\n\tx"
+cmd deleteLeft
+expectText "\n\ty\nx"
+cmd deleteLeft
+expectText "\n\tyx"
+cmd deleteLeft
+expectText "\n\tx"
+cmd deleteLeft
+expectText "\nx"
+cmd deleteLeft
+expectText "x"
+cmd undo
+expectText "\nx"
+cmd undo
+expectText "\n\ty\nx"
+cmd undo
+expectText "\n\ty\n\tx"
+cmd redo
+expectText "\n\ty\nx"
+cmd redo
+expectText "\nx"
+cmd redo
+expectText "x"
+
+=== Editor Controller > Type honors decreaseIndentPattern
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if (true) {\n\t"
+moveTo 2 2
+expectSel 2 2 2 2
+type "}"
+expectSel 2 2 2 2
+expectLine 2 "}"
+
+=== Editor Controller > Enter honors unIndentedLinePattern
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\t\t\treturn true"
+moveTo 2 15
+expectSel 2 15 2 15
+type "\n"
+expectSel 3 2 3 2
+
+=== Editor Controller > Enter honors intential indent
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if (true) {\n\tif (true) {\nreturn true;\n}}"
+moveTo 3 13
+expectSel 3 13 3 13
+type "\n"
+expectSel 4 1 4 1
+expectLine 3 "return true;"
+
+=== Editor Controller > Enter supports selection 1
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\tif (true) {\n\t\treturn true;\n\t}a}"
+moveTo 4 3
+moveTo 4 4 select
+expectSel 4 3 4 4
+type "\n"
+expectSel 5 1 5 1
+expectLine 4 "\t}"
+
+=== Editor Controller > Enter supports selection 2
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\tif (true) {"
+moveTo 2 12
+moveTo 2 13 select
+expectSel 2 12 2 13
+type "\n"
+expectSel 3 3 3 3
+type "\n"
+expectSel 4 3 4 3
+
+=== Editor Controller > Enter supports intentional indentation
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tif (true) {\n\t\tswitch(true) {\n\t\t\tcase true:\n\t\t\t\tbreak;\n\t\t}\n\t}"
+moveTo 5 4
+expectSel 5 4 5 4
+type "\n"
+expectLine 5 "\t\t}"
+expectSel 6 3 6 3
+
+=== Editor Controller > Enter should not adjust cursor position when press enter in the middle of a line 1
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\tif (true) {\n\t\treturn true;\n\t}a}"
+moveTo 3 9
+expectSel 3 9 3 9
+type "\n"
+expectSel 4 3 4 3
+expectLine 4 "\t\t true;"
+
+=== Editor Controller > Enter should not adjust cursor position when press enter in the middle of a line 2
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\tif (true) {\n\t\treturn true;\n\t}a}"
+moveTo 3 3
+expectSel 3 3 3 3
+type "\n"
+expectSel 4 3 4 3
+expectLine 4 "\t\treturn true;"
+
+=== Editor Controller > Enter should not adjust cursor position when press enter in the middle of a line 3
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if (true) {\n  if (true) {\n    return true;\n  }a}"
+moveTo 3 11
+expectSel 3 11 3 11
+type "\n"
+expectSel 4 5 4 5
+expectLine 4 "     true;"
+
+=== Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 1
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "if (true) {\n\tif (true) {\n\t\treturn true;\n\t}a}"
+moveTo 3 2
+expectSel 3 2 3 2
+type "\n"
+expectSel 4 2 4 2
+expectLine 4 "\t\treturn true;"
+moveTo 4 1
+expectSel 4 1 4 1
+type "\n"
+expectSel 5 1 5 1
+expectLine 5 "\t\treturn true;"
+
+=== Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 2
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tif (true) {\n\t\tif (true) {\n\t    \treturn true;\n\t\t}a}"
+moveTo 3 4
+expectSel 3 4 3 4
+type "\n"
+expectSel 4 3 4 3
+expectLine 4 "\t\t\treturn true;"
+moveTo 4 1
+expectSel 4 1 4 1
+type "\n"
+expectSel 5 1 5 1
+expectLine 5 "\t\t\treturn true;"
+
+=== Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 3
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if (true) {\n  if (true) {\n    return true;\n}a}"
+moveTo 3 2
+expectSel 3 2 3 2
+type "\n"
+expectSel 4 2 4 2
+expectLine 4 "    return true;"
+moveTo 4 3
+type "\n"
+expectSel 5 3 5 3
+expectLine 5 "    return true;"
+
+=== Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 4
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "if (true) {\n  if (true) {\n\t  return true;\n}a}\n\nif (true) {\n  if (true) {\n\t  return true;\n}a}"
+moveTo 3 3
+expectSel 3 3 3 3
+type "\n"
+expectSel 4 4 4 4
+expectLine 4 "    return true;"
+moveTo 9 4
+type "\n"
+expectSel 10 5 10 5
+expectLine 10 "    return true;"
+
+=== Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 5
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "if (true) {\n  if (true) {\n    return true;\n    return true;\n"
+moveTo 3 5
+moveTo 4 3 select
+expectSel 3 5 4 3
+type "\n"
+expectSel 4 3 4 3
+expectLine 4 "    return true;"
+
+=== Editor Controller > issue microsoft/monaco-editor#108 part 1/2: Auto indentation on Enter with selection is half broken
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "function baz() {\n\tvar x = 1;\n\t\t\t\t\t\t\treturn x;\n}"
+moveTo 3 8
+moveTo 2 12 select
+expectSel 3 8 2 12
+type "\n"
+expectLine 3 "\treturn x;"
+expectSel 3 2 3 2
+
+=== Editor Controller > issue microsoft/monaco-editor#108 part 2/2: Auto indentation on Enter with selection is half broken
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "function baz() {\n\tvar x = 1;\n\t\t\t\t\t\t\treturn x;\n}"
+moveTo 2 12
+moveTo 3 8 select
+expectSel 2 12 3 8
+type "\n"
+expectLine 3 "\treturn x;"
+expectSel 3 2 3 2
+
+=== Editor Controller > onEnter works if there are no indentation rules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "<?\n\tif (true) {\n\t\techo $hi;\n\t\techo $bye;\n\t}\n?>"
+moveTo 5 3
+expectSel 5 3 5 3
+type "\n"
+expectLine 6 "\t"
+expectSel 6 2 6 2
+expectLine 5 "\t}"
+
+=== Editor Controller > onEnter works if there are no indentation rules 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tif (5)\n\t\treturn 5;\n\t"
+moveTo 3 2
+expectSel 3 2 3 2
+type "\n"
+expectSel 4 2 4 2
+expectLine 4 "\t"
+
+=== Editor Controller > bug #16543: Tab should indent to correct indentation spot immediately
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "function baz() {\n\tfunction hello() { // something here\n\t\n\n\t}\n}"
+moveTo 4 1
+expectSel 4 1 4 1
+cmd tab
+expectLine 4 "\t\t"
+
+=== Editor Controller > bug #2938 (1): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines)
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tfunction baz() {\n\t\tfunction hello() { // something here\n\t\t\n\t\n\t\t}\n\t}"
+moveTo 4 2
+expectSel 4 2 4 2
+cmd tab
+expectLine 4 "\t\t\t"
+
+=== Editor Controller > bug #2938 (2): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines)
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tfunction baz() {\n\t\tfunction hello() { // something here\n\t\t\n    \n\t\t}\n\t}"
+moveTo 4 1
+expectSel 4 1 4 1
+cmd tab
+expectLine 4 "\t\t\t"
+
+=== Editor Controller > bug #2938 (3): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines)
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tfunction baz() {\n\t\tfunction hello() { // something here\n\t\t\n\t\t\t\n\t\t}\n\t}"
+moveTo 4 3
+expectSel 4 3 4 3
+cmd tab
+expectLine 4 "\t\t\t\t"
+
+=== Editor Controller > bug #2938 (4): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines)
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "\tfunction baz() {\n\t\tfunction hello() { // something here\n\t\t\n\t\t\t\t\n\t\t}\n\t}"
+moveTo 4 4
+expectSel 4 4 4 4
+cmd tab
+expectLine 4 "\t\t\t\t\t"
+
+=== Editor Controller > type honors indentation rules: ruby keywords
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "class Greeter\n  def initialize(name)\n    @name = name\n    en"
+moveTo 4 7
+expectSel 4 7 4 7
+type "d"
+expectLine 4 "  end"
+
+=== Editor Controller > Auto indent on type: increaseIndentPattern has higher priority than decreaseIndent when inheriting
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "\tif (true) {\n\t\tconsole.log();\n\t} else if {\n\t\tconsole.log()\n\t}"
+moveTo 5 3
+expectSel 5 3 5 3
+type "e"
+expectSel 5 4 5 4
+expectLine 5 "\t}e"
+
+=== Editor Controller > type honors users indentation adjustment
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "\tif (true ||\n\t ) {\n\t}\nif (true ||\n) {\n}"
+moveTo 2 3
+expectSel 2 3 2 3
+type " "
+expectSel 2 4 2 4
+expectLine 2 "\t  ) {"
+
+=== Editor Controller > bug 29972: if a line is line comment, open bracket should not indent next line
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if (true) {\n\t// {\n\t\t"
+moveTo 3 3
+expectSel 3 3 3 3
+type "}"
+expectSel 3 2 3 2
+expectLine 3 "}"
+
+=== Editor Controller > issue #38261: TAB key results in bizarre indentation in C++ mode 
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "int main() {\n  return 0;\n}\n\nbool Foo::bar(const string &a,\n              const string &b) {\n  foo();\n\n)"
+moveTo 8 1
+expectSel 8 1 8 1
+cmd tab
+expectText "int main() {\n  return 0;\n}\n\nbool Foo::bar(const string &a,\n              const string &b) {\n  foo();\n  \n)"
+expectPrimarySel 8 3 8 3
+
+=== Editor Controller > typing in json
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null,"tabSize":2,"indentSize":2}
+text: "{\n  \"scripts: {\"\n    \"watch\": \"a {\"\n    \"build{\": \"b\"\n    \"tasks\": []\n    \"tasks\": [\"a\"]\n  \"}\"\n\"}\""
+moveTo 3 19
+expectSel 3 19 3 19
+type "\n"
+expectLine 4 "    "
+moveTo 5 18
+expectSel 5 18 5 18
+type "\n"
+expectLine 6 "    "
+moveTo 7 15
+expectSel 7 15 7 15
+type "\n"
+expectLine 8 "      "
+expectLine 9 "    ]"
+moveTo 10 18
+expectSel 10 18 10 18
+type "\n"
+expectLine 11 "    ]"
+
+=== Editor Controller > issue #111128: Multicursor `Enter` issue with indentation
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false,"tabSize":4,"indentSize":4}
+text: "    let a, b, c;"
+setSelections 1 11 1 11; 1 14 1 14
+type "\n"
+expectText "    let a,\n\t b,\n\t c;"
+
+=== Editor Controller > issue #122714: tabSize=1 prevent typing a string matching decreaseIndentPattern in an empty file
+status: fail-ours needs language indentationRules
+# features: language indentationRules
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"tabSize":1,"indentSize":1}
+text: "\\end"
+moveTo 1 5
+expectSel 1 5 1 5
+type "{"
+expectLine 1 "\\end{}"
+
+=== Editor Controller > ElectricCharacter - does nothing if no electric char
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n"
+moveTo 2 1
+type "*"
+expectLine 2 "*"
+
+=== Editor Controller > ElectricCharacter - indents in order to match bracket
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n"
+moveTo 2 1
+type "}"
+expectLine 2 "  }"
+
+=== Editor Controller > ElectricCharacter - unindents in order to match bracket
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n    "
+moveTo 2 5
+type "}"
+expectLine 2 "  }"
+
+=== Editor Controller > ElectricCharacter - matches with correct bracket
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n    if (b) {\n    }\n    "
+moveTo 4 1
+type "}"
+expectLine 4 "  }    "
+
+=== Editor Controller > ElectricCharacter - does nothing if bracket does not match
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n    if (b) {\n    }\n  }  "
+moveTo 4 6
+type "}"
+expectLine 4 "  }  }"
+
+=== Editor Controller > ElectricCharacter - matches bracket even in line with content
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n// hello"
+moveTo 2 1
+type "}"
+expectLine 2 "  }// hello"
+
+=== Editor Controller > ElectricCharacter - is no-op if bracket is lined up
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n  "
+moveTo 2 3
+type "}"
+expectLine 2 "  }"
+
+=== Editor Controller > ElectricCharacter - is no-op if there is non-whitespace text before
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\na"
+moveTo 2 2
+type "}"
+expectLine 2 "a}"
+
+=== Editor Controller > ElectricCharacter - is no-op if pairs are all matched before
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "foo(() => {\n  ( 1 + 2 ) \n})"
+moveTo 2 13
+type "*"
+expectLine 2 "  ( 1 + 2 ) *"
+
+=== Editor Controller > ElectricCharacter - is no-op if the line has other content
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "Math.max(\n\t2\n\t3"
+moveTo 3 3
+type ")"
+expectLine 3 "\t3)"
+
+=== Editor Controller > ElectricCharacter - appends text
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n/*"
+moveTo 2 3
+type "*"
+expectLine 2 "/** */"
+
+=== Editor Controller > ElectricCharacter - appends text 2
+status: fail-ours needs language __electricCharacterSupport
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "  if (a) {\n  /*"
+moveTo 2 5
+type "*"
+expectLine 2 "  /** */"
+
+=== Editor Controller > ElectricCharacter - issue #23711: Replacing selected text with )]} fails to delete old text with backwards-dragged selection
+# features: language __electricCharacterSupport
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["{","}"],["[","]"],["(",")"]],"lineComment":null,"blockComment":null}
+text: "{\nword"
+moveTo 2 5
+moveTo 2 1 select
+type "}"
+expectLine 2 "}"
+
+=== Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair
+status: fail-ours needs autoClosingPairs.beforeText
+# features: autoClosingPairs.beforeText
+config: {"autoClosingPairs":[["begin","end"],["n","]"]],"surroundingPairs":[["begin","end"],["n","]"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "prefixbegi"
+setSelections 1 11 1 11
+type "n"
+expectText "prefixbegin]"
+
+=== Editor Controller > issue #37315 - overtypes only those characters that it inserted
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+type "a"
+type "s"
+type "d"
+expectLine 1 "x=(asd)"
+type ")"
+expectLine 1 "x=(asd)"
+setSelections 2 4 2 4
+type ")"
+expectLine 2 "y=());"
+
+=== Editor Controller > issue #37315 - stops overtyping once cursor leaves area
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+setSelections 1 5 1 5
+type ")"
+expectLine 1 "x=())"
+
+=== Editor Controller > issue #37315 - it overtypes only once
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+type ")"
+expectLine 1 "x=()"
+setSelections 1 4 1 4
+type ")"
+expectLine 1 "x=())"
+
+=== Editor Controller > issue #37315 - it can remember multiple auto-closed instances
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+type "("
+expectLine 1 "x=(())"
+type ")"
+expectLine 1 "x=(())"
+type ")"
+expectLine 1 "x=(())"
+
+=== Editor Controller > issue #118270 - auto closing deletes only those characters that it inserted
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+type "a"
+type "s"
+type "d"
+expectLine 1 "x=(asd)"
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+expectLine 1 "x=()"
+cmd deleteLeft
+expectLine 1 "x="
+setSelections 2 4 2 4
+cmd deleteLeft
+expectLine 2 "y=);"
+
+=== Editor Controller > issue #78527 - does not close quote on odd count
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "std::cout << '\"' << entryMap"
+setSelections 1 29 1 29
+type "["
+expectLine 1 "std::cout << '\"' << entryMap[]"
+type "\""
+expectLine 1 "std::cout << '\"' << entryMap[\"\"]"
+type "a"
+expectLine 1 "std::cout << '\"' << entryMap[\"a\"]"
+type "\""
+expectLine 1 "std::cout << '\"' << entryMap[\"a\"]"
+type "]"
+expectLine 1 "std::cout << '\"' << entryMap[\"a\"]"
+
+=== Editor Controller > issue #78833 - Add config to use old brackets/quotes overtyping
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"],"autoClosingOvertype":"always"}
+text: "\ny=();"
+expectSel 1 1 1 1
+type "x"
+type "="
+type "("
+expectLine 1 "x=()"
+type ")"
+expectLine 1 "x=()"
+setSelections 1 4 1 4
+type ")"
+expectLine 1 "x=()"
+setSelections 2 4 2 4
+type ")"
+expectLine 2 "y=();"
+
+=== Editor Controller > issue #53357: Over typing ignores characters after backslash
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "console.log();"
+setSelections 1 13 1 13
+type "'"
+expectText "console.log('');"
+type "i"
+type "t"
+expectText "console.log('it');"
+type "\\"
+expectText "console.log('it\\');"
+type "'"
+expectText "console.log('it\\'');"
+
+=== Editor Controller > issue #84998: Overtyping Brackets doesn't work after backslash
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+setSelections 1 1 1 1
+type "\\"
+expectText "\\"
+type "("
+expectText "\\()"
+type "a"
+type "b"
+type "c"
+expectText "\\(abc)"
+type "\\"
+expectText "\\(abc\\)"
+type ")"
+expectText "\\(abc\\)"
+
+=== Editor Controller > issue #20891: All cursors should do the same thing
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "var a = asd"
+setSelections 1 9 1 9; 1 12 1 12
+type "`"
+expectText "var a = `asd`"
+
+=== Editor Controller > issue #41825: Special handling of quotes in surrounding pairs
+config: {"autoClosingPairs":[],"surroundingPairs":[["\"","\""],["'","'"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "var x = 'hi';"
+setSelections 1 9 1 10; 1 12 1 13
+type "\""
+expectText "var x = \"hi\";"
+setSelections 1 9 1 10; 1 12 1 13
+type "'"
+expectText "var x = 'hi';"
+
+=== Editor Controller > All cursors should do the same thing when deleting left
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "var a = ()"
+setSelections 1 4 1 4; 1 10 1 10
+cmd deleteLeft
+expectText "va a = )"
+
+=== Editor Controller > issue #112039: shift-continuing a double/triple-click and drag selection does not remember its starting mode
+status: fail-ours word/line drag selection modes live in the widget's mouse handling, not in core commands
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "just some text\nand another line\nand another one"
+wordSelect 2 6
+moveTo 1 8 select
+expectSel 2 12 1 6
+
+=== Undo stops > there is an undo stop between typing and deleting left
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 1 3 1 3
+type "f"
+type "i"
+type "r"
+type "s"
+type "t"
+expectLine 1 "A first line"
+expectSel 1 8 1 8
+cmd deleteLeft
+cmd deleteLeft
+expectLine 1 "A fir line"
+expectSel 1 6 1 6
+cmd undo
+expectLine 1 "A first line"
+expectSel 1 8 1 8
+cmd undo
+expectLine 1 "A  line"
+expectSel 1 3 1 3
+
+=== Undo stops > there is an undo stop between typing and deleting right
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 1 3 1 3
+type "f"
+type "i"
+type "r"
+type "s"
+type "t"
+expectLine 1 "A first line"
+expectSel 1 8 1 8
+cmd deleteRight
+cmd deleteRight
+expectLine 1 "A firstine"
+expectSel 1 8 1 8
+cmd undo
+expectLine 1 "A first line"
+expectSel 1 8 1 8
+cmd undo
+expectLine 1 "A  line"
+expectSel 1 3 1 3
+
+=== Undo stops > there is an undo stop between deleting left and typing
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 2 8 2 8
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+expectLine 2 " line"
+expectSel 2 1 2 1
+type "S"
+type "e"
+type "c"
+type "o"
+type "n"
+type "d"
+expectLine 2 "Second line"
+expectSel 2 7 2 7
+cmd undo
+expectLine 2 " line"
+expectSel 2 1 2 1
+cmd undo
+expectLine 2 "Another line"
+expectSel 2 8 2 8
+
+=== Undo stops > there is an undo stop between deleting left and deleting right
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 2 8 2 8
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+expectLine 2 " line"
+expectSel 2 1 2 1
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+expectLine 2 ""
+expectSel 2 1 2 1
+cmd undo
+expectLine 2 " line"
+expectSel 2 1 2 1
+cmd undo
+expectLine 2 "Another line"
+expectSel 2 8 2 8
+
+=== Undo stops > there is an undo stop between deleting right and typing
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 2 9 2 9
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+expectLine 2 "Another "
+expectSel 2 9 2 9
+type "t"
+type "e"
+type "x"
+type "t"
+expectLine 2 "Another text"
+expectSel 2 13 2 13
+cmd undo
+expectLine 2 "Another "
+expectSel 2 9 2 9
+cmd undo
+expectLine 2 "Another line"
+expectSel 2 9 2 9
+
+=== Undo stops > there is an undo stop between deleting right and deleting left
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 2 9 2 9
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+cmd deleteRight
+expectLine 2 "Another "
+expectSel 2 9 2 9
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+cmd deleteLeft
+expectLine 2 "An"
+expectSel 2 3 2 3
+cmd undo
+expectLine 2 "Another "
+expectSel 2 9 2 9
+cmd undo
+expectLine 2 "Another line"
+expectSel 2 9 2 9
+
+=== Undo stops > inserts undo stop when typing space
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A  line\nAnother line"
+setSelections 1 3 1 3
+type "f"
+type "i"
+type "r"
+type "s"
+type "t"
+type " "
+type "a"
+type "n"
+type "d"
+type " "
+type "i"
+type "n"
+type "t"
+type "e"
+type "r"
+type "e"
+type "s"
+type "t"
+type "i"
+type "n"
+type "g"
+expectLine 1 "A first and interesting line"
+expectSel 1 24 1 24
+cmd undo
+expectLine 1 "A first and line"
+expectSel 1 12 1 12
+cmd undo
+expectLine 1 "A first line"
+expectSel 1 8 1 8
+cmd undo
+expectLine 1 "A  line"
+expectSel 1 3 1 3
+
+=== Undo stops > issue #93585: Undo multi cursor edit corrupts document
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world\nhello world"
+setSelections 2 7 2 12; 1 7 1 12
+type "n"
+type "o"
+expectText "hello no\nhello no"
+cmd undo
+expectText "hello world\nhello world"
+
+=== Undo stops > there is a single undo stop for consecutive whitespaces
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: ""
+type "a"
+type "b"
+type " "
+type " "
+type "c"
+type "d"
+expectText "ab  cd"
+cmd undo
+expectText "ab  "
+cmd undo
+expectText "ab"
+cmd undo
+expectText ""
+
+=== Undo stops > there is no undo stop after a single whitespace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: ""
+type "a"
+type "b"
+type " "
+type "c"
+type "d"
+expectText "ab cd"
+cmd undo
+expectText "ab"
+cmd undo
+expectText ""
+

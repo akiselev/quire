@@ -93,6 +93,21 @@ impl<'a> Model<'a> {
         }
     }
 
+    /// VS Code `getLeftDeleteOffset`: one code point back, or a whole grapheme when it is an emoji
+    /// sequence (so a ZWJ family or a flag goes in one backspace).
+    pub fn left_delete_offset(&self, b: usize) -> usize {
+        let g = self.prev_grapheme(b);
+        if g + 1 == b || g == b {
+            return g;
+        }
+        let cluster = self.text.slice(g..b).to_string();
+        if cluster.chars().any(is_emoji_like) {
+            g
+        } else {
+            self.text.prev_char_boundary(b)
+        }
+    }
+
     /// Leading whitespace of a line (spaces and tabs).
     pub fn indentation(&self, line: usize) -> String {
         self.text
@@ -121,6 +136,12 @@ pub(crate) fn is_wide(c: char) -> bool {
         0xFFE0..=0xFFE6 | 0x1F300..=0x1F64F | 0x1F900..=0x1F9FF | 0x20000..=0x3FFFD)
 }
 
+/// Emoji and emoji components (ZWJ, variation selectors, skin tones, tags, regional indicators).
+pub(crate) fn is_emoji_like(c: char) -> bool {
+    let u = c as u32;
+    matches!(u, 0x200D | 0xFE0E | 0xFE0F | 0x20E3 | 0x2600..=0x27BF | 0x1F000..=0x1FAFF | 0xE0020..=0xE007F)
+}
+
 fn next_visible(c: char, vis: u32, tab: u32) -> u32 {
     if c == '\t' {
         (vis / tab + 1) * tab
@@ -131,30 +152,55 @@ fn next_visible(c: char, vis: u32, tab: u32) -> u32 {
     }
 }
 
-/// `CursorColumns.visibleColumnFromColumn` with a char column.
-pub(crate) fn visible_col(chars: &[char], col: usize, tab: u32) -> u32 {
-    let tab = tab.max(1);
-    chars
-        .iter()
-        .take(col)
-        .fold(0, |v, &c| next_visible(c, v, tab))
+/// Grapheme clusters of a char slice as (start char index, end char index).
+fn graphemes(chars: &[char]) -> Vec<(usize, usize)> {
+    use unicode_segmentation::UnicodeSegmentation;
+    let s: String = chars.iter().collect();
+    let mut out = Vec::new();
+    let mut ci = 0;
+    for g in s.graphemes(true) {
+        let n = g.chars().count();
+        out.push((ci, ci + n));
+        ci += n;
+    }
+    out
 }
 
-/// `CursorColumns.columnFromVisibleColumn`.
+/// `CursorColumns.visibleColumnFromColumn` with a char column; one step per grapheme cluster.
+pub(crate) fn visible_col(chars: &[char], col: usize, tab: u32) -> u32 {
+    let tab = tab.max(1);
+    let mut v = 0;
+    for (a, b) in graphemes(chars) {
+        if b > col {
+            break;
+        }
+        v = next_visible(chars[a], v, tab);
+        let _ = b;
+    }
+    v
+}
+
+/// `CursorColumns.columnFromVisibleColumn`; lands on grapheme boundaries.
 pub(crate) fn col_from_visible(chars: &[char], vis: u32, tab: u32) -> usize {
     let tab = tab.max(1);
     if vis == 0 {
         return 0;
     }
     let mut before_vis = 0;
-    for (i, &c) in chars.iter().enumerate() {
-        let after_vis = next_visible(c, before_vis, tab);
+    let mut before_col = 0;
+    for (a, b) in graphemes(chars) {
+        let after_vis = next_visible(chars[a], before_vis, tab);
         if after_vis >= vis {
             let before_delta = vis - before_vis;
             let after_delta = after_vis - vis;
-            return if after_delta < before_delta { i + 1 } else { i };
+            return if after_delta < before_delta {
+                b
+            } else {
+                before_col
+            };
         }
         before_vis = after_vis;
+        before_col = b;
     }
     chars.len()
 }

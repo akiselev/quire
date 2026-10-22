@@ -49,15 +49,21 @@ pub(crate) fn normalize_indentation(cfg: &EditorConfig, s: &str) -> String {
 }
 
 fn out(text: &Text, changes: ChangeSet, sel: Selection, kind: InputKind) -> Option<Out> {
-    let _ = text;
     if changes.is_empty() {
         return None;
     }
+    // VS Code pushes an undo stop before a delete that joins lines.
+    let close_before = matches!(kind, InputKind::DeletingLeft | InputKind::DeletingRight)
+        && changes
+            .edits()
+            .iter()
+            .any(|e| text.byte_to_line(e.range.start) != text.byte_to_line(e.range.end));
     Some(Out {
         changes,
         sel,
         kind,
         auto_closed: Vec::new(),
+        close_before,
     })
 }
 
@@ -106,6 +112,7 @@ pub(crate) fn type_text(ctx: &Ctx, st: St, typed: &str) -> Option<Out> {
         sel: state.sel,
         kind,
         auto_closed: new_ac,
+        close_before: false,
     })
 }
 
@@ -144,6 +151,7 @@ fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         sel,
         kind,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
 
@@ -217,6 +225,7 @@ fn enter(ctx: &Ctx, st: &St) -> Out {
         sel,
         kind: InputKind::Typing,
         auto_closed: Vec::new(),
+        close_before: false,
     }
 }
 
@@ -226,7 +235,7 @@ fn surround(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         return None;
     }
     let close = cfg
-        .auto_closing_pairs
+        .surrounding_pairs
         .iter()
         .find(|(o, _)| o == ch)
         .map(|(_, c)| c.clone())?;
@@ -269,6 +278,7 @@ fn surround(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         sel,
         kind: InputKind::Other,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
 
@@ -310,6 +320,7 @@ fn overtype(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         sel,
         kind: InputKind::Typing,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
 
@@ -402,6 +413,7 @@ fn auto_close(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         sel,
         kind: InputKind::Typing,
         auto_closed: new_ac,
+        close_before: false,
     })
 }
 
@@ -541,7 +553,7 @@ pub(crate) fn delete_left(ctx: &Ctx, st: &St) -> Option<Out> {
                     return Some(RangeEdit::replace(a..r.head, ""));
                 }
             }
-            let a = m.prev_grapheme(r.head);
+            let a = m.left_delete_offset(r.head);
             if a == r.head {
                 None
             } else {
@@ -752,6 +764,7 @@ fn apply_line_edits(
         sel,
         kind,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
 
@@ -985,6 +998,7 @@ pub(crate) fn comment_line(ctx: &Ctx, st: &St) -> Option<Out> {
         sel,
         kind: InputKind::Other,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
 
@@ -1077,5 +1091,6 @@ pub(crate) fn delete_lines(st: &St) -> Option<Out> {
         sel,
         kind: InputKind::Other,
         auto_closed: Vec::new(),
+        close_before: false,
     })
 }
