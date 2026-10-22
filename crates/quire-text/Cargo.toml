@@ -36,5 +36,9 @@ quire-text = { path = ".", features = ["serde", "diff"] }
 name = "field"
 harness = false
 
+[[bench]]
+name = "lines"
+harness = false
+
 [lints]
 workspace = true

@@ -45,20 +45,36 @@ impl LineEnding {
 }
 
 /// The string backend: the text and, built on the first line query, the offsets of its line
-/// feeds (cleared by every mutation).
+/// feeds. Once built, the index is kept up to date by every mutation (shifted past the edit, with
+/// only the inserted text scanned, as ropey keeps its counts), so a line query after an edit
+/// costs no rescan.
 #[derive(Default)]
 struct Small {
     s: String,
-    breaks: OnceLock<Box<[u32]>>,
+    breaks: OnceLock<Vec<u32>>,
 }
 
 impl Clone for Small {
     fn clone(&self) -> Self {
+        let breaks = OnceLock::new();
+        if let Some(b) = self.breaks.get() {
+            let _ = breaks.set(b.clone());
+        }
         Small {
             s: self.s.clone(),
-            breaks: OnceLock::new(),
+            breaks,
         }
     }
+}
+
+/// Offsets (plus `base`) of the line feeds in `s`, appended to `out`.
+fn scan_breaks(s: &str, base: usize, out: &mut Vec<u32>) {
+    out.extend(
+        s.bytes()
+            .enumerate()
+            .filter(|&(_, b)| b == b'\n')
+            .map(|(i, _)| (base + i) as u32),
+    );
 }
 
 impl Small {
@@ -72,13 +88,41 @@ impl Small {
     /// Offsets of the line feeds.
     fn breaks(&self) -> &[u32] {
         self.breaks.get_or_init(|| {
-            self.s
-                .bytes()
-                .enumerate()
-                .filter(|&(_, b)| b == b'\n')
-                .map(|(i, _)| i as u32)
-                .collect()
+            let mut v = Vec::new();
+            scan_breaks(&self.s, 0, &mut v);
+            v
         })
+    }
+
+    /// Removes `r` from the text, updating the line-feed index if it is built.
+    fn remove(&mut self, r: Range<usize>) {
+        if let Some(b) = self.breaks.get_mut() {
+            let lo = b.partition_point(|&p| (p as usize) < r.start);
+            let hi = b.partition_point(|&p| (p as usize) < r.end);
+            let n = r.len() as u32;
+            for p in &mut b[hi..] {
+                *p -= n;
+            }
+            b.drain(lo..hi);
+        }
+        self.s.replace_range(r, "");
+    }
+
+    /// Inserts `t` at `at`, updating the line-feed index if it is built.
+    fn insert(&mut self, at: usize, t: &str) {
+        if let Some(b) = self.breaks.get_mut() {
+            let i = b.partition_point(|&p| (p as usize) < at);
+            let n = t.len() as u32;
+            for p in &mut b[i..] {
+                *p += n;
+            }
+            if t.as_bytes().contains(&b'\n') {
+                let mut new = Vec::new();
+                scan_breaks(t, at, &mut new);
+                b.splice(i..i, new);
+            }
+        }
+        self.s.insert_str(at, t);
     }
 
     fn len_lines(&self) -> usize {
@@ -759,9 +803,7 @@ impl Text {
     pub(crate) fn remove(&mut self, r: Range<usize>) {
         match &mut self.repr {
             Repr::Small(a) => {
-                let m = Arc::make_mut(a);
-                m.s.replace_range(r, "");
-                m.breaks.take();
+                Arc::make_mut(a).remove(r);
             }
             Repr::Rope(rope) => {
                 let a = rope.byte_to_char(r.start);
@@ -775,8 +817,7 @@ impl Text {
         match &mut self.repr {
             Repr::Small(a) => {
                 let m = Arc::make_mut(a);
-                m.s.insert_str(at, s);
-                m.breaks.take();
+                m.insert(at, s);
                 if m.s.len() > SMALL_MAX {
                     self.repr = Repr::Rope(ropey::Rope::from_str(&m.s));
                 }
@@ -1088,6 +1129,35 @@ mod tests {
             proptest::prop_assert_eq!(a.to_string(), b.to_string());
             proptest::prop_assert_eq!(a.len_lines(), b.len_lines());
             proptest::prop_assert_eq!(a.byte_to_line(at + 1), b.byte_to_line(at + 1));
+        }
+
+        /// The string backend's line-feed index, kept up to date through edits, equals a fresh
+        /// scan (TC0b).
+        #[test]
+        fn incremental_line_index(
+            src in "[ab\n]{0,40}",
+            edits in proptest::collection::vec((0usize..64, 0usize..6, "[xy\n]{0,4}"), 1..12),
+        ) {
+            let mut a = Text::from_file(&src);
+            a.len_lines(); // build the index
+            for (at, del, ins) in edits {
+                let at = at % (a.len_bytes() + 1);
+                let end = (at + del).min(a.len_bytes());
+                a.remove(at..end);
+                a.insert(at, &ins);
+                let fresh = Text::from_file(&a.to_string());
+                proptest::prop_assert_eq!(a.len_lines(), fresh.len_lines());
+                for i in 0..=a.len_lines() {
+                    proptest::prop_assert_eq!(a.line_to_byte(i), fresh.line_to_byte(i));
+                }
+                for p in 0..=a.len_bytes() {
+                    proptest::prop_assert_eq!(a.byte_to_line(p), fresh.byte_to_line(p));
+                }
+                // A copy-on-write copy carries the index along.
+                let mut c = a.clone();
+                c.insert(0, "\n");
+                proptest::prop_assert_eq!(c.len_lines(), a.len_lines() + 1);
+            }
         }
     }
 }

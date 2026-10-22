@@ -57,7 +57,6 @@ when the first ran out of context. Design: `docs/design/TC0.md`; the API as buil
 ## Open
 
 - Step 5 (above).
-- The string backend's line queries cost O(n) once per version, to build the line-feed index.
-  Editors on 10–64 KiB files pay this once after each edit. No benchmark covers it yet; E1 on a
-  mid-size file would show it.
+- ~~The string backend's line queries cost O(n) once per version.~~ Fixed in TC0b: the
+  line-feed index is kept up to date through edits (`benches/lines.rs`; 64 KiB 71 → 3.6 µs).
 - `Text::grapheme_next`/`grapheme_prev` are new and used only by the `backends_agree` test so far.
