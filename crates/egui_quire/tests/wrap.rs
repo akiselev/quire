@@ -397,3 +397,29 @@ fn prefix_and_wrap_together() {
         "{end:?} {c100:?}"
     );
 }
+
+#[test]
+fn alt_z_toggles_word_wrap() {
+    let text = format!("{}\nnext", words(40));
+    let mut h = harness(St::new(&text, EditorConfig::default()));
+    focus(&mut h);
+    let end = text.len();
+    assert_eq!(h.state().head(), end);
+    let off = caret(&h);
+    // Without wrap, "next" is the second row.
+    let row_h = off.height();
+    let top = caret_at(&mut h, 0).top();
+    assert!((off.top() - top - row_h).abs() < 0.5, "{off:?} {top}");
+    h.state_mut().select(end);
+    h.key_press_modifiers(Modifiers::ALT, Key::Z);
+    h.run();
+    assert_eq!(h.state().doc.config().word_wrap, WordWrap::On);
+    // The long line wraps, so "next" moves down by at least two rows.
+    let on = caret(&h);
+    assert!(on.top() - top >= 3.0 * row_h - 0.5, "{on:?} {top}");
+    assert_eq!(h.state().doc.text().to_string(), text);
+    h.key_press_modifiers(Modifiers::ALT, Key::Z);
+    h.run();
+    assert_eq!(h.state().doc.config().word_wrap, WordWrap::Off);
+    assert!((caret(&h).top() - off.top()).abs() < 0.5);
+}

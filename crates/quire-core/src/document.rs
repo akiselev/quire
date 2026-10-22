@@ -104,7 +104,8 @@ pub struct Applied {
     pub origin: Origin,
     /// Whether the acting view's selection changed.
     pub selection_changed: bool,
-    /// Whether an effect changed the document's config ([`Effect::SetInsertSpaces`]); a host
+    /// Whether an effect changed the document's config ([`Effect::SetInsertSpaces`],
+    /// [`Effect::SetWordWrap`]); a host
     /// that persists editor options reads [`Document::config`] then.
     pub config_changed: bool,
     /// Undo groups this transaction closed (the host's `text.edit` boundaries in host mode).
@@ -713,11 +714,16 @@ impl Document {
         }
         let mut config_changed = false;
         for e in &tr.effects {
-            if let Effect::SetInsertSpaces(b) = e
-                && self.config.insert_spaces != *b
-            {
-                self.config.insert_spaces = *b;
-                config_changed = true;
+            match e {
+                Effect::SetInsertSpaces(b) if self.config.insert_spaces != *b => {
+                    self.config.insert_spaces = *b;
+                    config_changed = true;
+                }
+                Effect::SetWordWrap(w) if self.config.word_wrap != *w => {
+                    self.config.word_wrap = *w;
+                    config_changed = true;
+                }
+                _ => {}
             }
         }
         let mut selection_changed = false;

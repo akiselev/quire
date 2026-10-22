@@ -67,6 +67,7 @@
   { "key": "ctrl+]", "mac": "cmd+]", "command": "editor.action.indentLines" },
   { "key": "ctrl+[", "mac": "cmd+[", "command": "editor.action.outdentLines" },
   { "key": "ctrl+shift+k", "mac": "cmd+shift+k", "command": "editor.action.deleteLines" },
+  { "key": "alt+z", "command": "editor.action.toggleWordWrap" },
   { "key": "alt+up", "command": "editor.action.moveLinesUpAction" },
   { "key": "alt+down", "command": "editor.action.moveLinesDownAction" },
   { "key": "shift+alt+up", "linux": "ctrl+shift+alt+up", "command": "editor.action.copyLinesUpAction" },

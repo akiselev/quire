@@ -322,6 +322,19 @@ pub(crate) fn run(
                 o => o,
             }))
         }
+        C::ToggleWordWrap => {
+            // VS Code (`toggleWordWrap.ts`) overrides the configured wrap with the opposite of
+            // the current one; quire has one setting, so the toggle flips it. No undo stop.
+            let w = match cfg.word_wrap {
+                crate::config::WordWrap::Off => crate::config::WordWrap::On,
+                crate::config::WordWrap::On => crate::config::WordWrap::Off,
+            };
+            Ok(CommandOutput::Transaction(
+                Transaction::select(doc.version(), text.len_bytes(), sel.clone())
+                    .with_origin(cmd_origin(cmd))
+                    .with_effect(Effect::SetWordWrap(w)),
+            ))
+        }
         C::ReindentLines => isolated(edit_out(
             indentation::reindent_lines(cfg, &st()),
             cmd_origin(cmd),

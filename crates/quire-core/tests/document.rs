@@ -432,6 +432,50 @@ fn indentation_to_spaces_sets_insert_spaces() {
     assert!(d.config().insert_spaces);
 }
 
+#[test]
+fn toggle_word_wrap_flips_config() {
+    let mut d = Document::new("abc\ndef", EditorConfig::default());
+    let mut v = EditorView::new(&d);
+    typ(&mut d, &mut v, "x", 0);
+    let before = d.text().to_string();
+    let ex = d
+        .execute(&mut v, &EditorCommand::ToggleWordWrap, None)
+        .unwrap();
+    assert_eq!(d.config().word_wrap, WordWrap::On);
+    let a = ex.applied.unwrap();
+    assert!(a.config_changed && !a.changed_text());
+    assert_eq!(d.text().to_string(), before);
+    // Undo reverts the typing, not the option, and the toggle left no undo stop of its own.
+    d.execute(&mut v, &EditorCommand::Undo, None).unwrap();
+    assert_eq!(d.text().to_string(), "abc\ndef");
+    assert_eq!(d.config().word_wrap, WordWrap::On);
+    d.execute(&mut v, &EditorCommand::ToggleWordWrap, None)
+        .unwrap();
+    assert_eq!(d.config().word_wrap, WordWrap::Off);
+    assert_eq!(
+        EditorCommand::from_vscode_id("editor.action.toggleWordWrap", 10),
+        Some(EditorCommand::ToggleWordWrap)
+    );
+    assert_eq!(
+        EditorCommand::ToggleWordWrap.id(),
+        "editor.action.toggleWordWrap"
+    );
+    // A read-only document allows it (VS Code: no precondition; it is a view option).
+    let mut d = Document::new(
+        "a",
+        EditorConfig {
+            read_only: true,
+            ..Default::default()
+        },
+    );
+    let mut v = EditorView::new(&d);
+    let ex = d
+        .execute(&mut v, &EditorCommand::ToggleWordWrap, None)
+        .unwrap();
+    assert!(ex.applied.unwrap().config_changed);
+    assert_eq!(d.config().word_wrap, WordWrap::On);
+}
+
 fn reindent(
     text: &str,
     rules: serde_json::Value,

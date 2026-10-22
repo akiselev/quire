@@ -167,6 +167,11 @@ pub enum EditorCommand {
     /// Lines"; nothing without rules).
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.reindentlines"))]
     ReindentLines,
+    /// Flip the document's `EditorConfig::word_wrap` between `Off` and `On` (VS Code "View:
+    /// Toggle Word Wrap", Alt+Z). A config change: undo does not revert it, read-only documents
+    /// allow it, and [`Applied::config_changed`](crate::Applied::config_changed) reports it.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.toggleWordWrap"))]
+    ToggleWordWrap,
     /// Insert a line below and move there (Ctrl+Enter).
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.insertLineAfter"))]
     InsertLineAfter,
@@ -365,6 +370,7 @@ impl EditorCommand {
             IndentationToSpaces => "editor.action.indentationToSpaces",
             IndentationToTabs => "editor.action.indentationToTabs",
             ReindentLines => "editor.action.reindentlines",
+            ToggleWordWrap => "editor.action.toggleWordWrap",
             ColumnSelectLeft => "cursorColumnSelectLeft",
             ColumnSelectRight => "cursorColumnSelectRight",
             ColumnSelectUp => "cursorColumnSelectUp",
@@ -457,6 +463,7 @@ impl EditorCommand {
             "editor.action.indentationToSpaces" => IndentationToSpaces,
             "editor.action.indentationToTabs" => IndentationToTabs,
             "editor.action.reindentlines" => ReindentLines,
+            "editor.action.toggleWordWrap" => ToggleWordWrap,
             "cursorColumnSelectLeft" => ColumnSelectLeft,
             "cursorColumnSelectRight" => ColumnSelectRight,
             "cursorColumnSelectUp" => ColumnSelectUp,

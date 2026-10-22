@@ -434,7 +434,7 @@ impl EditorView {
                 self.prune_auto_closed();
             }
             // Applied by the document.
-            Effect::SetInsertSpaces(_) => {}
+            Effect::SetInsertSpaces(_) | Effect::SetWordWrap(_) => {}
         }
     }
 

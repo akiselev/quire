@@ -2407,6 +2407,46 @@
     }
    ]
   },
+  "editor.action.toggleWordWrap": {
+   "expected": {
+    "linux": [
+     {
+      "key": "alt+z",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+z",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "alt+z",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "alt+z"
+     ],
+     "mac": [
+      "alt+z"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/workbench/contrib/codeEditor/browser/toggleWordWrap.ts:60",
+     "when": "",
+     "win": [
+      "alt+z"
+     ]
+    }
+   ]
+  },
   "editor.fold": {
    "expected": {
     "linux": [

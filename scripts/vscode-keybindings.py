@@ -40,6 +40,7 @@ SOURCES = [
     "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts",
     "src/vs/workbench/contrib/files/browser/fileCommands.ts",
     "src/vs/workbench/contrib/files/browser/fileConstants.ts",
+    "src/vs/workbench/contrib/codeEditor/browser/toggleWordWrap.ts",
 ]
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

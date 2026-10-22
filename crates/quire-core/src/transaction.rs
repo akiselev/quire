@@ -109,8 +109,8 @@ pub enum GroupHint {
     Isolated,
 }
 
-/// A side effect a transaction carries for the acting view (or, for `SetInsertSpaces`, the
-/// document).
+/// A side effect a transaction carries for the acting view (or, for `SetInsertSpaces` and
+/// `SetWordWrap`, the document).
 #[derive(Clone, PartialEq, Debug)]
 pub enum Effect {
     /// Scroll so the byte position (after the changes) is visible.
@@ -138,6 +138,10 @@ pub enum Effect {
     /// [`Document`](crate::Document), for every view; undo does not revert it, and
     /// [`Applied::config_changed`](crate::Applied::config_changed) reports it.
     SetInsertSpaces(bool),
+    /// Set the document's `EditorConfig::word_wrap` (VS Code `editor.action.toggleWordWrap`).
+    /// It acts on the [`Document`](crate::Document) as `SetInsertSpaces` does, except that a
+    /// read-only document allows it (it changes how the text is shown, not the text).
+    SetWordWrap(crate::config::WordWrap),
 }
 
 /// An edit (or a selection change) against one version of a document.
