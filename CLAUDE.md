@@ -47,6 +47,9 @@ quire depends on neither.
   own branch (`git worktree add ../quire-wt/<name> -b <name>` from `~/projects/quire`).
 - Commit early. To land: `git fetch && git rebase origin/master`, run the touched crate's
   tests, then `git push origin HEAD:master` (fast-forward only; never force-push master).
+- **GitHub API limit is shared** by every session: never use `gh api` to read shas or files
+  (use `git fetch` / `git ls-remote`, raw.githubusercontent.com for sources); poll at most every
+  5 minutes.
 - Commit messages say what changed and which milestone (QE0, QE1, QE2, QE4).
 - **Master stays green:** only work that passes the full `scripts/check.sh` lands on master.
   Unfinished code stays on your branch.
