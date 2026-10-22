@@ -166,6 +166,9 @@ pub(crate) struct Mem {
     pub mono_cache: Option<(egui::FontId, f32, (f32, f32), layout::Mono)>,
     /// The font atlas the cached galleys point into; when egui rebuilds it, the caches go.
     pub atlas: Option<crate::ascii::AtlasState>,
+    /// Column selection over visual rows (soft wrap; VS Code's view `IColumnSelectData`): the
+    /// selection key it belongs to, and its (from, to) positions.
+    pub column: Option<(u64, (RowCol, RowCol))>,
     /// `CodeEditor::measure`'s last wrapped row count: (hash of what it depends on, rows).
     pub measured: Option<(u64, usize)>,
 }
@@ -174,8 +177,8 @@ pub(crate) struct Mem {
 pub(crate) struct Drag {
     pub anchor: Range<usize>,
     pub unit: Unit,
-    /// Alt+Shift+drag: box selection anchored at (line, visual column).
-    pub column: Option<((usize, u32), (usize, u32))>,
+    /// Alt+Shift+drag: box selection from an anchor to a head (row 0 without wrap).
+    pub column: Option<(RowCol, RowCol)>,
 }
 
 /// A motion by visual rows (soft wrap).
@@ -184,6 +187,24 @@ enum RowMove {
     Vertical(isize),
     Home,
     End,
+}
+
+/// A position on a visual row, as VS Code's view positions: document line, row within it, and
+/// visible column (x in columns of the editor font, the wrapping indent included). Without
+/// wrap the row is 0 and the column is core's visual column.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct RowCol {
+    pub line: usize,
+    pub row: usize,
+    pub vis: u32,
+}
+
+/// A column-select step by keyboard (soft wrap).
+#[derive(Clone, Copy, Debug)]
+enum ColumnStep {
+    Left,
+    Right,
+    Rows(isize),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -864,15 +885,36 @@ impl FrameCx<'_> {
     /// `cursorMoveOperations.ts` `moveUp` / `moveDown` over view lines). The core knows only
     /// document lines, so the widget resolves these to a selection and records `setSelection`,
     /// as it does for the mouse. Returns false for every other command.
+    ///
+    /// `InsertCursorAbove` / `Below` and the keyboard column selections also go by visual row
+    /// (`cursorMoveCommands.ts` `addCursorUp/Down` with view states, `cursorColumnSelection.ts`
+    /// over view lines).
     fn wrapped_motion(&mut self, cmd: &EditorCommand) -> bool {
         use quire_core::Motion;
-        let EditorCommand::CursorMove { to, select } = cmd else {
-            return false;
-        };
         if self.geom.wrap.is_none() {
             return false;
         }
         let page = self.page_lines() as isize;
+        let step = match cmd {
+            EditorCommand::InsertCursorAbove | EditorCommand::InsertCursorBelow => {
+                self.wrapped_insert_cursor(matches!(cmd, EditorCommand::InsertCursorBelow));
+                return true;
+            }
+            EditorCommand::ColumnSelectLeft => Some(ColumnStep::Left),
+            EditorCommand::ColumnSelectRight => Some(ColumnStep::Right),
+            EditorCommand::ColumnSelectUp => Some(ColumnStep::Rows(-1)),
+            EditorCommand::ColumnSelectDown => Some(ColumnStep::Rows(1)),
+            EditorCommand::ColumnSelectPageUp { .. } => Some(ColumnStep::Rows(-page)),
+            EditorCommand::ColumnSelectPageDown { .. } => Some(ColumnStep::Rows(page)),
+            _ => None,
+        };
+        if let Some(step) = step {
+            self.wrapped_column_step(step);
+            return true;
+        }
+        let EditorCommand::CursorMove { to, select } = cmd else {
+            return false;
+        };
         let m = match to {
             Motion::Up => RowMove::Vertical(-1),
             Motion::Down => RowMove::Vertical(1),
@@ -994,6 +1036,234 @@ impl FrameCx<'_> {
                 }
             }
         }
+    }
+
+    /// (line, row, visible column) of byte `b`; `up`: at a wrap point, the previous row's end.
+    fn row_col_of(&mut self, b: usize, up: bool) -> RowCol {
+        let text = glue::text(self.doc);
+        let b = b.min(text.len_bytes());
+        let line = text.byte_to_line(b);
+        let col = b - text.line_to_byte(line);
+        let (row, x) = self.layout_line(line).locate(col, up);
+        RowCol {
+            line,
+            row,
+            vis: (x / self.geom.adv).round().max(0.0) as u32,
+        }
+    }
+
+    /// The byte at visible column `vis` of row `row` of `line` (`u32::MAX`: the row end), and
+    /// whether it is the end of a row that is not the line's last.
+    fn byte_at_row(&mut self, line: usize, row: usize, vis: u32) -> (usize, bool) {
+        let vl = self.layout_line(line);
+        let x = if vis == u32::MAX {
+            f32::INFINITY
+        } else {
+            vis as f32 * self.geom.adv
+        };
+        let (c, up) = vl.hit(row, x);
+        (glue::text(self.doc).line_to_byte(line) + c, up)
+    }
+
+    /// The visual row `delta` rows below (negative: above) row `row` of `line`, skipping folded
+    /// lines, clamped to the first and last row; and whether it moved the whole way.
+    fn step_rows(&mut self, line: usize, row: usize, delta: isize) -> ((usize, usize), bool) {
+        let n = glue::text(self.doc).len_lines().min(self.mem.heights.len());
+        let (mut l, mut r) = (line, row);
+        for _ in 0..delta.unsigned_abs() {
+            if delta > 0 {
+                if r + 1 < self.layout_line(l).n_rows() {
+                    r += 1;
+                    continue;
+                }
+                let mut nl = l + 1;
+                while nl < n && self.mem.heights.get(nl) == 0.0 {
+                    nl += 1;
+                }
+                if nl >= n {
+                    return ((l, r), false);
+                }
+                (l, r) = (nl, 0);
+            } else {
+                if r > 0 {
+                    r -= 1;
+                    continue;
+                }
+                let mut pl = l;
+                loop {
+                    if pl == 0 {
+                        return ((l, r), false);
+                    }
+                    pl -= 1;
+                    if self.mem.heights.get(pl) != 0.0 {
+                        break;
+                    }
+                }
+                (l, r) = (pl, self.layout_line(pl).n_rows() - 1);
+            }
+        }
+        ((l, r), true)
+    }
+
+    /// Reveal `pos` instead of the primary caret (the core's `reveal` of a selection command).
+    fn reveal_instead(&mut self, pos: Option<usize>) {
+        if let Some(p) = pos {
+            self.mem.scroll_to_caret = false;
+            self.reveal(p, false);
+        }
+    }
+
+    /// `addCursorUp/Down` over view lines: each selection gets a copy one visual row up or
+    /// down (`translateUp/Down`: anchor and head move, the head keeps its goal column, nothing
+    /// moves past the first or last row); the primary stays.
+    fn wrapped_insert_cursor(&mut self, down: bool) {
+        let delta = if down { 1 } else { -1 };
+        let sel = glue::selection(self.view).clone();
+        let mut ranges: Vec<SelRange> = sel.ranges().to_vec();
+        let mut ups: Vec<usize> = ranges
+            .iter()
+            .map(|r| r.head)
+            .filter(|&h| self.upstream(h))
+            .collect();
+        let mut reveal = None;
+        for r in sel.ranges() {
+            let a = self.row_col_of(r.anchor, r.anchor == r.head && self.upstream(r.head));
+            let anchor = match self.step_rows(a.line, a.row, delta) {
+                ((l, row), true) => self.byte_at_row(l, row, a.vis).0,
+                _ => r.anchor,
+            };
+            let up = self.upstream(r.head);
+            let h = self.row_col_of(r.head, up);
+            let goal = r.goal_column.unwrap_or(h.vis);
+            let (head, head_up) = match self.step_rows(h.line, h.row, delta) {
+                ((l, row), true) => self.byte_at_row(l, row, goal),
+                _ => (r.head, up),
+            };
+            if head_up {
+                ups.push(head);
+            }
+            reveal = Some(match reveal {
+                None => head,
+                Some(p) if down => head.max(p),
+                Some(p) => head.min(p),
+            });
+            ranges.push(SelRange::new(anchor, head).with_goal(Some(goal)));
+        }
+        self.set_selection(Selection::new(ranges, sel.primary_index()));
+        self.set_upstream(ups);
+        self.reveal_instead(reveal);
+    }
+
+    /// The column-select data in effect over visual rows: the recorded one, else from the
+    /// primary range (`getCursorColumnSelectData`).
+    fn column_data(&mut self) -> (RowCol, RowCol) {
+        if let Some((key, d)) = self.mem.column
+            && key == self.selection_key()
+        {
+            return d;
+        }
+        let p = glue::selection(self.view).primary();
+        let up = self.upstream(p.head);
+        let from = self.row_col_of(p.anchor, p.anchor == p.head && up);
+        let to = self.row_col_of(p.head, up);
+        (from, to)
+    }
+
+    /// `columnSelectLeft/Right/Up/Down` (and the paged variants) over visual rows.
+    fn wrapped_column_step(&mut self, step: ColumnStep) {
+        let (from, mut to) = self.column_data();
+        match step {
+            ColumnStep::Left => to.vis = to.vis.saturating_sub(1),
+            ColumnStep::Right => {
+                let mut max = 0u32;
+                for (l, r) in self.rows_between(from, to) {
+                    let vl = self.layout_line(l);
+                    let end = if r + 1 == vl.n_rows() {
+                        vl.full_len()
+                    } else {
+                        vl.row_end(r)
+                    };
+                    max = max.max((vl.x_in_row(r, end) / self.geom.adv).round() as u32);
+                }
+                if to.vis < max {
+                    to.vis += 1;
+                }
+            }
+            ColumnStep::Rows(d) => {
+                ((to.line, to.row), _) = self.step_rows(to.line, to.row, d);
+            }
+        }
+        self.wrapped_column_select(from, to);
+    }
+
+    /// The visual rows from `from` to `to` (either way round), in that order.
+    fn rows_between(&mut self, from: RowCol, to: RowCol) -> Vec<(usize, usize)> {
+        let (a, b) = ((from.line, from.row), (to.line, to.row));
+        let dir = if b < a { -1 } else { 1 };
+        let mut out = vec![a];
+        let mut at = a;
+        while at != b {
+            match self.step_rows(at.0, at.1, dir) {
+                (next, true) if next != at => {
+                    // Past the target (it was on a folded line or a row that no longer exists).
+                    if (dir > 0 && next > b) || (dir < 0 && next < b) {
+                        break;
+                    }
+                    out.push(next);
+                    at = next;
+                }
+                _ => break,
+            }
+        }
+        out
+    }
+
+    /// `ColumnSelection.columnSelect` over visual rows: on each row from `from` to `to`, the
+    /// range between the two visible columns; rows the box misses are skipped; when it misses
+    /// every row, a cursor at each row's end. Recorded as `setSelection`; the data is kept for
+    /// the next step.
+    fn wrapped_column_select(&mut self, from: RowCol, to: RowCol) {
+        let adv = self.geom.adv;
+        let is_rtl = from.vis > to.vis;
+        let is_ltr = from.vis < to.vis;
+        let rows = self.rows_between(from, to);
+        let reversed = (to.line, to.row) < (from.line, from.row);
+        let mut ranges = Vec::new();
+        let mut ups = Vec::new();
+        for &(l, r) in &rows {
+            let (sb, _) = self.byte_at_row(l, r, from.vis);
+            let (eb, eup) = self.byte_at_row(l, r, to.vis);
+            let vl = self.layout_line(l);
+            let ls = glue::text(self.doc).line_to_byte(l);
+            let vs = (vl.x_in_row(r, sb - ls) / adv).round() as u32;
+            let ve = (vl.x_in_row(r, eb - ls) / adv).round() as u32;
+            if is_ltr && (vs > to.vis || ve < from.vis) {
+                continue;
+            }
+            if is_rtl && (ve > from.vis || vs < to.vis) {
+                continue;
+            }
+            ranges.push(SelRange::new(sb, eb));
+            if eup {
+                ups.push(eb);
+            }
+        }
+        if ranges.is_empty() {
+            for &(l, r) in &rows {
+                let (b, up) = self.byte_at_row(l, r, u32::MAX);
+                ranges.push(SelRange::point(b));
+                if up {
+                    ups.push(b);
+                }
+            }
+        }
+        let heads = ranges.iter().map(|r| r.head);
+        let reveal = if reversed { heads.min() } else { heads.max() };
+        // The primary is the first state (the `from` row).
+        self.set_selection(Selection::new(ranges, 0));
+        self.set_upstream(ups);
+        self.mem.column = Some((self.selection_key(), (from, to)));
+        self.reveal_instead(reveal);
     }
 
     /// Lines per page for PageUp / PageDown.
@@ -1267,31 +1537,59 @@ impl FrameCx<'_> {
         line.min(glue::text(self.doc).len_lines().saturating_sub(1))
     }
 
-    /// (line, visual column) under a screen position; the column may lie past the line's end
-    /// (box selection).
-    /// (line, visual column) under `p` for box selection: inside the text the column comes from
-    /// the galley hit test (so wide CJK glyphs count as core counts them), past the line end it
-    /// adds whole advances, as VS Code's mouse column selection does.
-    fn line_col_at(&mut self, p: Pos2) -> (usize, u32) {
+    /// The box-selection position under `p`: inside the text the column comes from the galley
+    /// hit test (so wide CJK glyphs count as core counts them), elsewhere (past a row's end, in
+    /// a continuation row's indent) from whole advances, as VS Code's mouse column selection
+    /// does. Without wrap the column is core's visual column and may lie past the line's end;
+    /// with wrap it is a visible column on the row under `p`.
+    fn row_col_at(&mut self, p: Pos2) -> RowCol {
         let (line, row) = self.line_row_at(p.y);
         let x = p.x - self.geom.text_left(self.mem);
+        let adv = self.geom.adv;
         let vl = self.layout_line(line);
+        let row = row.min(vl.n_rows() - 1);
+        let x0 = vl.row_x0(row);
+        let end = x0 + vl.row_layout(row).width();
+        if self.geom.wrap.is_some() {
+            let vis = if x >= x0 && x <= end {
+                let (col, _) = vl.hit(row, x);
+                vl.x_in_row(row, col) / adv
+            } else if x > end {
+                (end / adv).round() + ((x - end) / adv).round()
+            } else {
+                x / adv
+            };
+            return RowCol {
+                line,
+                row,
+                vis: vis.round().max(0.0) as u32,
+            };
+        }
         let s = glue::line_str(glue::text(self.doc), line);
         let tab = self.doc.config().tab_size;
         let last = row + 1 >= vl.n_rows();
-        let end = vl.row_x0(row) + vl.row_layout(row).width();
-        if x <= end || !last {
+        let vis = if x <= end || !last {
             let (col, _) = vl.hit(row, x);
-            return (
-                line,
-                quire_core::columns::visual_col(&s, col.min(s.len()), tab),
-            );
+            quire_core::columns::visual_col(&s, col.min(s.len()), tab)
+        } else {
+            let past = ((x - end) / adv).round().max(0.0) as u32;
+            quire_core::columns::visual_col(&s, s.len(), tab) + past
+        };
+        RowCol { line, row: 0, vis }
+    }
+
+    /// Box selection from `anchor` to `head` (mouse): over visual rows with wrap, else the
+    /// core's `columnSelect`.
+    fn mouse_column_select(&mut self, anchor: RowCol, head: RowCol) {
+        if self.geom.wrap.is_some() {
+            self.touch();
+            self.wrapped_column_select(anchor, head);
+        } else {
+            self.dispatch(glue::column_select_cmd(
+                (anchor.line, anchor.vis),
+                (head.line, head.vis),
+            ));
         }
-        let past = ((x - end) / self.geom.adv).round().max(0.0) as u32;
-        (
-            line,
-            quire_core::columns::visual_col(&s, s.len(), tab) + past,
-        )
     }
 
     /// (visible line, row within it) at screen y.
@@ -1463,13 +1761,13 @@ impl FrameCx<'_> {
             }
             // Alt+Shift: box selection (drag extends it); Alt: add a cursor.
             if mods.alt && mods.shift && !mods.command && self.geom.text.contains(ptr) {
-                let at = self.line_col_at(ptr);
+                let at = self.row_col_at(ptr);
                 self.mem.drag = Some(Drag {
                     anchor: pos..pos,
                     unit: Unit::Char,
                     column: Some((at, at)),
                 });
-                self.dispatch(glue::column_select_cmd(at, at));
+                self.mouse_column_select(at, at);
                 self.mem.last_press = None;
                 return;
             }
@@ -1523,12 +1821,12 @@ impl FrameCx<'_> {
             }) = self.mem.drag.clone()
             && (response.dragged() || response.is_pointer_button_down_on())
         {
-            let at = self.line_col_at(ptr);
+            let at = self.row_col_at(ptr);
             if at != head {
                 if let Some(d) = self.mem.drag.as_mut() {
                     d.column = Some((anchor, at));
                 }
-                self.dispatch(glue::column_select_cmd(anchor, at));
+                self.mouse_column_select(anchor, at);
             }
             ui.ctx().request_repaint();
         } else if down

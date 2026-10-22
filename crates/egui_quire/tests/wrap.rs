@@ -595,3 +595,166 @@ fn measure_counts_folded_lines_out_and_wrap_off_counts_lines() {
     let h = measured_harness(St::new(&text, EditorConfig::default()), 380.0);
     assert!((h.state().measured.y - (5.0 * row_h + 4.0)).abs() < 0.5);
 }
+
+// ---------------------------------------------------------------------------------------------
+// insertCursorAbove/Below and column selection by visual row (VS Code view lines).
+
+fn press_command(h: &mut Harness<'_, St>, command_id: &str) {
+    let os = h.ctx.os();
+    let mac = os == egui::os::OperatingSystem::Mac;
+    let keys = egui_quire::Keymap::vscode_default()
+        .keys_for(os, command_id)
+        .unwrap_or_else(|| panic!("{command_id} bound on {os:?}"));
+    for c in std::iter::once(keys.first).chain(keys.second) {
+        h.key_press_modifiers(c.modifiers(mac), c.key);
+        h.run();
+    }
+}
+
+fn ranges(h: &Harness<'_, St>) -> Vec<(usize, usize)> {
+    h.state()
+        .view
+        .selection()
+        .ranges()
+        .iter()
+        .map(|r| (r.anchor, r.head))
+        .collect()
+}
+
+/// Where rows 1..=n of line 0 start (Down from the document start lands there).
+fn row_starts(h: &mut Harness<'_, St>, n: usize) -> Vec<usize> {
+    caret_at(h, 0);
+    (0..n)
+        .map(|_| {
+            press(h, Key::ArrowDown);
+            h.state().head()
+        })
+        .collect()
+}
+
+#[test]
+fn insert_cursor_below_and_above_go_by_visual_row() {
+    let text = format!("{}\nnext", words(40));
+    let mut h = harness_os(St::new(&text, wrap_cfg()), egui::os::OperatingSystem::Mac);
+    focus(&mut h);
+    let rows = row_starts(&mut h, 2);
+    assert!(rows[0] > 0 && rows[1] > rows[0] && rows[1] < words(40).len());
+    // From the start of line 0: the new cursor is on the next row of the same line.
+    caret_at(&mut h, 2);
+    press_command(&mut h, "editor.action.insertCursorBelow");
+    assert_eq!(ranges(&h), vec![(2, 2), (rows[0] + 2, rows[0] + 2)]);
+    press_command(&mut h, "editor.action.insertCursorBelow");
+    assert_eq!(
+        ranges(&h),
+        vec![
+            (2, 2),
+            (rows[0] + 2, rows[0] + 2),
+            (rows[1] + 2, rows[1] + 2)
+        ]
+    );
+    // The primary stays where it was.
+    assert_eq!(h.state().head(), 2);
+    // Above from row 1: row 0. At the first row nothing moves (the copy merges).
+    caret_at(&mut h, rows[0] + 1);
+    press_command(&mut h, "editor.action.insertCursorAbove");
+    assert_eq!(ranges(&h), vec![(1, 1), (rows[0] + 1, rows[0] + 1)]);
+    press_command(&mut h, "editor.action.insertCursorAbove");
+    assert_eq!(ranges(&h), vec![(1, 1), (rows[0] + 1, rows[0] + 1)]);
+    // A selection is copied with both ends moved one row.
+    {
+        let st = h.state_mut();
+        st.doc
+            .execute(
+                &mut st.view,
+                &EditorCommand::SetSelection {
+                    selection: Selection::single(1, 3),
+                },
+                None,
+            )
+            .unwrap();
+    }
+    h.run();
+    press_command(&mut h, "editor.action.insertCursorBelow");
+    assert_eq!(ranges(&h), vec![(1, 3), (rows[0] + 1, rows[0] + 3)]);
+    // Without wrap: the next document line.
+    let mut h = harness_os(
+        St::new(&text, EditorConfig::default()),
+        egui::os::OperatingSystem::Mac,
+    );
+    focus(&mut h);
+    caret_at(&mut h, 2);
+    press_command(&mut h, "editor.action.insertCursorBelow");
+    let next = words(40).len() + 1;
+    assert_eq!(ranges(&h), vec![(2, 2), (next + 2, next + 2)]);
+}
+
+#[test]
+fn column_select_keys_go_by_visual_row() {
+    let text = format!("{}\nnext", words(40));
+    let mut h = harness_os(St::new(&text, wrap_cfg()), egui::os::OperatingSystem::Mac);
+    focus(&mut h);
+    let rows = row_starts(&mut h, 2);
+    caret_at(&mut h, 1);
+    press_command(&mut h, "cursorColumnSelectRight");
+    press_command(&mut h, "cursorColumnSelectRight");
+    assert_eq!(ranges(&h), vec![(1, 3)]);
+    press_command(&mut h, "cursorColumnSelectDown");
+    assert_eq!(ranges(&h), vec![(1, 3), (rows[0] + 1, rows[0] + 3)]);
+    press_command(&mut h, "cursorColumnSelectDown");
+    assert_eq!(
+        ranges(&h),
+        vec![
+            (1, 3),
+            (rows[0] + 1, rows[0] + 3),
+            (rows[1] + 1, rows[1] + 3)
+        ]
+    );
+    press_command(&mut h, "cursorColumnSelectUp");
+    press_command(&mut h, "cursorColumnSelectLeft");
+    assert_eq!(ranges(&h), vec![(1, 2), (rows[0] + 1, rows[0] + 2)]);
+    // Recorded as setSelection (the core knows only document lines).
+    let st = h.state();
+    assert!(st.view.selection().primary().head == 2);
+}
+
+#[test]
+fn alt_shift_drag_box_selects_visual_rows() {
+    let text = format!("{}\nnext", words(40));
+    let mut h = harness(St::new(&text, wrap_cfg()));
+    focus(&mut h);
+    let rows = row_starts(&mut h, 2);
+    let c0 = caret_at(&mut h, 0);
+    let adv = caret_at(&mut h, 1).left() - c0.left();
+    let row_h = c0.height();
+    let at = |col: f32, row: f32| pos2(c0.left() + col * adv, c0.top() + row_h * (row + 0.5));
+    let m = Modifiers::ALT | Modifiers::SHIFT;
+    h.event(Event::PointerMoved(at(1.0, 0.0)));
+    h.event(Event::PointerButton {
+        pos: at(1.0, 0.0),
+        button: PointerButton::Primary,
+        pressed: true,
+        modifiers: m,
+    });
+    h.step();
+    for i in 1..=4 {
+        let t = i as f32 / 4.0;
+        h.event(Event::PointerMoved(at(1.0 + 3.0 * t, 2.0 * t)));
+        h.step();
+    }
+    h.event(Event::PointerButton {
+        pos: at(4.0, 2.0),
+        button: PointerButton::Primary,
+        pressed: false,
+        modifiers: m,
+    });
+    h.run();
+    assert_eq!(
+        ranges(&h),
+        vec![
+            (1, 4),
+            (rows[0] + 1, rows[0] + 4),
+            (rows[1] + 1, rows[1] + 4)
+        ],
+        "one range per visual row of line 0"
+    );
+}
