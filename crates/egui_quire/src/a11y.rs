@@ -98,31 +98,29 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
         let layout = f.layout_line(line);
         let top = f.geom.line_top(f.mem, line);
         let last = line + 1 >= lines;
-        let galley = &layout.galley;
+        let char_xs = layout.char_xs();
         let mut value = String::new();
         let mut lens: Vec<u8> = Vec::new();
         let mut xs: Vec<f32> = Vec::new();
         let mut ws: Vec<f32> = Vec::new();
         let mut word_starts: Vec<usize> = Vec::new();
         let mut was_word_end = false;
-        if let Some(row) = galley.rows.first() {
-            for gl in &row.glyphs {
-                let is_word = gl.chr.is_alphanumeric() || gl.chr == '_';
-                if is_word && was_word_end {
-                    word_starts.push(lens.len());
-                }
-                was_word_end = !is_word;
-                let before = value.len();
-                value.push(gl.chr);
-                lens.push((value.len() - before) as u8);
-                xs.push(gl.pos.x);
-                ws.push(gl.advance_width);
+        for (i, chr) in layout.text().chars().enumerate() {
+            let is_word = chr.is_alphanumeric() || chr == '_';
+            if is_word && was_word_end {
+                word_starts.push(lens.len());
             }
+            was_word_end = !is_word;
+            let before = value.len();
+            value.push(chr);
+            lens.push((value.len() - before) as u8);
+            xs.push(char_xs[i]);
+            ws.push(char_xs[i + 1] - char_xs[i]);
         }
         if !last {
             value.push('\n');
             lens.push(1);
-            xs.push(galley.size().x);
+            xs.push(layout.width());
             ws.push(0.0);
         }
         let chunks = lens.len().div_ceil(MAX_CHARS).max(1);

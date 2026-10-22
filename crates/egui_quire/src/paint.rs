@@ -2,14 +2,12 @@
 //! carets, gutter and scrollbars. Overlays are cheap shapes rebuilt each frame; line text comes
 //! from the galley cache.
 
-use std::sync::Arc;
-
-use egui::text::{LayoutJob, TextFormat, TextWrapping};
+use egui::text::TextFormat;
 use egui::{Align2, Color32, Rect, Sense, Shape, Stroke, Ui, pos2, vec2};
 
 use crate::editor::FrameCx;
 use crate::glue::{self, Severity};
-use crate::layout::LineLayout;
+use crate::layout::{self, LineLayout};
 
 /// A visible line ready to paint.
 struct VisLine {
@@ -252,23 +250,16 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
 fn preedit_layout(f: &FrameCx<'_>, line: &str, col: usize, pre: &str) -> LineLayout {
     let col = col.min(line.len());
     let font = f.theme.font.clone();
-    let mut job = LayoutJob {
-        wrap: TextWrapping::no_max_width(),
-        break_on_newline: false,
-        ..Default::default()
-    };
     let plain = TextFormat::simple(font.clone(), f.theme.foreground);
     let under = TextFormat {
         underline: Stroke::new(1.0, f.theme.preedit_underline),
         ..TextFormat::simple(font, f.theme.foreground)
     };
-    job.append(&line[..col], 0.0, plain.clone());
-    job.append(pre, 0.0, under);
-    job.append(&line[col..], 0.0, plain);
-    let galley: Arc<egui::Galley> = f.ctx.fonts_mut(|fo| fo.layout_job(job));
     let spliced: String = [&line[..col], pre, &line[col..]].concat();
-    let mono = (spliced.is_ascii() && !spliced.contains('\t')).then_some(f.geom.mono);
-    LineLayout { galley, mono }
+    let spans = [(col, under), (col + pre.len(), plain.clone())];
+    let tabs = f.geom.mono.tab_stops(f.doc.config().tab_size);
+    let galley = layout::layout_line_job(f.ctx, &spliced, &spans, &plain, f.geom.mono, tabs);
+    LineLayout::new(galley, f.geom.mono, tabs)
 }
 
 fn worst_severity_per_line(f: &FrameCx<'_>, vis: &[VisLine]) -> Vec<Option<Severity>> {

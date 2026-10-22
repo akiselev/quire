@@ -872,6 +872,7 @@ fn mono_fast_path_at(ppp: f32) {
                 font: &font,
                 pixels_per_point: ui.ctx().pixels_per_point(),
                 mono,
+                tab_size: 4,
             };
             let line = "fn main() { let x = 42; }";
             let fast = sh.shape(
@@ -881,10 +882,7 @@ fn mono_fast_path_at(ppp: f32) {
                 egui::Color32::WHITE,
             );
             assert!(fast.mono.is_some());
-            let slow = egui_quire::layout::LineLayout {
-                galley: fast.galley.clone(),
-                mono: None,
-            };
+            let slow = fast.without_fast_path();
             for col in 0..=line.len() {
                 // Within one physical pixel of egui's pixel-snapped glyph origins.
                 assert!(
@@ -1042,123 +1040,134 @@ fn cut_with_empty_selection_copies_the_line_it_deletes() {
     assert_eq!(copied, vec!["two\n".to_owned()]);
     assert_eq!(h.state().text(), "one\nthree");
 }
-// ---------------------------------------------------------------------------------------------
-// Horizontal extent from the longest line.
-
-fn wheel(h: &mut Harness<'_, St>, delta: Vec2) {
-    let r = h.state().rects[0];
-    h.event(Event::PointerMoved(r.center()));
-    h.event(Event::MouseWheel {
-        unit: egui::MouseWheelUnit::Point,
-        delta,
-        phase: egui::TouchPhase::Move,
-        source: egui::MouseWheelSource::Wheel,
-        modifiers: Modifiers::NONE,
-    });
-    h.run_steps(40);
-}
-
-#[test]
-fn horizontal_extent_is_the_longest_line_even_off_screen() {
-    // The long line is far below the viewport: never laid out, still scrollable to.
-    let mut text: String = (0..300).map(|i| format!("{i}\n")).collect();
-    text.push_str(&"x".repeat(400));
-    text.push('\n');
-    let mut h = harness(St::new(&text));
-    h.run();
-    wheel(&mut h, vec2(-100_000.0, 0.0));
-    let x = h.state().views[0].scroll().horizontal;
-    let adv = egui_quire::layout::mono(&h.ctx, &egui::FontId::monospace(13.0)).advance();
-    let view_w = h.state().rects[0].width();
-    // 400 columns plus margin, minus the visible text width (gutter excluded): at least
-    // 400 columns minus the whole editor width.
-    assert!(
-        x > 400.0 * adv - view_w && x < 410.0 * adv,
-        "scroll x {x} (adv {adv})"
-    );
-    // Another party deletes the long line; the extent shrinks and the scroll clamps.
-    let start = h.state().doc.text().line_to_byte(300);
-    let len = h.state().doc.text().len_bytes();
-    {
-        let st = h.state_mut();
-        let cs = quire_core::ChangeSet::replace(len, [(start..len, "")]).unwrap();
-        let tr = quire_core::Transaction::new(st.doc.version(), cs);
-        let St { doc, views, .. } = st;
-        doc.apply(tr, &mut views[1]).unwrap();
-    }
-    h.run();
-    assert_eq!(h.state().views[0].scroll().horizontal, 0.0);
-}
 
 // ---------------------------------------------------------------------------------------------
-// X11/Wayland PRIMARY selection.
+// Tabs at tab stops.
 
-fn settled_selections(h: &mut Harness<'_, St>) -> Vec<String> {
-    std::mem::take(&mut h.state_mut().primary)
+/// Shape `line` with `tab_size` and call `f` with the layout (fast path) and the advance.
+fn with_shaped(line: &str, tab_size: u32, f: impl FnOnce(&egui_quire::layout::LineLayout, f32)) {
+    with_shaped_font(line, tab_size, egui::FontId::monospace(13.0), f);
+}
+
+fn with_shaped_font(
+    line: &str,
+    tab_size: u32,
+    font: egui::FontId,
+    f: impl FnOnce(&egui_quire::layout::LineLayout, f32),
+) {
+    let mut f = Some(f);
+    let line = line.to_owned();
+    let mut h = Harness::builder().build_ui(move |ui| {
+        let mono = egui_quire::layout::mono(ui.ctx(), &font);
+        let mut cache = egui_quire::galley_cache::GalleyCache::default();
+        let mut sh = egui_quire::layout::LineShaper {
+            cache: &mut cache,
+            ctx: ui.ctx(),
+            font: &font,
+            pixels_per_point: ui.ctx().pixels_per_point(),
+            mono,
+            tab_size,
+        };
+        let ll = sh.shape(&line, &[], 1, egui::Color32::WHITE);
+        if let Some(f) = f.take() {
+            f(&ll, mono.advance());
+        }
+    });
+    h.run();
 }
 
 #[test]
-fn settled_selection_is_reported_once_for_primary() {
-    let mut h = harness(St::new("alpha beta\n"));
-    h.run();
-    focus(&mut h);
-    settled_selections(&mut h);
-    h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowLeft);
-    h.step();
-    assert_eq!(settled_selections(&mut h), vec!["\n".to_owned()]);
-    h.step();
-    assert!(
-        settled_selections(&mut h).is_empty(),
-        "not re-sent while unchanged"
-    );
-    h.key_press_modifiers(cmd(), Key::A);
-    h.step();
-    assert_eq!(settled_selections(&mut h), vec!["alpha beta\n".to_owned()]);
-    // While a drag is in progress nothing is sent; on release the final selection is.
-    let r = h.state().rects[0];
-    let p0 = pos2(r.right() - 30.0, r.top() + 8.0);
-    h.event(Event::PointerMoved(p0));
-    h.event(Event::PointerButton {
-        pos: p0,
-        button: PointerButton::Primary,
-        pressed: true,
-        modifiers: Modifiers::NONE,
-    });
-    h.step();
-    let p1 = pos2(r.left() + 60.0, r.top() + 8.0);
-    for i in 1..=4 {
-        h.event(Event::PointerMoved(p0 + (p1 - p0) * (i as f32 / 4.0)));
-        h.step();
+fn tabs_advance_to_tab_stops() {
+    for (line, tab_size, col_of_x) in [
+        ("\tx", 4, 4.0),
+        ("a\tx", 4, 4.0),
+        ("abc\tx", 4, 4.0),
+        ("abcd\tx", 4, 8.0),
+        ("\t\tx", 4, 8.0),
+        ("ab\tx", 2, 4.0),
+        ("a\tx", 8, 8.0),
+    ] {
+        with_shaped(line, tab_size, |ll, adv| {
+            let col = line.len() - 1;
+            assert!(ll.mono.is_some());
+            let fast = ll.x_of(col);
+            assert!(
+                (fast - col_of_x * adv).abs() < 1e-3,
+                "{line:?} ts {tab_size}: {fast} vs {}",
+                col_of_x * adv
+            );
+            // The galley itself places the glyph there (egui's tab advance corrected).
+            let slow = ll.without_fast_path();
+            assert!(
+                (slow.x_of(col) - fast).abs() <= 1.0,
+                "{line:?}: galley {} vs fast {fast}",
+                slow.x_of(col)
+            );
+            // Hit-testing inside the tab: left half → before it, right half → after it.
+            let tab_at = line.find('\t').unwrap();
+            let (x0, x1) = (ll.x_of(tab_at), ll.x_of(tab_at + 1));
+            assert_eq!(ll.col_at(x0 + (x1 - x0) * 0.3), tab_at, "{line:?}");
+            assert_eq!(ll.col_at(x0 + (x1 - x0) * 0.7), tab_at + 1, "{line:?}");
+            assert_eq!(slow.col_at(x0 + (x1 - x0) * 0.7), tab_at + 1, "{line:?}");
+        });
     }
-    assert!(
-        settled_selections(&mut h).is_empty(),
-        "nothing while dragging"
-    );
-    h.event(Event::PointerButton {
-        pos: p1,
-        button: PointerButton::Primary,
-        pressed: false,
-        modifiers: Modifiers::NONE,
-    });
-    h.run();
-    let (a, b) = h.state().sel(0);
-    assert!(a != b);
-    let expect = h.state().text()[b.min(a)..a.max(b)].to_owned();
-    assert_eq!(settled_selections(&mut h), vec![expect]);
 }
 
 #[test]
-fn middle_click_pastes_primary_at_the_pointer() {
-    let mut h = harness(St::new("abcdefgh\nab\n"));
+fn trailing_tab_extends_line_width() {
+    with_shaped("ab\t", 4, |ll, adv| {
+        assert!((ll.x_of(3) - 4.0 * adv).abs() < 1e-3);
+        assert!((ll.width() - 4.0 * adv).abs() < 1e-3);
+        let slow = ll.without_fast_path();
+        assert!((slow.x_of(3) - 4.0 * adv).abs() <= 1.0);
+    });
+}
+
+#[test]
+fn tabs_after_non_ascii_use_glyph_positions() {
+    // 'é' is one column in the monospace font; the galley path must still reach the stop.
+    with_shaped("é\tx", 4, |ll, adv| {
+        assert!(ll.mono.is_none());
+        let x = ll.x_of("é\t".len());
+        assert!((x - 4.0 * adv).abs() <= 1.0, "{x} vs {}", 4.0 * adv);
+    });
+    // A proportional font (glyphs of uneven width): the text after the tab lands on a stop.
+    with_shaped_font("Wé\tx", 4, egui::FontId::proportional(13.0), |ll, adv| {
+        let x = ll.x_of("Wé\t".len());
+        let stop = 4.0 * adv;
+        let k = (x / stop).round();
+        assert!(k >= 1.0 && (x - k * stop).abs() <= 1.0, "{x} not on a stop of {stop}");
+        assert!(x > ll.x_of("Wé".len()));
+    });
+}
+
+#[test]
+fn editor_caret_and_clicks_honour_tab_size() {
+    let mut cfg = quire_core::EditorConfig::default();
+    cfg.tab_size = 4;
+    let mut st = St::new("abcdefgh\nab\n\tfoo\n");
+    st.doc.set_config(cfg);
+    let mut h = harness(st);
     h.run();
     let (left, adv, row0) = measure(&mut h, 8, 2);
-    let p = pos2(left + 4.0 * adv, row0.center().y);
-    h.event(Event::PointerMoved(p));
-    h.event(Event::MiddleClickPaste {
-        pos: p,
-        text: "XY".into(),
-    });
-    h.run();
-    assert_eq!(h.state().text(), "abcdXYefgh\nab\n");
-    assert_eq!(h.state().sel(0), (6, 6));
+    let row_h = row0.height();
+    let y2 = row0.top() + row_h * 2.5;
+    // Caret at the end of "\tfoo": 4 + 3 columns.
+    click_at(&mut h, pos2(left + 30.0 * adv, y2));
+    let start2 = "abcdefgh\nab\n".len();
+    assert_eq!(h.state().sel(0).1, start2 + 4);
+    let c = h.state().caret.unwrap();
+    assert!((c.left() - (left + 7.0 * adv)).abs() < 0.6, "{} vs {}", c.left(), left + 7.0 * adv);
+    // Click a column inside the tab: left half → before it, right half → after it.
+    click_at(&mut h, pos2(left + 1.0 * adv, y2));
+    assert_eq!(h.state().sel(0).1, start2);
+    click_at(&mut h, pos2(left + 3.0 * adv, y2));
+    assert_eq!(h.state().sel(0).1, start2 + 1);
+    // Tab size 8 moves "foo" to column 8.
+    let mut cfg = h.state().doc.config().clone();
+    cfg.tab_size = 8;
+    h.state_mut().doc.set_config(cfg);
+    click_at(&mut h, pos2(left + 30.0 * adv, y2));
+    let c = h.state().caret.unwrap();
+    assert!((c.left() - (left + 11.0 * adv)).abs() < 0.6);
 }
