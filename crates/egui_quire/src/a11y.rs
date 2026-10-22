@@ -9,6 +9,7 @@ use egui::{Id, Rect, Ui, UiBuilder, pos2, vec2};
 
 use crate::editor::FrameCx;
 use crate::glue;
+use crate::theme::EditorText;
 
 const MAX_CHARS: usize = 255;
 
@@ -30,7 +31,12 @@ pub fn run_id(editor: Id, line: usize, chunk: usize) -> Id {
     }
 }
 
-pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
+/// Id of the live-region node that announces page shifts.
+fn announce_id(editor: Id) -> Id {
+    Id::unique((editor, "announce"))
+}
+
+pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &EditorText) {
     let id = f.id;
     let enabled = f
         .ctx
@@ -53,6 +59,27 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
     let head_line = text.byte_to_line(sel.head.min(text.len_bytes()));
     if head_line < f.mem.a11y_page_start || head_line >= f.mem.a11y_page_start + n {
         f.mem.a11y_page_start = (head_line / n) * n;
+        // The runs a screen reader was reading are gone: say where the caret is now.
+        f.mem.a11y_announce = Some(
+            strings
+                .line_announcement
+                .replace("{line}", &(head_line + 1).to_string()),
+        );
+    }
+    if let Some(msg) = f.mem.a11y_announce.clone() {
+        let aid = announce_id(id);
+        let _child = ui.new_child(
+            UiBuilder::new()
+                .scope_id(aid)
+                .accessibility_parent(id)
+                .accessibility_role(Role::Status)
+                .max_rect(Rect::from_min_size(f.geom.text.min, vec2(1.0, 1.0))),
+        );
+        f.ctx.accesskit_node_builder(aid, |n| {
+            n.set_role(Role::Status);
+            n.set_live(accesskit::Live::Polite);
+            n.set_label(msg);
+        });
     }
     let page = f.mem.a11y_page_start..(f.mem.a11y_page_start + n).min(lines);
 

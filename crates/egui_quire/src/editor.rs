@@ -126,6 +126,8 @@ pub(crate) struct Mem {
     pub hover: Option<(usize, f64, bool)>,
     pub find: FindBar,
     pub a11y_page_start: usize,
+    /// Live-region text announced after the last page shift.
+    pub a11y_announce: Option<String>,
     pub scroll_to_caret: bool,
     /// Widest line laid out since the text last changed (wide glyphs exceed column widths).
     pub max_seen_width: f32,
@@ -460,7 +462,7 @@ impl<'a> CodeEditor<'a> {
         }
 
         frame.report_settled_selection(ui);
-        crate::a11y::update(&mut frame, ui, a11y_name);
+        crate::a11y::update(&mut frame, ui, a11y_name, text);
         glue::set_scroll_px(frame.view, frame.doc, &frame.mem.heights, frame.mem.scroll);
 
         let settled = frame.mem.drag.is_none() && glue::is_settled(frame.doc);
