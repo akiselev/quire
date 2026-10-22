@@ -6,8 +6,8 @@
 //! drifts from it. The report is `docs/design/KEYMAP-AUDIT.md`.
 
 use egui::os::OperatingSystem;
-use egui_quire::keymap::{KeyLookup, Keymap, RawBinding, When, WhenContext, VSCODE_DEFAULT_JSON};
 use egui_quire::KeySeq;
+use egui_quire::keymap::{KeyLookup, Keymap, RawBinding, VSCODE_DEFAULT_JSON, When, WhenContext};
 use serde_json::Value;
 
 const EXTRACTED: &str = include_str!("../keymaps/vscode-extracted.json");
@@ -95,7 +95,11 @@ fn default_keymap_matches_vscode_on_every_os() {
     for id in commands.keys() {
         assert!(ids.contains(&id.as_str()), "{id} dropped from the keymap");
     }
-    assert!(failures.is_empty(), "keymap drift:\n{}", failures.join("\n"));
+    assert!(
+        failures.is_empty(),
+        "keymap drift:\n{}",
+        failures.join("\n")
+    );
 }
 
 /// Every expected key, pressed on its OS with its context, reaches the command (nothing shadows

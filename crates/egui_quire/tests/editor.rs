@@ -1865,7 +1865,11 @@ fn a11y_page_skips_folded_lines() {
         .collect();
     assert_eq!(runs.len(), 50, "50 visible lines");
     assert_eq!(runs[0].value().as_deref(), Some("block {\n"));
-    assert_eq!(runs[1].value().as_deref(), Some("}\n"), "hidden lines get no run");
+    assert_eq!(
+        runs[1].value().as_deref(),
+        Some("}\n"),
+        "hidden lines get no run"
+    );
     assert_eq!(runs[49].value().as_deref(), Some("line 79\n"));
     // Run ids stay keyed by document line: the caret on line 31 maps to run (31, 0).
     let close = h.state().doc.text().line_to_byte(31);
