@@ -1,9 +1,6 @@
 //! Query sources, in Helix's layout (`queries/<lang>/<kind>.scm`), with `; inherits: a,b`
 //! lines replaced in place by the named directories' queries of the same kind.
 
-/// The query kinds quire-syntax reads.
-pub(crate) const KINDS: [&str; 5] = ["highlights", "injections", "folds", "indents", "brackets"];
-
 macro_rules! table {
     ($($dir:literal / $kind:literal),* $(,)?) => {
         const TABLE: &[(&str, &str, &str)] = &[

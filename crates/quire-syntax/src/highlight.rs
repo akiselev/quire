@@ -115,6 +115,7 @@ fn clip(layer: &Layer, r: Range<usize>, out: &mut Vec<(usize, usize)>) {
 pub(crate) struct Fold {
     pub start: usize,
     pub end: usize,
+    pub comment: bool,
 }
 
 /// Multi-line `@fold` nodes of every layer, one per start line (the longest), sorted.
@@ -143,6 +144,7 @@ pub(crate) fn folds(layers: &Layers) -> Vec<Fold> {
                 out.push(Fold {
                     start: s.row,
                     end: e.row,
+                    comment: c.node.kind().contains("comment"),
                 });
             }
         }

@@ -9,7 +9,9 @@
 //! reused and reparsed incrementally across edits.
 
 mod config;
+mod driver;
 mod highlight;
+mod highlighter;
 mod lang;
 mod queries;
 mod source;
@@ -17,7 +19,10 @@ mod style;
 mod tree;
 
 pub use config::{QueryError, check_queries};
+pub use driver::{DEFAULT_DEBOUNCE_MS, DEFAULT_MARGIN_LINES, SyntaxDriver};
+pub use highlighter::{SyntaxTree, TreeSitterHighlighter};
 pub use lang::Lang;
+pub use style::name as style_name;
 pub use tree::ParseStats;
 
 #[cfg(test)]

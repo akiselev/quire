@@ -12,6 +12,24 @@ pub(crate) trait Source {
     fn len_lines(&self) -> usize;
 }
 
+impl Source for quire_core::Text {
+    fn len_bytes(&self) -> usize {
+        quire_core::Text::len_bytes(self)
+    }
+    fn chunk_list(&self) -> Vec<&str> {
+        self.chunks().collect()
+    }
+    fn byte_to_line(&self, b: usize) -> usize {
+        quire_core::Text::byte_to_line(self, b)
+    }
+    fn line_to_byte(&self, line: usize) -> usize {
+        quire_core::Text::line_to_byte(self, line)
+    }
+    fn len_lines(&self) -> usize {
+        quire_core::Text::len_lines(self)
+    }
+}
+
 /// A string with a line index (tests and benches before the quire-core seam).
 #[cfg_attr(not(test), allow(dead_code))]
 pub(crate) struct StrText {

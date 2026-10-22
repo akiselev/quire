@@ -45,7 +45,6 @@ pub(crate) struct Captured {
 /// Everything quire-syntax needs for one language.
 #[derive(Debug)]
 pub(crate) struct LangConfig {
-    pub lang: Lang,
     pub grammar: Language,
     pub highlights: Query,
     /// Per highlight capture index: `None` = not a highlight (`@_x`, unknown names);
@@ -167,7 +166,6 @@ fn build(lang: Lang, grammar: Language) -> Result<LangConfig, QueryError> {
     let indents = captured(compile(lang, &grammar, "indents")?, "indent", "outdent");
     let brackets = captured(compile(lang, &grammar, "brackets")?, "open", "close");
     Ok(LangConfig {
-        lang,
         grammar,
         highlights,
         capture_styles,
@@ -186,9 +184,4 @@ pub fn check_queries() -> Result<(), QueryError> {
         }
     }
     Ok(())
-}
-
-#[allow(dead_code)]
-pub(crate) fn kinds() -> &'static [&'static str] {
-    &queries::KINDS
 }
