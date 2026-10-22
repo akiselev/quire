@@ -70,6 +70,11 @@ impl SyntaxTree {
         v
     }
 
+    /// The root layer's tree as an S-expression (tests and debugging).
+    pub fn root_sexp(&self) -> String {
+        self.layers.layers[0].data.tree.root_node().to_sexp()
+    }
+
     /// Whether any layer's tree contains a syntax error.
     pub fn has_error(&self) -> bool {
         self.layers

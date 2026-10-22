@@ -142,160 +142,6 @@ fn e5_timing() {
 }
 
 #[test]
-#[ignore]
-fn included_range_cost() {
-    use std::time::Instant;
-    use tree_sitter::{Parser, Point, Range as R};
-    let mut s = "x".repeat(500_000);
-    s.push_str(" a + b ");
-    s.push_str(&"y".repeat(45_000));
-    let mut p = Parser::new();
-    p.set_language(&tree_sitter_javascript::LANGUAGE.into())
-        .unwrap();
-    let r = R {
-        start_byte: 500_000,
-        end_byte: 500_007,
-        start_point: Point {
-            row: 0,
-            column: 500_000,
-        },
-        end_point: Point {
-            row: 0,
-            column: 500_007,
-        },
-    };
-    p.set_included_ranges(&[r]).unwrap();
-    let t = Instant::now();
-    for _ in 0..100 {
-        let _ = p.parse_with_options(
-            &mut |b: usize, _: Point| &s.as_bytes()[b.min(s.len())..],
-            None,
-            None,
-        );
-    }
-    eprintln!("whole-chunk callback: {:?}/parse", t.elapsed() / 100);
-    let t = Instant::now();
-    for _ in 0..100 {
-        let _ = p.parse_with_options(
-            &mut |b: usize, _: Point| &s.as_bytes()[b.min(s.len())..(b + 64).min(s.len())],
-            None,
-            None,
-        );
-    }
-    eprintln!("64-byte callback: {:?}/parse", t.elapsed() / 100);
-}
-
-#[test]
-#[ignore]
-fn fixture_errors() {
-    let s = gen_fixture::svelte_component(400);
-    let l = parse(Lang::Svelte, &s);
-    for x in &l.layers {
-        let root = x.data.tree.root_node();
-        if root.has_error() {
-            let mut c = root.walk();
-            let mut stack = vec![root];
-            while let Some(n) = stack.pop() {
-                if n.is_error() || n.is_missing() {
-                    eprintln!(
-                        "{:?} error at {:?}: {:?} in {:?}",
-                        x.lang,
-                        n.byte_range(),
-                        &s[n.byte_range()].chars().take(80).collect::<String>(),
-                        n.parent().map(|p| p.kind())
-                    );
-                    break;
-                }
-                stack.extend(n.children(&mut c).collect::<Vec<_>>().into_iter().rev());
-            }
-        }
-    }
-}
-
-#[test]
-#[ignore]
-fn svelte_scaling() {
-    use std::time::Instant;
-    let mut p = tree_sitter::Parser::new();
-    p.set_language(&tree_sitter_htmlx_svelte::LANGUAGE.into())
-        .unwrap();
-    let cases: Vec<(&str, Box<dyn Fn(usize) -> String>)> = vec![
-        ("text", Box::new(|n| "<p>hello</p>\n".repeat(n))),
-        ("expr", Box::new(|n| "<p>{a + b}</p>\n".repeat(n))),
-        ("if", Box::new(|n| "{#if a}\n<p>x</p>\n{/if}\n".repeat(n))),
-        (
-            "each",
-            Box::new(|n| "{#each xs as x (x.id)}\n<p>x</p>\n{/each}\n".repeat(n)),
-        ),
-        (
-            "attr-expr",
-            Box::new(|n| "<p class:a={b === 1}>x</p>\n".repeat(n)),
-        ),
-        (
-            "on-arrow",
-            Box::new(|n| "<li on:click={() => pick(x)}>y</li>\n".repeat(n)),
-        ),
-        (
-            "entity",
-            Box::new(|n| "<h2 title=\"S 1\">{t} &amp; more</h2>\n".repeat(n)),
-        ),
-        ("comment", Box::new(|n| "<!-- c -->\n".repeat(n))),
-        (
-            "else",
-            Box::new(|n| "{#if a}\n<p>x</p>\n{:else}\n<p>y</p>\n{/if}\n".repeat(n)),
-        ),
-    ];
-    for (name, f) in &cases {
-        let mut line = format!("{name:>10}:");
-        for n in [500, 1000, 2000] {
-            let s = format!("<main>\n{}</main>\n", f(n));
-            let t = Instant::now();
-            let tree = p.parse(&s, None).unwrap();
-            line.push_str(&format!(
-                " {n}:{:?}{}",
-                t.elapsed(),
-                if tree.root_node().has_error() {
-                    "(ERR)"
-                } else {
-                    ""
-                }
-            ));
-        }
-        eprintln!("{line}");
-    }
-}
-
-#[test]
-#[ignore]
-fn svelte_scaling2() {
-    use std::time::Instant;
-    let mut p = tree_sitter::Parser::new();
-    p.set_language(&tree_sitter_htmlx_svelte::LANGUAGE.into())
-        .unwrap();
-    let block = "  <section>\n    {#if a}\n      <ul>\n        <li>{x}</li>\n      </ul>\n    {:else}\n      <p>No items</p>\n    {/if}\n  </section>\n";
-    let flat = "  <section>\n    {#if a}\n      <p>x</p>\n    {:else}\n      <p>No items</p>\n    {/if}\n  </section>\n";
-    let noelse = "  <section>\n    {#if a}\n      <ul>\n        <li>{x}</li>\n      </ul>\n    {/if}\n  </section>\n";
-    for (name, b) in [("block", block), ("flat", flat), ("noelse", noelse)] {
-        let mut line = format!("{name:>8}:");
-        for n in [100, 200, 400, 800] {
-            let s = format!("<main>\n{}</main>\n", b.repeat(n));
-            let t = Instant::now();
-            let tree = p.parse(&s, None).unwrap();
-            line.push_str(&format!(
-                " {n}:{:?}{}",
-                t.elapsed(),
-                if tree.root_node().has_error() {
-                    "(ERR)"
-                } else {
-                    ""
-                }
-            ));
-        }
-        eprintln!("{line}");
-    }
-}
-
-#[test]
 fn byte_range_matches_whole_pattern() {
     use streaming_iterator::StreamingIterator;
     let s = "<div>x</div>\n<script lang=\"ts\">\n  let a = 1;\n  let b = 2;\n</script>\n<p>y</p>\n";
@@ -414,8 +260,14 @@ fn root_reparse_cost() {
 #[ignore]
 fn dump_sexp() {
     let s = std::env::var("QS_SRC").unwrap_or_else(|_| "<p>None &amp; zero</p>\n".into());
-    let lang = Lang::from_name(&std::env::var("QS_LANG").unwrap_or_else(|_| "svelte".into())).unwrap();
+    let lang =
+        Lang::from_name(&std::env::var("QS_LANG").unwrap_or_else(|_| "svelte".into())).unwrap();
     for l in &parse(lang, &s).layers {
-        eprintln!("{:?} {:?}: {}", l.lang, l.span, l.data.tree.root_node().to_sexp());
+        eprintln!(
+            "{:?} {:?}: {}",
+            l.lang,
+            l.span,
+            l.data.tree.root_node().to_sexp()
+        );
     }
 }

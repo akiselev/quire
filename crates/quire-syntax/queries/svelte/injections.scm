@@ -24,7 +24,7 @@
   (tag_name) @_tag
   (attribute
     (attribute_name) @_attr
-    (unquoted_attribute_value) @_lang))
+    [(attribute_value) (unquoted_attribute_value)] @_lang))
  .
  (raw_text) @injection.content
  (#eq? @_tag "script")

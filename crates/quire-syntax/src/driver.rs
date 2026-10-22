@@ -179,10 +179,10 @@ impl<H: Highlighter> SyntaxDriver<H> {
         };
         let Some(done) = done else { return };
         self.in_flight = None;
-        if let Some(tree) = done.tree {
-            if self.tree.as_ref().is_none_or(|(_, v)| *v <= done.version) {
-                self.tree = Some((tree, done.version));
-            }
+        if let Some(tree) = done.tree
+            && self.tree.as_ref().is_none_or(|(_, v)| *v <= done.version)
+        {
+            self.tree = Some((tree, done.version));
         }
         let range = done.runs.line_range();
         if doc.set_tokens(done.version, done.runs).is_ok() && done.version == doc.version() {

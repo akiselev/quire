@@ -7,7 +7,11 @@ use quire_syntax::Lang;
 use support::{expect_file, render, style_of};
 
 fn fixture(name: &str) -> String {
-    std::fs::read_to_string(format!("{}/tests/fixtures/{name}", env!("CARGO_MANIFEST_DIR"))).unwrap()
+    std::fs::read_to_string(format!(
+        "{}/tests/fixtures/{name}",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap()
 }
 
 #[test]
@@ -20,27 +24,42 @@ fn queries_compile() {
 
 #[test]
 fn svelte_fixture() {
-    expect_file("component.svelte.tokens", &render(Lang::Svelte, &fixture("component.svelte")));
+    expect_file(
+        "component.svelte.tokens",
+        &render(Lang::Svelte, &fixture("component.svelte")),
+    );
 }
 
 #[test]
 fn typescript_fixture() {
-    expect_file("sample.ts.tokens", &render(Lang::TypeScript, &fixture("sample.ts")));
+    expect_file(
+        "sample.ts.tokens",
+        &render(Lang::TypeScript, &fixture("sample.ts")),
+    );
 }
 
 #[test]
 fn tsx_fixture() {
-    expect_file("sample.tsx.tokens", &render(Lang::Tsx, &fixture("sample.tsx")));
+    expect_file(
+        "sample.tsx.tokens",
+        &render(Lang::Tsx, &fixture("sample.tsx")),
+    );
 }
 
 #[test]
 fn javascript_fixture() {
-    expect_file("sample.js.tokens", &render(Lang::JavaScript, &fixture("sample.js")));
+    expect_file(
+        "sample.js.tokens",
+        &render(Lang::JavaScript, &fixture("sample.js")),
+    );
 }
 
 #[test]
 fn css_fixture() {
-    expect_file("sample.css.tokens", &render(Lang::Css, &fixture("sample.css")));
+    expect_file(
+        "sample.css.tokens",
+        &render(Lang::Css, &fixture("sample.css")),
+    );
 }
 
 #[test]
@@ -55,7 +74,10 @@ fn typescript_spots() {
     assert_eq!(style_of(Lang::TypeScript, &s, "// A comment"), "comment");
     assert_eq!(style_of(Lang::TypeScript, &s, "/ab+c/"), "string.special");
     assert_eq!(style_of(Lang::TypeScript, &s, "null"), "constant+lib");
-    assert_eq!(style_of(Lang::TypeScript, &s, "<T extends"), "punctuation.bracket");
+    assert_eq!(
+        style_of(Lang::TypeScript, &s, "<T extends"),
+        "punctuation.bracket"
+    );
 }
 
 #[test]

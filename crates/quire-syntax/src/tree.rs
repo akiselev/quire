@@ -378,10 +378,8 @@ pub(crate) fn parse<S: Source + ?Sized>(
             Origin::Reparsed { old, before } => {
                 let p = prev.as_ref().expect("reparsed implies prev");
                 // Where the injections may have changed: what tree-sitter reports, plus the edits.
-                let mut changed: Vec<Range<usize>> = out[idx]
-                    .data
-                    .tree
-                    .changed_ranges(&before)
+                let mut changed: Vec<Range<usize>> = before
+                    .changed_ranges(&out[idx].data.tree)
                     .map(|r| r.start_byte..r.end_byte)
                     .collect();
                 changed.extend(
@@ -391,11 +389,13 @@ pub(crate) fn parse<S: Source + ?Sized>(
                         .cloned(),
                 );
                 let changed = merge(changed);
+
                 let found = if changed.is_empty() {
                     Vec::new()
                 } else {
                     find_injections(&out[idx].data.tree, plang, &pranges, &ctx, Some(&changed))
                 };
+
                 let hits = |r: &Range<usize>| {
                     changed.iter().any(|c| c.start <= r.end && c.end >= r.start)
                         || found
@@ -597,8 +597,8 @@ fn find_injections<S: Source + ?Sized>(
     }
     let mut hits: Vec<Hit<'_>> = Vec::new();
     let mut cursor = QueryCursor::new();
-    let whole = [0..usize::MAX];
-    for r in within.unwrap_or(&whole) {
+    let whole = std::slice::from_ref(&(0..usize::MAX));
+    for r in within.unwrap_or(whole) {
         cursor.set_byte_range(r.clone());
         let text = |n: Node<'_>| chunks.slices(n.byte_range());
         let mut matches = cursor.matches(&inj.query, tree.root_node(), text);
