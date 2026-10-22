@@ -16,10 +16,10 @@ pub fn code(lines: usize) -> String {
         match x % 9 {
             0 => s.push_str(&format!("fn item_{i}(a: u32, b: &str) -> Option<u32> {{")),
             1 => s.push_str(&format!("let value_{i} = compute(a, b, {});", x % 1000)),
-            2 => s.push_str("}"),
+            2 => s.push('}'),
             3 => s.push_str(&format!("// note {i}: grüße, naïve café — ok")),
             4 => s.push_str(&format!("if value > {} {{ return None; }}", x % 77)),
-            5 => s.push_str(""),
+            5 => {}
             6 => s.push_str(&format!(
                 "map.insert(\"key_{i}\".to_string(), vec![1, 2, 3]);"
             )),
