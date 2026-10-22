@@ -18,7 +18,10 @@ pub struct HeightIndex {
 impl HeightIndex {
     /// `lines` lines, each `height` tall.
     pub fn uniform(lines: usize, height: f32) -> Self {
-        let mut s = Self { tree: Vec::new(), heights: vec![height; lines] };
+        let mut s = Self {
+            tree: Vec::new(),
+            heights: vec![height; lines],
+        };
         s.rebuild();
         s
     }

@@ -9,9 +9,9 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
-quire-core = { workspace = true }
+quire-core = { workspace = true, features = ["serde"] }
 egui = { workspace = true, features = ["default_fonts"] }
-serde = { version = "1", features = ["derive"] }
+serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]

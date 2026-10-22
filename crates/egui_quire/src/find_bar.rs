@@ -45,7 +45,10 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, text: &EditorText) {
     let width = (g.text.width() - 16.0).clamp(120.0, 460.0);
     let rows = if f.mem.find.replace { 2.0 } else { 1.0 };
     let height = rows * (ui.spacing().interact_size.y + 4.0) + 8.0;
-    let rect = Rect::from_min_size(pos2(g.rect.right() - width - 14.0, g.rect.top() + 2.0), vec2(width, height));
+    let rect = Rect::from_min_size(
+        pos2(g.rect.right() - width - 14.0, g.rect.top() + 2.0),
+        vec2(width, height),
+    );
     let id = f.id;
     let mut child = ui.new_child(
         UiBuilder::new()
@@ -63,72 +66,100 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, text: &EditorText) {
     let (matches, current) = glue::find_matches(f.view, f.doc);
     let count = matches.len();
 
-    Frame::popup(child.style()).inner_margin(Margin::same(4)).show(&mut child, |ui| {
-        ui.horizontal(|ui| {
-            let q = ui.add(
-                TextEdit::singleline(&mut bar.query)
-                    .id(query_id(id))
-                    .hint_text(text.find_placeholder.as_str())
-                    .desired_width(width * 0.45),
-            );
-            if std::mem::take(&mut bar.focus_query) {
-                q.request_focus();
-            }
-            if q.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
-                if ui.input(|i| i.modifiers.shift) {
-                    prev = true;
-                } else {
-                    next = true;
-                }
-                q.request_focus();
-            }
-            if (q.has_focus() || q.lost_focus()) && ui.input(|i| i.key_pressed(Key::Escape)) {
-                close = true;
-            }
-            ui.toggle_value(&mut bar.options.case_sensitive, "Aa").on_hover_text(text.match_case.as_str());
-            ui.toggle_value(&mut bar.options.whole_word, "ab").on_hover_text(text.whole_word.as_str());
-            ui.toggle_value(&mut bar.options.regex, ".*").on_hover_text(text.regex.as_str());
-            let label = if count == 0 {
-                text.no_results.clone()
-            } else {
-                text.match_count
-                    .replace("{current}", &current.map_or("?".to_owned(), |c| (c + 1).to_string()))
-                    .replace("{total}", &count.to_string())
-            };
-            ui.label(label);
-            if ui.small_button("↑").on_hover_text(text.previous_match.as_str()).clicked() {
-                prev = true;
-            }
-            if ui.small_button("↓").on_hover_text(text.next_match.as_str()).clicked() {
-                next = true;
-            }
-            if ui.small_button("×").on_hover_text(text.close.as_str()).clicked() {
-                close = true;
-            }
-        });
-        if bar.replace {
+    Frame::popup(child.style())
+        .inner_margin(Margin::same(4))
+        .show(&mut child, |ui| {
             ui.horizontal(|ui| {
-                let r = ui.add(
-                    TextEdit::singleline(&mut bar.replacement)
-                        .id(replace_id(id))
-                        .hint_text(text.replace_placeholder.as_str())
+                let q = ui.add(
+                    TextEdit::singleline(&mut bar.query)
+                        .id(query_id(id))
+                        .hint_text(text.find_placeholder.as_str())
                         .desired_width(width * 0.45),
                 );
-                if r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
-                    replace_one = true;
-                    r.request_focus();
+                ui.ctx()
+                    .accesskit_node_builder(q.id, |n| n.set_label(text.find_label.clone()));
+                if std::mem::take(&mut bar.focus_query) {
+                    q.request_focus();
                 }
-                if ui.button(text.replace_one.as_str()).clicked() {
-                    replace_one = true;
+                if q.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                    if ui.input(|i| i.modifiers.shift) {
+                        prev = true;
+                    } else {
+                        next = true;
+                    }
+                    q.request_focus();
                 }
-                if ui.button(text.replace_all.as_str()).clicked() {
-                    replace_all = true;
+                if (q.has_focus() || q.lost_focus()) && ui.input(|i| i.key_pressed(Key::Escape)) {
+                    close = true;
+                }
+                ui.toggle_value(&mut bar.options.case_sensitive, "Aa")
+                    .on_hover_text(text.match_case.as_str());
+                ui.toggle_value(&mut bar.options.whole_word, "ab")
+                    .on_hover_text(text.whole_word.as_str());
+                ui.toggle_value(&mut bar.options.regex, ".*")
+                    .on_hover_text(text.regex.as_str());
+                let label = if let Some(err) = glue::find_error(f.view) {
+                    err
+                } else if count == 0 {
+                    text.no_results.clone()
+                } else {
+                    text.match_count
+                        .replace(
+                            "{current}",
+                            &current.map_or("?".to_owned(), |c| (c + 1).to_string()),
+                        )
+                        .replace("{total}", &count.to_string())
+                };
+                ui.label(label);
+                if ui
+                    .small_button("<")
+                    .on_hover_text(text.previous_match.as_str())
+                    .clicked()
+                {
+                    prev = true;
+                }
+                if ui
+                    .small_button(">")
+                    .on_hover_text(text.next_match.as_str())
+                    .clicked()
+                {
+                    next = true;
+                }
+                if ui
+                    .small_button("×")
+                    .on_hover_text(text.close.as_str())
+                    .clicked()
+                {
+                    close = true;
                 }
             });
-        }
-    });
+            if bar.replace {
+                ui.horizontal(|ui| {
+                    let r = ui.add(
+                        TextEdit::singleline(&mut bar.replacement)
+                            .id(replace_id(id))
+                            .hint_text(text.replace_placeholder.as_str())
+                            .desired_width(width * 0.45),
+                    );
+                    ui.ctx()
+                        .accesskit_node_builder(r.id, |n| n.set_label(text.replace_label.clone()));
+                    if r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                        replace_one = true;
+                        r.request_focus();
+                    }
+                    if ui.button(text.replace_one.as_str()).clicked() {
+                        replace_one = true;
+                    }
+                    if ui.button(text.replace_all.as_str()).clicked() {
+                        replace_all = true;
+                    }
+                });
+            }
+        });
 
-    if (bar.query.clone(), bar.options) != before || glue::find_query_stale(f.view, &bar.query, bar.options) {
+    if (bar.query.clone(), bar.options) != before
+        || glue::find_query_stale(f.view, &bar.query, bar.options)
+    {
         glue::set_find(f.doc, f.view, &bar.query, bar.options);
     }
     f.mem.find = bar;
@@ -148,7 +179,7 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, text: &EditorText) {
     }
     if close {
         f.mem.find.open = false;
-        glue::clear_find(f.view);
+        glue::clear_find(f.doc, f.view);
         f.ctx.memory_mut(|m| m.request_focus(id));
     }
 }

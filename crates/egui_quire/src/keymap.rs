@@ -58,7 +58,9 @@ pub enum When {
 
 impl When {
     fn parse(s: Option<&str>) -> Result<Self, String> {
-        let Some(s) = s.map(str::trim) else { return Ok(Self::Always) };
+        let Some(s) = s.map(str::trim) else {
+            return Ok(Self::Always);
+        };
         let (neg, name) = match s.strip_prefix('!') {
             Some(rest) => (true, rest.trim()),
             None => (false, s),
@@ -143,7 +145,14 @@ impl Keymap {
         let win = parse(&r.win)?.or(key);
         let when = When::parse(r.when.as_deref())?;
         match KeyAction::resolve(&r.command, r.args.as_ref()) {
-            Ok(action) => self.bindings.push(Binding { linux, win, mac, when, command_id: r.command, action }),
+            Ok(action) => self.bindings.push(Binding {
+                linux,
+                win,
+                mac,
+                when,
+                command_id: r.command,
+                action,
+            }),
             Err(e) => self.unresolved.push((r.command, e)),
         }
         Ok(())
@@ -159,7 +168,13 @@ impl Keymap {
     }
 
     /// The action bound to `key` with `mods` on `os` when `ctx` holds (last matching entry wins).
-    pub fn lookup(&self, os: OperatingSystem, key: Key, mods: Modifiers, ctx: &WhenContext) -> Option<&Binding> {
+    pub fn lookup(
+        &self,
+        os: OperatingSystem,
+        key: Key,
+        mods: Modifiers,
+        ctx: &WhenContext,
+    ) -> Option<&Binding> {
         let mods = normalize(os, mods);
         self.bindings
             .iter()
@@ -169,6 +184,9 @@ impl Keymap {
 
     /// The chord bound to a command id on `os` (first entry), for menus and tests.
     pub fn chord_for(&self, os: OperatingSystem, command_id: &str) -> Option<Chord> {
-        self.bindings.iter().find(|b| b.command_id == command_id).and_then(|b| b.chord(os))
+        self.bindings
+            .iter()
+            .find(|b| b.command_id == command_id)
+            .and_then(|b| b.chord(os))
     }
 }

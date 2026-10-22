@@ -16,18 +16,27 @@ struct App {
 
 impl eframe::App for App {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
-        egui::Panel::bottom("log").show_inside(ui, |ui| {
+        egui::Panel::bottom("log").show(ui, |ui| {
             ui.horizontal(|ui| {
-                ui.label(format!("version {:?}  dirty {}", self.doc.version(), self.doc.is_dirty()));
+                ui.label(format!(
+                    "version {:?}  dirty {}",
+                    self.doc.version(),
+                    self.doc.is_dirty()
+                ));
             });
             for l in self.log.iter().rev().take(4) {
                 ui.label(l);
             }
         });
-        egui::CentralPanel::default().show_inside(ui, |ui| {
+        egui::CentralPanel::default().show(ui, |ui| {
             ui.columns(2, |cols| {
-                for (i, (col, view)) in cols.iter_mut().zip([&mut self.left, &mut self.right]).enumerate() {
-                    let out = CodeEditor::new(&mut self.doc, view, ("playground", i), "Source").show(col);
+                for (i, (col, view)) in cols
+                    .iter_mut()
+                    .zip([&mut self.left, &mut self.right])
+                    .enumerate()
+                {
+                    let out =
+                        CodeEditor::new(&mut self.doc, view, ("playground", i), "Source").show(col);
                     for e in out.events {
                         if e == EditorEvent::SaveRequested {
                             let v = self.doc.version();
@@ -48,6 +57,13 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "quire playground",
         eframe::NativeOptions::default(),
-        Box::new(|_| Ok(Box::new(App { doc, left, right, log: Vec::new() }))),
+        Box::new(|_| {
+            Ok(Box::new(App {
+                doc,
+                left,
+                right,
+                log: Vec::new(),
+            }))
+        }),
     )
 }

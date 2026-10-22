@@ -22,7 +22,13 @@ pub struct GalleyKey {
 }
 
 impl GalleyKey {
-    pub fn new(content: u64, style: u64, font: &FontId, pixels_per_point: f32, wrap_width: f32) -> Self {
+    pub fn new(
+        content: u64,
+        style: u64,
+        font: &FontId,
+        pixels_per_point: f32,
+        wrap_width: f32,
+    ) -> Self {
         Self {
             content,
             style,
@@ -58,7 +64,12 @@ impl Default for GalleyCache {
 
 impl GalleyCache {
     pub fn with_capacity(capacity: usize) -> Self {
-        Self { map: HashMap::new(), tick: 0, capacity: capacity.max(4), misses: 0 }
+        Self {
+            map: HashMap::new(),
+            tick: 0,
+            capacity: capacity.max(4),
+            misses: 0,
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -70,7 +81,11 @@ impl GalleyCache {
     }
 
     /// Get the galley for `key`, laying it out with `make` on a miss.
-    pub fn get_or_insert(&mut self, key: GalleyKey, make: impl FnOnce() -> Arc<Galley>) -> Arc<Galley> {
+    pub fn get_or_insert(
+        &mut self,
+        key: GalleyKey,
+        make: impl FnOnce() -> Arc<Galley>,
+    ) -> Arc<Galley> {
         self.tick += 1;
         let tick = self.tick;
         if let Some((g, used)) = self.map.get_mut(&key) {

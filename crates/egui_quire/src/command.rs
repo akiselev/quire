@@ -25,7 +25,9 @@ impl WidgetAction {
     }
 
     fn from_id(id: &str) -> Option<Self> {
-        [Self::OpenFind, Self::OpenReplace, Self::CloseFind].into_iter().find(|a| a.id() == id)
+        [Self::OpenFind, Self::OpenReplace, Self::CloseFind]
+            .into_iter()
+            .find(|a| a.id() == id)
     }
 }
 
@@ -49,13 +51,19 @@ impl KeyAction {
         }
         let mut obj = match args {
             Some(serde_json::Value::Object(m)) => m.clone(),
-            Some(other) => return Err(format!("args of {command:?} must be an object, got {other}")),
+            Some(other) => {
+                return Err(format!(
+                    "args of {command:?} must be an object, got {other}"
+                ));
+            }
             None => serde_json::Map::new(),
         };
         obj.insert("id".into(), serde_json::Value::String(command.into()));
         match serde_json::from_value::<EditorCommand>(serde_json::Value::Object(obj)) {
             Ok(c) => Ok(Self::Command(c)),
-            Err(e) => WidgetAction::from_id(command).map(Self::Widget).ok_or_else(|| e.to_string()),
+            Err(e) => WidgetAction::from_id(command)
+                .map(Self::Widget)
+                .ok_or_else(|| e.to_string()),
         }
     }
 }

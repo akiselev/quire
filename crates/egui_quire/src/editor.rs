@@ -11,10 +11,10 @@ use std::ops::Range;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use egui::{
-    Color32, Context, CornerRadius, Event, EventFilter, Id, ImeEvent, Key, Modifiers, Pos2, Rect, Response,
-    Sense, Stroke, Ui, Vec2, pos2, vec2,
+    Color32, Context, Event, EventFilter, Id, ImeEvent, Key, Pos2, Rect, Response, Sense, Ui, Vec2,
+    pos2, vec2,
 };
-use quire_core::{Applied, Document, EditorCommand, EditorView, Selection, Version};
+use quire_core::{Applied, Document, EditorCommand, EditorView, HostRequest, Selection, Version};
 
 use crate::command::{KeyAction, WidgetAction};
 use crate::find_bar::FindBar;
@@ -58,13 +58,24 @@ pub enum EditorEvent {
     RedoRequested,
     FocusChanged(bool),
     /// The pointer rested over `pos` (host may answer with hover content).
-    HoverAt { pos: usize, version: Version },
+    HoverAt {
+        pos: usize,
+        version: Version,
+    },
     /// Ctrl+click (Cmd+click on macOS) on the word `range`.
-    LinkActivated { range: Range<usize>, version: Version },
+    LinkActivated {
+        range: Range<usize>,
+        version: Version,
+    },
     /// Secondary click at `pos`; the host draws the menu.
-    ContextMenu { pos: usize },
+    ContextMenu {
+        pos: usize,
+    },
     /// A diagnostic's action was chosen.
-    DiagnosticAction { command_id: String, args: serde_json::Value },
+    DiagnosticAction {
+        command_id: String,
+        args: serde_json::Value,
+    },
 }
 
 /// What one frame of the editor produced.
@@ -110,10 +121,10 @@ pub(crate) struct Mem {
     pub drag: Option<Drag>,
     pub hover: Option<(usize, f64, bool)>,
     pub find: FindBar,
-    pub preedit: Option<Preedit>,
     pub a11y_page_start: usize,
     pub scroll_to_caret: bool,
     pub max_seen_width: f32,
+    pub diag_hover: Option<Range<usize>>,
 }
 
 #[derive(Clone, Debug)]
@@ -129,16 +140,13 @@ pub(crate) enum Unit {
     Line,
 }
 
-#[derive(Clone, Debug, Default)]
-pub(crate) struct Preedit {
-    pub text: String,
-    pub active_chars: Option<Range<usize>>,
-}
-
 type SharedMem = Arc<Mutex<Mem>>;
 
 fn load_mem(ctx: &Context, id: Id) -> SharedMem {
-    ctx.data_mut(|d| d.get_temp_mut_or_default::<SharedMem>(id.with("quire.mem")).clone())
+    ctx.data_mut(|d| {
+        d.get_temp_mut_or_default::<SharedMem>(id.with("quire.mem"))
+            .clone()
+    })
 }
 
 /// Geometry of one frame.
@@ -168,11 +176,16 @@ impl<'a> CodeEditor<'a> {
     /// `id_salt` identifies this editor in egui memory (caret, scroll, IME ownership survive
     /// reparenting when the salt is stable). `a11y_name` is the accessible name (required: an
     /// unnamed text input fails accessibility checks).
-    pub fn new(doc: &'a mut Document, view: &'a mut EditorView, id_salt: impl std::hash::Hash, a11y_name: &'a str) -> Self {
+    pub fn new(
+        doc: &'a mut Document,
+        view: &'a mut EditorView,
+        id_salt: impl std::hash::Hash + std::fmt::Debug,
+        a11y_name: &'a str,
+    ) -> Self {
         Self {
             doc,
             view,
-            id: Id::new(id_salt),
+            id: Id::unique(id_salt),
             theme: None,
             text: None,
             keys: KeyHandling::default(),
@@ -215,11 +228,18 @@ impl<'a> CodeEditor<'a> {
     /// Size for layout without drawing: all lines × line height; width fills `available.x` when
     /// finite, else gutter plus 80 columns.
     pub fn measure(&self, ctx: &Context, available: Vec2) -> Vec2 {
-        let theme = self.theme.cloned().unwrap_or_else(|| EditorTheme::from_visuals(&ctx.global_style().visuals));
+        let theme = self
+            .theme
+            .cloned()
+            .unwrap_or_else(|| EditorTheme::from_visuals(&ctx.global_style().visuals));
         let row_h = layout::row_height(ctx, &theme.font);
         let adv = layout::mono_advance(ctx, &theme.font);
         let lines = glue::text(self.doc).len_lines().max(1);
-        let w = if available.x.is_finite() { available.x } else { gutter_width(lines, adv) + 80.0 * adv };
+        let w = if available.x.is_finite() {
+            available.x
+        } else {
+            gutter_width(lines, adv) + 80.0 * adv
+        };
         vec2(w, lines as f32 * row_h + PAD_Y * 2.0)
     }
 
@@ -232,7 +252,16 @@ impl<'a> CodeEditor<'a> {
 
     /// Draw and interact inside `rect`.
     pub fn show_in(self, ui: &mut Ui, rect: Rect) -> EditorOutput {
-        let Self { doc, view, id, theme, text, keys, a11y_name, read_only } = self;
+        let Self {
+            doc,
+            view,
+            id,
+            theme,
+            text,
+            keys,
+            a11y_name,
+            read_only,
+        } = self;
         let ctx = ui.ctx().clone();
         let owned_theme;
         let theme = match theme {
@@ -251,6 +280,7 @@ impl<'a> CodeEditor<'a> {
             }
         };
         glue::sync(doc, view);
+        glue::refresh_find(doc, view);
 
         let shared = load_mem(&ctx, id);
         let mut mem = shared.lock().unwrap_or_else(|e| e.into_inner());
@@ -265,12 +295,16 @@ impl<'a> CodeEditor<'a> {
         let geom = Geom {
             rect,
             gutter: Rect::from_min_max(rect.min, pos2(rect.left() + gw, rect.bottom())),
-            text: Rect::from_min_max(pos2(rect.left() + gw, rect.top() + PAD_Y), pos2(rect.right(), rect.bottom())),
+            text: Rect::from_min_max(
+                pos2(rect.left() + gw, rect.top() + PAD_Y),
+                pos2(rect.right(), rect.bottom()),
+            ),
             row_h,
             adv,
             pad_left: adv * 0.5,
         };
 
+        mem.scroll = glue::scroll_px(view, doc, &mem.heights);
         let response = ui.interact(rect, id, Sense::click_and_drag());
         let mut frame = FrameCx {
             ctx: &ctx,
@@ -293,15 +327,10 @@ impl<'a> CodeEditor<'a> {
             frame.mem.focused = focused;
             frame.out.events.push(EditorEvent::FocusChanged(focused));
             frame.mem.last_interaction = ctx.input(|i| i.time);
-            if !focused && frame.mem.preedit.take().is_some() {
-                glue::set_composing(frame.view, false);
+            glue::set_focused(frame.view, focused);
+            if !focused && glue::preedit(frame.view).is_some() {
+                glue::set_preedit(frame.view, None);
             }
-        }
-        if focused {
-            let escape = frame.mem.preedit.is_some() || frame.mem.find.open;
-            ctx.memory_mut(|m| {
-                m.set_focus_lock_filter(id, EventFilter { tab: true, horizontal_arrows: true, vertical_arrows: true, escape })
-            });
         }
 
         // Keyboard, text, IME, clipboard.
@@ -332,7 +361,9 @@ impl<'a> CodeEditor<'a> {
             && ctx.memory(|m| m.owns_ime_events(id))
             && let Some(caret) = caret_rect
         {
-            let to_global = ctx.layer_transform_to_global(ui.layer_id()).unwrap_or_default();
+            let to_global = ctx
+                .layer_transform_to_global(ui.layer_id())
+                .unwrap_or_default();
             ctx.output_mut(|o| {
                 o.ime = Some(egui::output::IMEOutput {
                     purpose: egui::IMEPurpose::Normal,
@@ -343,16 +374,49 @@ impl<'a> CodeEditor<'a> {
             });
         }
 
+        // Focus filter for the next frame's events, from the state after this frame's input:
+        // Escape stays with the editor only while it has a use for it (preedit, find bar).
+        if ctx.memory(|m| m.has_focus(id)) {
+            let escape = glue::preedit(frame.view).is_some() || frame.mem.find.open;
+            ctx.memory_mut(|m| {
+                m.set_focus_lock_filter(
+                    id,
+                    EventFilter {
+                        tab: true,
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
+                        escape,
+                    },
+                )
+            });
+        }
+
         crate::a11y::update(&mut frame, ui, a11y_name);
+        glue::set_scroll_px(frame.view, frame.doc, &frame.mem.heights, frame.mem.scroll);
 
         let settled = frame.mem.drag.is_none() && glue::is_settled(frame.doc);
-        let caret_rect = caret_rect.map(|r| ctx.layer_transform_to_global(ui.layer_id()).unwrap_or_default() * r);
-        let Out { applied, commands, events } = frame.out;
+        let caret_rect = caret_rect.map(|r| {
+            ctx.layer_transform_to_global(ui.layer_id())
+                .unwrap_or_default()
+                * r
+        });
+        let Out {
+            applied,
+            commands,
+            events,
+        } = frame.out;
         let mut response = response;
         if !applied.is_empty() {
             response.mark_changed();
         }
-        EditorOutput { response, applied, commands, events, caret_rect, settled }
+        EditorOutput {
+            response,
+            applied,
+            commands,
+            events,
+            caret_rect,
+            settled,
+        }
     }
 }
 
@@ -400,8 +464,11 @@ impl FrameCx<'_> {
     /// goes through the core and is applied now.
     pub fn dispatch(&mut self, cmd: EditorCommand) {
         self.touch();
+        let cmd = glue::with_page_lines(cmd, self.page_lines());
         self.out.commands.push(cmd.clone());
         match &cmd {
+            // Save is a host request; so are Undo / Redo in host undo mode (the core answers
+            // with a request then, but the widget must not wait on a todo-free core to know).
             EditorCommand::Save => {
                 self.out.events.push(EditorEvent::SaveRequested);
                 return;
@@ -414,14 +481,34 @@ impl FrameCx<'_> {
                 self.out.events.push(EditorEvent::RedoRequested);
                 return;
             }
+            EditorCommand::CloseFind => self.mem.find.open = false,
             _ => {}
         }
-        if self.read_only && changes_text(&cmd) {
+        if self.read_only && glue::changes_text(&cmd) {
             return;
         }
-        if let Ok(Some(a)) = glue::run(self.doc, self.view, &cmd) {
-            self.push_applied(a);
+        let time_ms = (self.now() * 1000.0) as u64;
+        match glue::run(self.doc, self.view, &cmd, time_ms) {
+            Ok(ran) => {
+                if let Some(a) = ran.applied {
+                    self.push_applied(a);
+                }
+                match ran.request {
+                    Some(HostRequest::Save) => self.out.events.push(EditorEvent::SaveRequested),
+                    Some(HostRequest::Undo) => self.out.events.push(EditorEvent::UndoRequested),
+                    Some(HostRequest::Redo) => self.out.events.push(EditorEvent::RedoRequested),
+                    None => {}
+                }
+            }
+            Err(_refused) => {}
         }
+    }
+
+    /// Lines per page for PageUp / PageDown.
+    fn page_lines(&self) -> u32 {
+        ((self.geom.text.height() / self.geom.row_h).floor() as u32)
+            .saturating_sub(1)
+            .max(1)
     }
 
     pub fn push_applied(&mut self, a: Applied) {
@@ -442,7 +529,10 @@ impl FrameCx<'_> {
                 };
                 self.mem.find.open_bar(a == WidgetAction::OpenReplace, seed);
             }
-            WidgetAction::CloseFind => self.mem.find.open = false,
+            WidgetAction::CloseFind => {
+                self.mem.find.open = false;
+                glue::clear_find(self.doc, self.view);
+            }
         }
     }
 
@@ -463,7 +553,7 @@ impl FrameCx<'_> {
         for ev in events {
             let handled = match &ev {
                 Event::Text(t) => {
-                    if self.mem.preedit.is_none() && !t.is_empty() {
+                    if glue::preedit(self.view).is_none() && !t.is_empty() {
                         self.dispatch(glue::type_cmd(t));
                     }
                     true
@@ -477,24 +567,34 @@ impl FrameCx<'_> {
                     true
                 }
                 Event::Cut => {
-                    if self.copy() {
-                        self.dispatch(glue::type_cmd(""));
-                    }
+                    self.copy();
+                    self.dispatch(glue::cut_cmd());
                     true
                 }
                 Event::Paste(t) => {
                     self.dispatch(glue::paste_cmd(t));
                     true
                 }
-                Event::Key { key: Key::Escape, pressed: true, .. } if self.mem.preedit.is_some() => {
+                Event::Key {
+                    key: Key::Escape,
+                    pressed: true,
+                    ..
+                } if glue::preedit(self.view).is_some() => {
                     // Escape cancels the preedit only.
-                    self.mem.preedit = None;
-                    glue::set_composing(self.view, false);
+                    glue::set_preedit(self.view, None);
                     true
                 }
-                Event::Key { key, pressed: true, modifiers, .. } => match keys {
-                    KeyHandling::Builtin(map) if self.mem.preedit.is_none() => {
-                        match map.lookup(os, *key, *modifiers, &self.when_context()).map(|b| b.action.clone()) {
+                Event::Key {
+                    key,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } => match keys {
+                    KeyHandling::Builtin(map) if glue::preedit(self.view).is_none() => {
+                        match map
+                            .lookup(os, *key, *modifiers, &self.when_context())
+                            .map(|b| b.action.clone())
+                        {
                             Some(KeyAction::Command(c)) => {
                                 self.dispatch(c);
                                 true
@@ -539,31 +639,38 @@ impl FrameCx<'_> {
     fn handle_ime(&mut self, ime: &ImeEvent) {
         self.touch();
         match ime {
-            ImeEvent::Preedit { text, active_range_chars } => {
+            ImeEvent::Preedit {
+                text,
+                active_range_chars,
+            } => {
                 if text.is_empty() {
-                    if self.mem.preedit.take().is_some() {
-                        glue::set_composing(self.view, false);
+                    if glue::preedit(self.view).is_some() {
+                        glue::set_preedit(self.view, None);
                     }
                 } else {
-                    if self.mem.preedit.is_none() && !glue::selection(self.view).primary().is_empty() && !self.read_only {
+                    if glue::preedit(self.view).is_none()
+                        && !glue::selection(self.view).primary().is_empty()
+                        && !self.read_only
+                    {
                         // Composition replaces the selection, as in TextEdit.
                         self.dispatch(glue::type_cmd(""));
                     }
-                    self.mem.preedit = Some(Preedit { text: text.clone(), active_chars: active_range_chars.clone() });
-                    glue::set_composing(self.view, true);
+                    glue::set_preedit(self.view, Some((text, active_range_chars.clone())));
                     self.mem.scroll_to_caret = true;
                 }
             }
             ImeEvent::Commit(text) => {
-                let was = self.mem.preedit.take().is_some();
-                if was {
-                    glue::set_composing(self.view, false);
+                if glue::preedit(self.view).is_some() {
+                    glue::set_preedit(self.view, None);
                 }
                 if !text.is_empty() {
                     self.dispatch(glue::type_cmd(text));
                 }
             }
-            ImeEvent::DeleteSurrounding { before_chars, after_chars } => {
+            ImeEvent::DeleteSurrounding {
+                before_chars,
+                after_chars,
+            } => {
                 if self.read_only {
                     return;
                 }
@@ -584,7 +691,7 @@ impl FrameCx<'_> {
                     to = t.next_char_boundary(to);
                 }
                 if from < to
-                    && let Some(a) = glue::replace(self.doc, self.view, from..to, "")
+                    && let Some(a) = glue::replace(self.doc, self.view, from..to, "", true)
                 {
                     self.push_applied(a);
                 }
@@ -603,7 +710,10 @@ impl FrameCx<'_> {
                 .filter_map(|e| match e {
                     Event::AccessKitActionRequest(r)
                         if r.target_node == id.accesskit_id()
-                            && matches!(r.action, Action::SetValue | Action::ReplaceSelectedText) =>
+                            && matches!(
+                                r.action,
+                                Action::SetValue | Action::ReplaceSelectedText
+                            ) =>
                     {
                         Some(r.data.clone())
                     }
@@ -620,7 +730,7 @@ impl FrameCx<'_> {
                 let len = glue::text(self.doc).len_bytes();
                 let sel = glue::selection(self.view).primary();
                 let range = if sel.is_empty() { 0..len } else { sel.range() };
-                if let Some(a) = glue::replace(self.doc, self.view, range, &v) {
+                if let Some(a) = glue::replace(self.doc, self.view, range, &v, false) {
                     self.push_applied(a);
                 }
             }
@@ -629,7 +739,10 @@ impl FrameCx<'_> {
 
     /// Byte offset under a screen position.
     pub fn pos_at(&mut self, p: Pos2) -> usize {
-        let line = self.mem.heights.line_at(p.y - self.geom.text.top() + self.mem.scroll.y);
+        let line = self
+            .mem
+            .heights
+            .line_at(p.y - self.geom.text.top() + self.mem.scroll.y);
         let text = glue::text(self.doc);
         let line = line.min(text.len_lines().saturating_sub(1));
         let ll = self.layout_line(line);
@@ -642,7 +755,8 @@ impl FrameCx<'_> {
         let text = glue::text(self.doc);
         let s = glue::line_str(text, line);
         let mut runs = Vec::new();
-        let style_hash = glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.theme.galley_hash();
+        let style_hash =
+            glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.theme.galley_hash();
         let mut shaper = LineShaper {
             cache: &mut self.mem.galleys,
             ctx: self.ctx,
@@ -661,7 +775,11 @@ impl FrameCx<'_> {
             Unit::Line => {
                 let l = text.byte_to_line(pos);
                 let r = text.line_range(l);
-                let end = if l + 1 < text.len_lines() { text.line_to_byte(l + 1) } else { r.end };
+                let end = if l + 1 < text.len_lines() {
+                    text.line_to_byte(l + 1)
+                } else {
+                    r.end
+                };
                 r.start..end
             }
             Unit::Word => {
@@ -677,7 +795,29 @@ impl FrameCx<'_> {
 
     fn handle_pointer(&mut self, ui: &Ui, response: &Response) {
         let (pressed, down, mods, time, ptr) = ui.input(|i| {
-            (i.pointer.primary_pressed(), i.pointer.primary_down(), i.modifiers, i.time, i.pointer.interact_pos())
+            // Modifiers as they were at the press (the event carries them).
+            let press_mods = i.events.iter().rev().find_map(|e| match e {
+                Event::PointerButton {
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers,
+                    ..
+                } => Some(*modifiers),
+                _ => None,
+            });
+            (
+                i.pointer.primary_pressed(),
+                i.pointer.primary_down(),
+                press_mods.unwrap_or(i.modifiers),
+                i.time,
+                i.pointer.interact_pos(),
+            )
+        });
+        let (click_delay, click_dist) = self.ctx.options(|o| {
+            (
+                o.input_options.max_double_click_delay,
+                o.input_options.max_click_dist,
+            )
         });
         let Some(ptr) = ptr else { return };
         let in_text = self.geom.text.contains(ptr) || self.geom.gutter.contains(ptr);
@@ -692,12 +832,17 @@ impl FrameCx<'_> {
             let pos = self.pos_at(ptr);
             if mods.command && !mods.shift && !mods.alt {
                 let range = self.unit_range(pos, Unit::Word);
-                self.out.events.push(EditorEvent::LinkActivated { range, version: glue::version(self.doc) });
+                self.out.events.push(EditorEvent::LinkActivated {
+                    range,
+                    version: glue::version(self.doc),
+                });
                 self.mem.last_press = None;
                 return;
             }
             let count = match self.mem.last_press {
-                Some((t, p, c)) if time - t < 0.5 && p.distance(ptr) < 6.0 => c % 3 + 1,
+                Some((t, p, c)) if time - t < click_delay && p.distance(ptr) < click_dist => {
+                    c % 3 + 1
+                }
                 _ => 1,
             };
             self.mem.last_press = Some((time, ptr, count));
@@ -717,37 +862,41 @@ impl FrameCx<'_> {
                 let r = self.unit_range(pos, unit);
                 (r.clone(), r.end)
             };
-            self.mem.drag = Some(Drag { anchor: anchor_range.clone(), unit });
+            self.mem.drag = Some(Drag {
+                anchor: anchor_range.clone(),
+                unit,
+            });
             let new = if anchor_range.is_empty() || mods.shift {
                 glue::single(anchor_range.start, head)
             } else {
                 glue::single(anchor_range.start, anchor_range.end)
             };
             self.set_selection(new);
-        } else if down && let Some(drag) = self.mem.drag.clone() {
-            if response.dragged() || response.is_pointer_button_down_on() {
-                let pos = self.pos_at(ptr);
-                let r = self.unit_range(pos, drag.unit);
-                let a = drag.anchor;
-                let new = if r.start < a.start {
-                    glue::single(a.end, r.start)
-                } else {
-                    glue::single(a.start, r.end.max(a.end))
-                };
-                if glue::selection(self.view).primary().range() != new.primary().range()
-                    || glue::selection(self.view).primary().head != new.primary().head
-                {
-                    self.set_selection(new);
-                }
-                // Autoscroll when dragging past the edges.
-                let t = self.geom.text;
-                if ptr.y < t.top() {
-                    self.mem.scroll.y -= (t.top() - ptr.y).min(self.geom.row_h * 3.0);
-                } else if ptr.y > t.bottom() {
-                    self.mem.scroll.y += (ptr.y - t.bottom()).min(self.geom.row_h * 3.0);
-                }
-                ui.ctx().request_repaint();
+        } else if down
+            && let Some(drag) = self.mem.drag.clone()
+            && (response.dragged() || response.is_pointer_button_down_on())
+        {
+            let pos = self.pos_at(ptr);
+            let r = self.unit_range(pos, drag.unit);
+            let a = drag.anchor;
+            let new = if r.start < a.start {
+                glue::single(a.end, r.start)
+            } else {
+                glue::single(a.start, r.end.max(a.end))
+            };
+            if glue::selection(self.view).primary().range() != new.primary().range()
+                || glue::selection(self.view).primary().head != new.primary().head
+            {
+                self.set_selection(new);
             }
+            // Autoscroll when dragging past the edges.
+            let t = self.geom.text;
+            if ptr.y < t.top() {
+                self.mem.scroll.y -= (t.top() - ptr.y).min(self.geom.row_h * 3.0);
+            } else if ptr.y > t.bottom() {
+                self.mem.scroll.y += (ptr.y - t.bottom()).min(self.geom.row_h * 3.0);
+            }
+            ui.ctx().request_repaint();
         }
         if !down {
             self.mem.drag = None;
@@ -759,15 +908,22 @@ impl FrameCx<'_> {
             match self.mem.hover {
                 Some((p, since, emitted)) if p == pos => {
                     if !emitted && time - since >= 0.5 {
-                        self.out.events.push(EditorEvent::HoverAt { pos, version: glue::version(self.doc) });
+                        self.out.events.push(EditorEvent::HoverAt {
+                            pos,
+                            version: glue::version(self.doc),
+                        });
                         self.mem.hover = Some((p, since, true));
                     } else if !emitted {
-                        ui.ctx().request_repaint_after(std::time::Duration::from_secs_f64(0.5 - (time - since)));
+                        ui.ctx()
+                            .request_repaint_after(std::time::Duration::from_secs_f64(
+                                0.5 - (time - since),
+                            ));
                     }
                 }
                 _ => {
                     self.mem.hover = Some((pos, time, false));
-                    ui.ctx().request_repaint_after(std::time::Duration::from_millis(500));
+                    ui.ctx()
+                        .request_repaint_after(std::time::Duration::from_millis(500));
                 }
             }
         } else {
@@ -775,8 +931,12 @@ impl FrameCx<'_> {
         }
     }
 
+    /// Mouse selection: recorded as `setSelection`, applied as a selection-only transaction (the
+    /// transaction that command resolves to).
     fn set_selection(&mut self, sel: Selection) {
-        if let Some(a) = glue::set_selection(self.doc, self.view, sel) {
+        self.touch();
+        self.out.commands.push(glue::set_selection_cmd(sel.clone()));
+        if let Some(a) = glue::select(self.doc, self.view, sel) {
             self.push_applied(a);
         }
     }
@@ -807,21 +967,27 @@ impl FrameCx<'_> {
                 ui.input_mut(|i| i.smooth_scroll_delta = Vec2::ZERO);
             }
         }
-        if std::mem::take(&mut self.mem.scroll_to_caret) {
-            self.scroll_caret_into_view();
+        if let Some((pos, center)) = glue::take_reveal(self.view, self.doc) {
+            self.reveal(pos, center);
+        } else if std::mem::take(&mut self.mem.scroll_to_caret) {
+            let head = glue::selection(self.view).primary().head;
+            self.reveal(head, false);
         }
+        self.mem.scroll_to_caret = false;
         self.clamp_scroll();
     }
 
-    fn scroll_caret_into_view(&mut self) {
+    fn reveal(&mut self, pos: usize, center: bool) {
         let text = glue::text(self.doc);
-        let head = glue::selection(self.view).primary().head.min(text.len_bytes());
+        let head = pos.min(text.len_bytes());
         let line = text.byte_to_line(head);
         let col = head - text.line_to_byte(line);
         let top = self.mem.heights.y_of(line);
         let bottom = top + self.geom.row_h;
         let view_h = self.geom.text.height();
-        if top < self.mem.scroll.y {
+        if center {
+            self.mem.scroll.y = top - (view_h - self.geom.row_h) * 0.5;
+        } else if top < self.mem.scroll.y {
             self.mem.scroll.y = top;
         } else if bottom > self.mem.scroll.y + view_h {
             self.mem.scroll.y = bottom - view_h;
@@ -840,7 +1006,10 @@ impl FrameCx<'_> {
     /// Visible line range.
     pub fn visible_lines(&self) -> Range<usize> {
         let first = self.mem.heights.line_at(self.mem.scroll.y);
-        let last = self.mem.heights.line_at(self.mem.scroll.y + self.geom.text.height());
+        let last = self
+            .mem
+            .heights
+            .line_at(self.mem.scroll.y + self.geom.text.height());
         first..(last + 1).min(self.mem.heights.len())
     }
 
@@ -863,8 +1032,89 @@ impl FrameCx<'_> {
             (false, period - phase)
         };
         let until_stop = t.blink_idle_stop as f64 - idle;
-        self.ctx.request_repaint_after(std::time::Duration::from_secs_f64(until.min(until_stop).max(0.0)));
+        self.ctx
+            .request_repaint_after(std::time::Duration::from_secs_f64(
+                until.min(until_stop).max(0.0),
+            ));
         vis
+    }
+}
+
+/// (colour, message, actions as (title, command id, args JSON)).
+type HoverItem = (Color32, String, Vec<(String, String, String)>);
+
+impl FrameCx<'_> {
+    /// Hover text for diagnostics under the pointer, with their actions as buttons. The hover
+    /// target stays alive while its tooltip is open so the buttons can be reached.
+    fn diagnostic_hover(&mut self, ui: &mut Ui, response: &Response) {
+        let wid = self.id.with("quire.diag");
+        let ptr = ui.input(|i| i.pointer.hover_pos());
+        let mut target = None;
+        if let Some(p) = ptr
+            && response.hovered()
+            && self.geom.text.contains(p)
+            && self.mem.drag.is_none()
+        {
+            let pos = self.pos_at(p);
+            target = glue::diagnostics_at(self.doc, pos)
+                .first()
+                .map(|d| d.range.clone());
+        }
+        if target.is_none() && egui::Tooltip::was_tooltip_open_last_frame(self.ctx, wid) {
+            target = self.mem.diag_hover.clone();
+        }
+        self.mem.diag_hover = target.clone();
+        let Some(range) = target else { return };
+        let text = glue::text(self.doc);
+        let start = range.start.min(text.len_bytes());
+        let line = text.byte_to_line(start);
+        let ls = text.line_to_byte(line);
+        let line_len = glue::line_str(text, line).len();
+        let end = range.end.clamp(start, ls + line_len);
+        let ll = self.layout_line(line);
+        let left = self.geom.text_left(self.mem);
+        let top = self.geom.line_top(self.mem, line);
+        let x0 = left + ll.x_of(start - ls);
+        let x1 = (left + ll.x_of(end - ls)).max(x0 + self.geom.adv);
+        let rect = Rect::from_min_max(pos2(x0, top), pos2(x1, top + self.geom.row_h));
+        let items: Vec<HoverItem> = glue::diagnostics_at(self.doc, start)
+            .into_iter()
+            .map(|d| {
+                let c = match d.severity {
+                    glue::Severity::Error => self.theme.error,
+                    glue::Severity::Warning => self.theme.warning,
+                    glue::Severity::Info => self.theme.info,
+                    glue::Severity::Hint => self.theme.hint,
+                };
+                let acts = d
+                    .actions
+                    .iter()
+                    .map(|a| (a.title.clone(), a.command_id.clone(), a.args_json.clone()))
+                    .collect();
+                (c, d.message.clone(), acts)
+            })
+            .collect();
+        let mut chosen = None;
+        ui.interact(rect, wid, Sense::hover()).on_hover_ui(|ui| {
+            for (c, msg, acts) in &items {
+                ui.colored_label(*c, msg);
+                if !acts.is_empty() {
+                    ui.horizontal(|ui| {
+                        for (title, command_id, args) in acts {
+                            if ui.button(title).clicked() {
+                                chosen = Some((command_id.clone(), args.clone()));
+                            }
+                        }
+                    });
+                }
+            }
+        });
+        if let Some((command_id, args)) = chosen {
+            let args = serde_json::from_str(&args).unwrap_or(serde_json::Value::Null);
+            self.out
+                .events
+                .push(EditorEvent::DiagnosticAction { command_id, args });
+        }
     }
 }
 
@@ -872,10 +1122,6 @@ impl Mem {
     pub(crate) fn galleys_max_width(&self) -> f32 {
         self.max_seen_width
     }
-}
-
-fn changes_text(cmd: &EditorCommand) -> bool {
-    !matches!(cmd, EditorCommand::CursorMove { .. } | EditorCommand::Save | EditorCommand::Undo | EditorCommand::Redo)
 }
 
 /// The word (or run of punctuation / whitespace) at byte column `col` of `line`.
@@ -906,8 +1152,18 @@ pub(crate) fn word_at(line: &str, col: usize) -> Range<usize> {
         (None, Some(_)) => before.unwrap(),
         (None, None) => return col..col,
     };
-    let start = line[..col].char_indices().rev().take_while(|(_, c)| kind(*c) == k).last().map_or(col, |(i, _)| i);
-    let end = col + line[col..].chars().take_while(|c| kind(*c) == k).map(char::len_utf8).sum::<usize>();
+    let start = line[..col]
+        .char_indices()
+        .rev()
+        .take_while(|(_, c)| kind(*c) == k)
+        .last()
+        .map_or(col, |(i, _)| i);
+    let end = col
+        + line[col..]
+            .chars()
+            .take_while(|c| kind(*c) == k)
+            .map(char::len_utf8)
+            .sum::<usize>();
     start..end
 }
 

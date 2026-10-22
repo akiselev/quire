@@ -1,8 +1,8 @@
 //! AccessKit: the editor node (`Role::MultilineTextInput`, host-supplied name) with `TextRun`
 //! children for a page of lines around the caret (50 lines, 500 when a screen reader is active),
 //! following egui 0.37's `text_selection/accesskit_text.rs`. The page shifts when the caret
-//! leaves it. Run ids: `Id::new((editor_id, "run", line))` for a line's first chunk and
-//! `Id::new((editor_id, "run", line, k))` for chunk `k > 0` (AccessKit runs hold ≤ 255 chars).
+//! leaves it. Run ids: `Id::unique((editor_id, "run", line))` for a line's first chunk and
+//! `Id::unique((editor_id, "run", line, k))` for chunk `k > 0` (AccessKit runs hold ≤ 255 chars).
 
 use egui::accesskit::{self, Role};
 use egui::{Id, Rect, Ui, UiBuilder, pos2, vec2};
@@ -14,12 +14,20 @@ const MAX_CHARS: usize = 255;
 
 /// Page size: 50 lines, 500 with a screen reader.
 pub fn page_size(ui: &Ui) -> usize {
-    if ui.memory(|m| m.options.screen_reader) { 500 } else { 50 }
+    if ui.memory(|m| m.options.screen_reader) {
+        500
+    } else {
+        50
+    }
 }
 
 /// Id of the text run for `line`, chunk `chunk`.
 pub fn run_id(editor: Id, line: usize, chunk: usize) -> Id {
-    if chunk == 0 { Id::new((editor, "run", line)) } else { Id::new((editor, "run", line, chunk)) }
+    if chunk == 0 {
+        Id::unique((editor, "run", line))
+    } else {
+        Id::unique((editor, "run", line, chunk))
+    }
 }
 
 pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
@@ -48,7 +56,10 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
     }
     let page = f.mem.a11y_page_start..(f.mem.a11y_page_start + n).min(lines);
 
-    let to_global = f.ctx.layer_transform_to_global(ui.layer_id()).unwrap_or_default();
+    let to_global = f
+        .ctx
+        .layer_transform_to_global(ui.layer_id())
+        .unwrap_or_default();
     let left = f.geom.text_left(f.mem);
     let row_h = f.geom.row_h;
 
@@ -60,14 +71,27 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
         if !page.contains(&line) {
             return None;
         }
-        let col_chars = text.slice(text.line_to_byte(line)..b).to_string().chars().count();
-        let chunk = if col_chars > 0 && col_chars.is_multiple_of(MAX_CHARS) { col_chars / MAX_CHARS - 1 } else { col_chars / MAX_CHARS };
-        Some(accesskit::TextPosition { node: run_id(id, line, chunk).accesskit_id(), character_index: col_chars - chunk * MAX_CHARS })
+        let col_chars = text
+            .slice(text.line_to_byte(line)..b)
+            .to_string()
+            .chars()
+            .count();
+        let chunk = if col_chars > 0 && col_chars.is_multiple_of(MAX_CHARS) {
+            col_chars / MAX_CHARS - 1
+        } else {
+            col_chars / MAX_CHARS
+        };
+        Some(accesskit::TextPosition {
+            node: run_id(id, line, chunk).accesskit_id(),
+            character_index: col_chars - chunk * MAX_CHARS,
+        })
     };
     let anchor = pos_of(sel.anchor);
     let focus = pos_of(sel.head);
     if let (Some(anchor), Some(focus)) = (anchor, focus) {
-        f.ctx.accesskit_node_builder(id, |n| n.set_text_selection(accesskit::TextSelection { anchor, focus }));
+        f.ctx.accesskit_node_builder(id, |n| {
+            n.set_text_selection(accesskit::TextSelection { anchor, focus })
+        });
     }
 
     for line in page.clone() {
@@ -116,18 +140,31 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str) {
             // A child Ui with an explicit id and the editor as accessibility parent gives the run
             // node its place in the tree (egui's register_accesskit_parent is crate-private).
             let _child = ui.new_child(
-                UiBuilder::new().scope_id(rid).accessibility_parent(id).accessibility_role(Role::TextRun).max_rect(rect),
+                UiBuilder::new()
+                    .scope_id(rid)
+                    .accessibility_parent(id)
+                    .accessibility_role(Role::TextRun)
+                    .max_rect(rect),
             );
             let value = value[b0..b1].to_owned();
             let lens = lens[c0..c1].to_vec();
             let pos: Vec<f32> = xs[c0..c1].iter().map(|x| x - x0).collect();
             let wid = ws[c0..c1].to_vec();
-            let starts: Vec<u8> = word_starts.iter().filter(|&&w| w >= c0 && w < c1).map(|&w| (w - c0) as u8).collect();
+            let starts: Vec<u8> = word_starts
+                .iter()
+                .filter(|&&w| w >= c0 && w < c1)
+                .map(|&w| (w - c0) as u8)
+                .collect();
             let g = to_global * rect;
             f.ctx.accesskit_node_builder(rid, |n| {
                 n.set_role(Role::TextRun);
                 n.set_text_direction(accesskit::TextDirection::LeftToRight);
-                n.set_bounds(accesskit::Rect { x0: g.min.x.into(), y0: g.min.y.into(), x1: g.max.x.into(), y1: g.max.y.into() });
+                n.set_bounds(accesskit::Rect {
+                    x0: g.min.x.into(),
+                    y0: g.min.y.into(),
+                    x1: g.max.x.into(),
+                    y1: g.max.y.into(),
+                });
                 n.set_value(value);
                 n.set_character_lengths(lens);
                 n.set_character_positions(pos);

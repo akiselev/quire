@@ -6,8 +6,8 @@ use std::ops::Range;
 
 use egui::Color32;
 use quire_core::{
-    Applied, ChangeSet, Document, EditorCommand, EditorView, FindQuery, HostRequest, InputKind, Origin, Preedit,
-    SelRange, Selection, Text, Transaction, UndoMode, Version,
+    Applied, ChangeSet, Document, EditorCommand, EditorView, FindQuery, GroupHint, HostRequest,
+    InputKind, Origin, Preedit, SelRange, Selection, Text, Transaction, UndoMode, Version,
 };
 
 pub use quire_core::Severity;
@@ -30,7 +30,7 @@ pub fn version(doc: &Document) -> Version {
 
 /// Line `i` without its line break.
 pub fn line_str(text: &Text, i: usize) -> Cow<'_, str> {
-    let s: Cow<'_, str> = text.line(i).into();
+    let s = text.line(i).to_cow();
     match s {
         Cow::Borrowed(b) => Cow::Borrowed(b.strip_suffix('\n').unwrap_or(b)),
         Cow::Owned(mut o) => {
@@ -55,19 +55,47 @@ pub struct Ran {
 
 /// Run a command through the core (pure command → transaction, then apply). `time_ms` is the
 /// clock for undo grouping.
-pub fn run(doc: &mut Document, view: &mut EditorView, cmd: &EditorCommand, time_ms: u64) -> Result<Ran, String> {
-    let ex = doc.execute(view, cmd, Some(time_ms)).map_err(|e| e.to_string())?;
-    Ok(Ran { applied: ex.applied, request: ex.request })
+pub fn run(
+    doc: &mut Document,
+    view: &mut EditorView,
+    cmd: &EditorCommand,
+    time_ms: u64,
+) -> Result<Ran, String> {
+    let ex = doc
+        .execute(view, cmd, Some(time_ms))
+        .map_err(|e| e.to_string())?;
+    Ok(Ran {
+        applied: ex.applied,
+        request: ex.request,
+    })
 }
 
 /// Replace `range` with `text` as one input transaction (IME surrounding delete, a11y SetValue).
-pub fn replace(doc: &mut Document, view: &mut EditorView, range: Range<usize>, text: &str) -> Option<Applied> {
+pub fn replace(
+    doc: &mut Document,
+    view: &mut EditorView,
+    range: Range<usize>,
+    text: &str,
+    ime: bool,
+) -> Option<Applied> {
     let len = doc.text().len_bytes();
     let changes = ChangeSet::replace(len, [(range.clone(), text)]).ok()?;
     let caret = range.start + text.len();
     let tr = Transaction::new(doc.version(), changes)
         .with_selection(Selection::point(caret))
-        .with_origin(Origin::Input(InputKind::Other));
+        .with_origin(Origin::Input(if ime {
+            InputKind::Ime
+        } else {
+            InputKind::Other
+        }))
+        .with_group(GroupHint::Close);
+    doc.apply(tr, view).ok()
+}
+
+/// Apply a selection-only transaction.
+pub fn select(doc: &mut Document, view: &mut EditorView, sel: Selection) -> Option<Applied> {
+    let tr = Transaction::select(doc.version(), doc.text().len_bytes(), sel)
+        .with_origin(Origin::Command("setSelection".into()));
     doc.apply(tr, view).ok()
 }
 
@@ -100,7 +128,10 @@ pub fn preedit(view: &EditorView) -> Option<&Preedit> {
 pub fn set_preedit(view: &mut EditorView, p: Option<(&str, Option<Range<usize>>)>) {
     view.set_preedit(p.map(|(text, active_chars)| {
         let to_byte = |c: usize| text.char_indices().nth(c).map_or(text.len(), |(b, _)| b);
-        Preedit { text: text.to_owned(), active: active_chars.map(|r| to_byte(r.start)..to_byte(r.end)) }
+        Preedit {
+            text: text.to_owned(),
+            active: active_chars.map(|r| to_byte(r.start)..to_byte(r.end)),
+        }
     }));
 }
 
@@ -110,7 +141,12 @@ pub fn set_focused(view: &mut EditorView, f: bool) {
 
 /// Colour runs `(start_byte, colour)` of `line` (resolved from token styles at paint time), and
 /// a hash of the runs for the galley key.
-pub fn line_runs(doc: &Document, line: usize, theme: &EditorTheme, out: &mut Vec<(usize, Color32)>) -> u64 {
+pub fn line_runs(
+    doc: &Document,
+    line: usize,
+    theme: &EditorTheme,
+    out: &mut Vec<(usize, Color32)>,
+) -> u64 {
     out.clear();
     let tokens = doc.tokens();
     if line >= tokens.len_lines() {
@@ -141,10 +177,19 @@ pub fn diagnostics_at(doc: &Document, pos: usize) -> Vec<&quire_core::Diagnostic
 }
 
 /// Find matches of the view (sorted) and the index of the one at the primary selection.
-pub fn find_matches<'v>(view: &'v EditorView, _doc: &Document) -> (&'v [Range<usize>], Option<usize>) {
-    let Some(f) = view.find() else { return (&[], None) };
+pub fn find_matches<'v>(
+    view: &'v EditorView,
+    _doc: &Document,
+) -> (&'v [Range<usize>], Option<usize>) {
+    let Some(f) = view.find() else {
+        return (&[], None);
+    };
     let sel = view.selection().primary().range();
-    let cur = f.matches.binary_search_by(|m| m.start.cmp(&sel.start)).ok().filter(|&i| f.matches[i] == sel);
+    let cur = f
+        .matches
+        .binary_search_by(|m| m.start.cmp(&sel.start))
+        .ok()
+        .filter(|&i| f.matches[i] == sel);
     (&f.matches, cur)
 }
 
@@ -157,7 +202,12 @@ pub struct FindOptions {
 }
 
 fn query(q: &str, o: FindOptions) -> FindQuery {
-    FindQuery { search_string: q.to_owned(), is_regex: o.regex, match_case: o.case_sensitive, whole_word: o.whole_word }
+    FindQuery {
+        search_string: q.to_owned(),
+        is_regex: o.regex,
+        match_case: o.case_sensitive,
+        whole_word: o.whole_word,
+    }
 }
 
 /// Is the view's find state out of date for this query (or absent)?
@@ -185,7 +235,9 @@ pub fn clear_find(doc: &Document, view: &mut EditorView) {
 }
 
 pub fn find_error(view: &EditorView) -> Option<String> {
-    view.find().and_then(|f| f.error.as_ref()).map(|e| e.0.clone())
+    view.find()
+        .and_then(|f| f.error.as_ref())
+        .map(|e| e.0.clone())
 }
 
 pub fn find_next_cmd() -> EditorCommand {
@@ -197,19 +249,28 @@ pub fn find_prev_cmd() -> EditorCommand {
 }
 
 pub fn replace_one_cmd(r: &str) -> EditorCommand {
-    EditorCommand::ReplaceOne { replacement: r.to_owned() }
+    EditorCommand::ReplaceOne {
+        replacement: r.to_owned(),
+    }
 }
 
 pub fn replace_all_cmd(r: &str) -> EditorCommand {
-    EditorCommand::ReplaceAll { replacement: r.to_owned() }
+    EditorCommand::ReplaceAll {
+        replacement: r.to_owned(),
+    }
 }
 
 pub fn type_cmd(text: &str) -> EditorCommand {
-    EditorCommand::Type { text: text.to_owned() }
+    EditorCommand::Type {
+        text: text.to_owned(),
+    }
 }
 
 pub fn paste_cmd(text: &str) -> EditorCommand {
-    EditorCommand::Paste { text: text.to_owned(), per_cursor: true }
+    EditorCommand::Paste {
+        text: text.to_owned(),
+        per_cursor: true,
+    }
 }
 
 pub fn cut_cmd() -> EditorCommand {
@@ -220,12 +281,20 @@ pub fn cut_cmd() -> EditorCommand {
 pub fn with_page_lines(cmd: EditorCommand, page: u32) -> EditorCommand {
     use quire_core::Motion;
     match cmd {
-        EditorCommand::CursorMove { to: Motion::PageUp { .. }, select } => {
-            EditorCommand::CursorMove { to: Motion::PageUp { lines: page }, select }
-        }
-        EditorCommand::CursorMove { to: Motion::PageDown { .. }, select } => {
-            EditorCommand::CursorMove { to: Motion::PageDown { lines: page }, select }
-        }
+        EditorCommand::CursorMove {
+            to: Motion::PageUp { .. },
+            select,
+        } => EditorCommand::CursorMove {
+            to: Motion::PageUp { lines: page },
+            select,
+        },
+        EditorCommand::CursorMove {
+            to: Motion::PageDown { .. },
+            select,
+        } => EditorCommand::CursorMove {
+            to: Motion::PageDown { lines: page },
+            select,
+        },
         c => c,
     }
 }
@@ -257,8 +326,15 @@ pub fn scroll_px(view: &EditorView, doc: &Document, heights: &crate::HeightIndex
     egui::vec2(s.horizontal, heights.y_of(line) + s.offset)
 }
 
-pub fn set_scroll_px(view: &mut EditorView, doc: &Document, heights: &crate::HeightIndex, px: egui::Vec2) {
-    let line = heights.line_at(px.y).min(doc.text().len_lines().saturating_sub(1));
+pub fn set_scroll_px(
+    view: &mut EditorView,
+    doc: &Document,
+    heights: &crate::HeightIndex,
+    px: egui::Vec2,
+) {
+    let line = heights
+        .line_at(px.y)
+        .min(doc.text().len_lines().saturating_sub(1));
     let s = quire_core::Scroll {
         anchor: doc.text().line_to_byte(line),
         offset: px.y - heights.y_of(line),
@@ -273,6 +349,10 @@ pub fn set_scroll_px(view: &mut EditorView, doc: &Document, heights: &crate::Hei
 pub fn take_reveal(view: &mut EditorView, doc: &Document) -> Option<(usize, bool)> {
     view.take_reveal().map(|r| match r {
         quire_core::Reveal::Pos { pos, center } => (pos, center),
-        quire_core::Reveal::Line(l) => (doc.text().line_to_byte(l.min(doc.text().len_lines().saturating_sub(1))), true),
+        quire_core::Reveal::Line(l) => (
+            doc.text()
+                .line_to_byte(l.min(doc.text().len_lines().saturating_sub(1))),
+            true,
+        ),
     })
 }

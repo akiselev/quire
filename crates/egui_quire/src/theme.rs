@@ -70,7 +70,10 @@ impl EditorTheme {
 
     /// Colour of a token type.
     pub fn token_color(&self, token_type: usize) -> Color32 {
-        self.token_colors.get(token_type).copied().unwrap_or(self.foreground)
+        self.token_colors
+            .get(token_type)
+            .copied()
+            .unwrap_or(self.foreground)
     }
 
     /// Hash of everything that affects line galleys (font is keyed separately).

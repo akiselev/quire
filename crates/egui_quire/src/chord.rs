@@ -22,7 +22,13 @@ impl Chord {
         if s.contains(' ') {
             return Err(format!("two-step chord not supported: {s:?}"));
         }
-        let mut c = Self { key: Key::Escape, ctrl: false, shift: false, alt: false, cmd: false };
+        let mut c = Self {
+            key: Key::Escape,
+            ctrl: false,
+            shift: false,
+            alt: false,
+            cmd: false,
+        };
         // Split on '+' but allow a trailing '+' key ("ctrl++" is not used by VS Code; "ctrl+=" is).
         let parts: Vec<&str> = s.split('+').collect();
         let (mods, key) = parts.split_at(parts.len() - 1);
@@ -44,7 +50,11 @@ impl Chord {
     /// egui sets `command` alongside `ctrl` (elsewhere) or `mac_cmd` (macOS); the physical flags
     /// are compared, so `ctrl+left` and `ctrl+shift+left` never shadow each other.
     pub fn matches(&self, key: Key, m: Modifiers) -> bool {
-        key == self.key && m.ctrl == self.ctrl && m.shift == self.shift && m.alt == self.alt && m.mac_cmd == self.cmd
+        key == self.key
+            && m.ctrl == self.ctrl
+            && m.shift == self.shift
+            && m.alt == self.alt
+            && m.mac_cmd == self.cmd
     }
 
     /// egui modifiers for this chord on the given platform (for tests and display).

@@ -10,8 +10,17 @@ use crate::galley_cache::{GalleyCache, GalleyKey, hash_one};
 
 /// Build the layout job of one line (without its line break). `runs` are `(start_byte, colour)`,
 /// sorted by start; bytes before the first run use `default`.
-pub fn line_job(text: &str, runs: &[(usize, Color32)], font: &FontId, default: Color32) -> LayoutJob {
-    let mut job = LayoutJob { wrap: TextWrapping::no_max_width(), break_on_newline: false, ..Default::default() };
+pub fn line_job(
+    text: &str,
+    runs: &[(usize, Color32)],
+    font: &FontId,
+    default: Color32,
+) -> LayoutJob {
+    let mut job = LayoutJob {
+        wrap: TextWrapping::no_max_width(),
+        break_on_newline: false,
+        ..Default::default()
+    };
     let fmt = |c: Color32| TextFormat::simple(font.clone(), c);
     let mut at = 0usize;
     let mut color = default;
@@ -54,7 +63,10 @@ impl LineLayout {
             return col as f32 * adv;
         }
         let ci = text[..col].chars().count();
-        self.galley.pos_from_cursor(egui::text::CCursor::new(ci)).min.x
+        self.galley
+            .pos_from_cursor(egui::text::CCursor::new(ci))
+            .min
+            .x
     }
 
     /// Byte column nearest to x.
@@ -64,7 +76,9 @@ impl LineLayout {
             let c = (x / adv).round().max(0.0) as usize;
             return c.min(text.len());
         }
-        let cc = self.galley.cursor_from_pos(egui::vec2(x, self.galley.size().y * 0.5));
+        let cc = self
+            .galley
+            .cursor_from_pos(egui::vec2(x, self.galley.size().y * 0.5));
         let ci: usize = cc.index.0;
         text.char_indices().nth(ci).map_or(text.len(), |(b, _)| b)
     }
@@ -90,14 +104,29 @@ pub struct LineShaper<'a> {
 
 impl LineShaper<'_> {
     /// Lay out `text` with colour runs; `style_hash` must change whenever `runs` or the theme do.
-    pub fn shape(&mut self, text: &str, runs: &[(usize, Color32)], style_hash: u64, default: Color32) -> LineLayout {
-        let key = GalleyKey::new(hash_one(text), style_hash, self.font, self.pixels_per_point, f32::INFINITY);
+    pub fn shape(
+        &mut self,
+        text: &str,
+        runs: &[(usize, Color32)],
+        style_hash: u64,
+        default: Color32,
+    ) -> LineLayout {
+        let key = GalleyKey::new(
+            hash_one(text),
+            style_hash,
+            self.font,
+            self.pixels_per_point,
+            f32::INFINITY,
+        );
         let galley = self.cache.get_or_insert(key, || {
             let job = line_job(text, runs, self.font, default);
             self.ctx.fonts_mut(|f| f.layout_job(job))
         });
         let mono = (text.is_ascii() && !text.contains('\t')).then_some(self.mono_advance);
-        LineLayout { galley, mono_advance: mono }
+        LineLayout {
+            galley,
+            mono_advance: mono,
+        }
     }
 }
 
