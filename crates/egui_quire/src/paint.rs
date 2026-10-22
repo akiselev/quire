@@ -54,6 +54,9 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
         if line >= text.len_lines() {
             break;
         }
+        if f.mem.heights.get(line) == 0.0 {
+            continue; // folded away
+        }
         let start = text.line_to_byte(line);
         let top = g.line_top(f.mem, line);
         if let Some(p) = preedit.as_ref().filter(|_| line == head_line) {
@@ -154,6 +157,33 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
         text_painter.galley(pos2(left, v.top), v.layout.galley.clone(), theme.foreground);
     }
 
+    // Folded headers: a placeholder after the line's end (VS Code's "⋯").
+    let first_vis = vis.first().map_or(0, |v| v.line);
+    let last_vis = vis.last().map_or(0, |v| v.line + 1);
+    let headers = glue::fold_headers(f.doc, first_vis..last_vis);
+    let mut folded_headers = Vec::new();
+    for v in vis
+        .iter()
+        .filter(|v| headers.binary_search(&v.line).is_ok())
+    {
+        if glue::is_folded_header(f.view, f.doc, v.line) {
+            folded_headers.push(v.line);
+            let x0 = left + v.layout.width() + g.adv * 0.5;
+            let r = Rect::from_min_size(
+                pos2(x0, v.top + row_h * 0.2),
+                vec2(g.adv * 2.0, row_h * 0.6),
+            );
+            text_painter.rect_filled(r, 2.0, theme.current_line);
+            text_painter.text(
+                r.center(),
+                Align2::CENTER_CENTER,
+                "⋯",
+                theme.font.clone(),
+                theme.line_number,
+            );
+        }
+    }
+
     // Squiggles.
     for d in glue::diagnostics(f.doc) {
         let color = match d.severity {
@@ -217,7 +247,8 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
     // Gutter.
     painter.rect_filled(g.gutter, 0.0, theme.gutter_background);
     let worst = worst_severity_per_line(f, &vis);
-    let num_x = g.gutter.right() - g.adv * 0.75;
+    let num_x = g.gutter.right() - crate::editor::fold_w(g.adv) - g.adv * 0.5;
+    let gutter_hovered = ui.rect_contains_pointer(g.gutter);
     let gutter_painter = painter.with_clip_rect(g.gutter.intersect(painter.clip_rect()));
     for (v, sev) in vis.iter().zip(worst) {
         let color = if v.line == head_line {
@@ -232,6 +263,20 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
             theme.font.clone(),
             color,
         );
+        if headers.binary_search(&v.line).is_ok() {
+            let folded = folded_headers.contains(&v.line);
+            if folded || gutter_hovered {
+                let c = g.fold_col();
+                let center = pos2(c.center().x, v.top + row_h * 0.5);
+                fold_marker(
+                    &gutter_painter,
+                    center,
+                    row_h * 0.22,
+                    folded,
+                    theme.line_number,
+                );
+            }
+        }
         if let Some(sev) = sev {
             let c = match sev {
                 Severity::Error => theme.error,
@@ -260,6 +305,24 @@ fn preedit_layout(f: &FrameCx<'_>, line: &str, col: usize, pre: &str) -> LineLay
     let tabs = f.geom.mono.tab_stops(f.doc.config().tab_size);
     let galley = layout::layout_line_job(f.ctx, &spliced, &spans, &plain, f.geom.mono, tabs);
     LineLayout::new(galley, f.geom.mono, tabs)
+}
+
+/// A chevron: pointing right when folded, down when expanded.
+fn fold_marker(p: &egui::Painter, c: egui::Pos2, r: f32, folded: bool, color: Color32) {
+    let pts = if folded {
+        vec![
+            pos2(c.x - r * 0.5, c.y - r),
+            pos2(c.x + r * 0.5, c.y),
+            pos2(c.x - r * 0.5, c.y + r),
+        ]
+    } else {
+        vec![
+            pos2(c.x - r, c.y - r * 0.5),
+            pos2(c.x, c.y + r * 0.5),
+            pos2(c.x + r, c.y - r * 0.5),
+        ]
+    };
+    p.add(Shape::line(pts, Stroke::new(1.5, color)));
 }
 
 fn worst_severity_per_line(f: &FrameCx<'_>, vis: &[VisLine]) -> Vec<Option<Severity>> {

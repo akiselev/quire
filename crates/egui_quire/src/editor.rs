@@ -118,6 +118,8 @@ pub struct CodeEditor<'a> {
 pub(crate) struct Mem {
     pub galleys: GalleyCache,
     pub heights: HeightIndex,
+    /// Hash of (lines, row height, folds) the height index was built for.
+    pub heights_sig: u64,
     pub scroll: Vec2,
     pub last_interaction: f64,
     pub focused: bool,
@@ -151,6 +153,8 @@ pub(crate) struct Mem {
 pub(crate) struct Drag {
     pub anchor: Range<usize>,
     pub unit: Unit,
+    /// Alt+Shift+drag: box selection anchored at (line, visual column).
+    pub column: Option<((usize, u32), (usize, u32))>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -182,6 +186,14 @@ pub(crate) struct Geom {
 }
 
 impl Geom {
+    /// The fold-marker column (right edge of the gutter).
+    pub fn fold_col(&self) -> Rect {
+        Rect::from_min_max(
+            pos2(self.gutter.right() - fold_w(self.adv), self.gutter.top()),
+            self.gutter.max,
+        )
+    }
+
     /// Screen y of the top of `line`.
     pub fn line_top(&self, mem: &Mem, line: usize) -> f32 {
         self.text.top() + mem.heights.y_of(line) - mem.scroll.y
@@ -347,8 +359,16 @@ impl<'a> CodeEditor<'a> {
         let mono = layout::mono(&ctx, &theme.font);
         let adv = mono.advance();
         let n_lines = glue::text(doc).len_lines().max(1);
-        if mem.heights.len() != n_lines || mem.heights.get(0) != row_h {
+        let sig = crate::galley_cache::hash_one((n_lines, row_h.to_bits(), glue::folds(view)));
+        if mem.heights_sig != sig {
+            mem.heights_sig = sig;
+            // Folded lines are zero-height: line_at() never lands on them and painting skips them.
             mem.heights = HeightIndex::uniform(n_lines, row_h);
+            for (a, b) in glue::hidden_line_spans(view, doc) {
+                for l in a..=b.min(n_lines - 1) {
+                    mem.heights.set(l, 0.0);
+                }
+            }
         }
         let gw = gutter_width(n_lines, adv);
         let geom = Geom {
@@ -499,10 +519,15 @@ impl<'a> CodeEditor<'a> {
 
 const PAD_Y: f32 = 2.0;
 
-/// Gutter width for `lines` lines: diagnostic mark, digits, padding.
+/// Gutter width for `lines` lines: diagnostic mark, digits, padding, fold markers.
 fn gutter_width(lines: usize, adv: f32) -> f32 {
     let digits = (lines.max(1).ilog10() + 1).max(2) as f32;
-    MARK_W + digits * adv + adv * 1.5
+    MARK_W + digits * adv + adv * 1.5 + fold_w(adv)
+}
+
+/// Width of the fold-marker column at the gutter's right edge.
+pub(crate) fn fold_w(adv: f32) -> f32 {
+    (adv * 1.6).max(12.0)
 }
 
 const MARK_W: f32 = 8.0;
@@ -783,36 +808,15 @@ impl FrameCx<'_> {
                     glue::set_preedit(self.view, None);
                 }
                 if !text.is_empty() {
-                    self.dispatch(glue::type_cmd(text));
+                    self.dispatch(glue::composition_cmd(text, 0, 0));
                 }
             }
             ImeEvent::DeleteSurrounding {
                 before_chars,
                 after_chars,
             } => {
-                if self.read_only {
-                    return;
-                }
-                let t = glue::text(self.doc);
-                let head = glue::selection(self.view).primary().head;
-                let mut from = head;
-                for _ in 0..*before_chars {
-                    if from == 0 {
-                        break;
-                    }
-                    from = t.prev_char_boundary(from);
-                }
-                let mut to = head;
-                for _ in 0..*after_chars {
-                    if to >= t.len_bytes() {
-                        break;
-                    }
-                    to = t.next_char_boundary(to);
-                }
-                if from < to
-                    && let Some(a) = glue::replace(self.doc, self.view, from..to, "", true)
-                {
-                    self.push_applied(a);
+                if *before_chars + *after_chars > 0 {
+                    self.dispatch(glue::composition_cmd("", *before_chars, *after_chars));
                 }
             }
             #[allow(deprecated)]
@@ -856,14 +860,26 @@ impl FrameCx<'_> {
         }
     }
 
-    /// Byte offset under a screen position.
-    pub fn pos_at(&mut self, p: Pos2) -> usize {
+    /// The (visible) line at screen y.
+    fn line_at_y(&self, y: f32) -> usize {
         let line = self
             .mem
             .heights
-            .line_at(p.y - self.geom.text.top() + self.mem.scroll.y);
-        let text = glue::text(self.doc);
-        let line = line.min(text.len_lines().saturating_sub(1));
+            .line_at(y - self.geom.text.top() + self.mem.scroll.y);
+        line.min(glue::text(self.doc).len_lines().saturating_sub(1))
+    }
+
+    /// (line, visual column) under a screen position; the column may lie past the line's end
+    /// (box selection).
+    fn line_col_at(&self, p: Pos2) -> (usize, u32) {
+        let line = self.line_at_y(p.y);
+        let x = p.x - self.geom.text_left(self.mem);
+        (line, (x / self.geom.adv).round().max(0.0) as u32)
+    }
+
+    /// Byte offset under a screen position.
+    pub fn pos_at(&mut self, p: Pos2) -> usize {
+        let line = self.line_at_y(p.y);
         let ll = self.layout_line(line);
         let col = ll.col_at(p.x - self.geom.text_left(self.mem));
         glue::text(self.doc).line_to_byte(line) + col
@@ -943,6 +959,35 @@ impl FrameCx<'_> {
                 self.mem.last_press = None;
                 return;
             }
+            // Fold marker: toggle the range headed by this line.
+            if self.geom.fold_col().contains(ptr) {
+                let line = self.line_at_y(ptr.y);
+                if !glue::fold_headers(self.doc, line..line + 1).is_empty() {
+                    if let Some(a) = glue::toggle_fold_at_line(self.doc, self.view, line) {
+                        self.push_applied(a);
+                    }
+                    self.mem.last_press = None;
+                    return;
+                }
+            }
+            // Alt+Shift: box selection (drag extends it); Alt: add a cursor.
+            if mods.alt && mods.shift && !mods.command && self.geom.text.contains(ptr) {
+                let at = self.line_col_at(ptr);
+                self.mem.drag = Some(Drag {
+                    anchor: pos..pos,
+                    unit: Unit::Char,
+                    column: Some((at, at)),
+                });
+                self.dispatch(glue::column_select_cmd(at, at));
+                self.mem.last_press = None;
+                return;
+            }
+            if mods.alt && !mods.shift && !mods.command && self.geom.text.contains(ptr) {
+                let sel = glue::with_cursor_added(glue::selection(self.view), pos);
+                self.set_selection(sel);
+                self.mem.last_press = None;
+                return;
+            }
             let count = match self.mem.last_press {
                 Some((t, p, c)) if time - t < click_delay && p.distance(ptr) < click_dist => {
                     c % 3 + 1
@@ -969,6 +1014,7 @@ impl FrameCx<'_> {
             self.mem.drag = Some(Drag {
                 anchor: anchor_range.clone(),
                 unit,
+                column: None,
             });
             let new = if anchor_range.is_empty() || mods.shift {
                 glue::single(anchor_range.start, head)
@@ -976,6 +1022,21 @@ impl FrameCx<'_> {
                 glue::single(anchor_range.start, anchor_range.end)
             };
             self.set_selection(new);
+        } else if down
+            && let Some(Drag {
+                column: Some((anchor, head)),
+                ..
+            }) = self.mem.drag.clone()
+            && (response.dragged() || response.is_pointer_button_down_on())
+        {
+            let at = self.line_col_at(ptr);
+            if at != head {
+                if let Some(d) = self.mem.drag.as_mut() {
+                    d.column = Some((anchor, at));
+                }
+                self.dispatch(glue::column_select_cmd(anchor, at));
+            }
+            ui.ctx().request_repaint();
         } else if down
             && let Some(drag) = self.mem.drag.clone()
             && (response.dragged() || response.is_pointer_button_down_on())

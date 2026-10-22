@@ -1390,13 +1390,22 @@ fn keymap_parses_two_chord_entries() {
     let map = egui_quire::Keymap::vscode_default();
     let os = egui::os::OperatingSystem::Nix;
     let ctx = egui_quire::keymap::WhenContext::default();
-    // Only resolved bindings make prefixes: ctrl+k starts nothing until core has the commands.
+    // ctrl+k starts the fold chords; ctrl+k ctrl+c is not bound until core has addCommentLine
+    // (only resolved bindings count).
+    let k = egui_quire::Chord::parse("ctrl+k").unwrap();
     assert!(matches!(
         map.lookup_seq(os, None, Key::K, Modifiers::CTRL, &ctx),
+        egui_quire::KeyLookup::Prefix(c) if c == k
+    ));
+    assert!(matches!(
+        map.lookup_seq(os, Some(k), Key::C, Modifiers::CTRL, &ctx),
         egui_quire::KeyLookup::Unbound
     ));
+    match map.lookup_seq(os, Some(k), Key::Num0, Modifiers::CTRL, &ctx) {
+        egui_quire::KeyLookup::Bound(b) => assert_eq!(b.command_id, "editor.foldAll"),
+        other => panic!("{other:?}"),
+    }
     let custom = chord_state("").keymap.unwrap();
-    let k = egui_quire::Chord::parse("ctrl+k").unwrap();
     assert!(matches!(
         custom.lookup_seq(os, None, Key::K, Modifiers::CTRL, &ctx),
         egui_quire::KeyLookup::Prefix(c) if c == k
@@ -1526,4 +1535,233 @@ fn page_shift_announces_the_line() {
     h.key_press(Key::ArrowUp);
     h.run();
     assert_eq!(announcement(&h).unwrap().0, "Line 200");
+}
+
+// ---------------------------------------------------------------------------------------------
+// Core ED2 commands through the default keymap (multi-cursor, lines, column select, folds).
+
+fn is_mac(h: &Harness<'_, St>) -> bool {
+    matches!(
+        h.ctx.os(),
+        egui::os::OperatingSystem::Mac | egui::os::OperatingSystem::IOS
+    )
+}
+
+/// Press the default keymap's keys for `command_id` on the harness's platform. Returns false
+/// (pressing nothing) when the command has no binding there.
+fn press_command(h: &mut Harness<'_, St>, command_id: &str) -> bool {
+    let os = h.ctx.os();
+    let mac = is_mac(h);
+    let Some(keys) = egui_quire::Keymap::vscode_default().keys_for(os, command_id) else {
+        return false;
+    };
+    for c in std::iter::once(keys.first).chain(keys.second) {
+        h.key_press_modifiers(c.modifiers(mac), c.key);
+        h.run();
+    }
+    true
+}
+
+fn caret_to(h: &mut Harness<'_, St>, pos: usize) {
+    let St { doc, views, .. } = h.state_mut();
+    let tr = quire_core::Transaction::select(
+        doc.version(),
+        doc.text().len_bytes(),
+        quire_core::Selection::point(pos),
+    );
+    doc.apply(tr, &mut views[0]).unwrap();
+    h.run();
+}
+
+fn ranges(h: &Harness<'_, St>) -> Vec<(usize, usize)> {
+    h.state().views[0]
+        .selection()
+        .ranges()
+        .iter()
+        .map(|r| (r.anchor, r.head))
+        .collect()
+}
+
+#[test]
+fn insert_cursor_below_and_above_through_keys() {
+    let mut h = harness(St::new("abc\ndef\nghi"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 5);
+    assert!(press_command(&mut h, "editor.action.insertCursorBelow"));
+    assert!(press_command(&mut h, "editor.action.insertCursorAbove"));
+    assert_eq!(h.state().views[0].selection().len(), 3);
+    h.event(Event::Text("X".into()));
+    h.run();
+    assert_eq!(h.state().text(), "aXbc\ndXef\ngXhi");
+}
+
+#[test]
+fn add_selection_to_next_find_match_through_keys() {
+    let mut h = harness(St::new("foo bar foo baz foo"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 1);
+    assert!(press_command(
+        &mut h,
+        "editor.action.addSelectionToNextFindMatch"
+    ));
+    assert_eq!(ranges(&h), vec![(0, 3)], "first press selects the word");
+    assert!(press_command(
+        &mut h,
+        "editor.action.addSelectionToNextFindMatch"
+    ));
+    assert_eq!(ranges(&h), vec![(0, 3), (8, 11)]);
+    h.event(Event::Text("q".into()));
+    h.run();
+    assert_eq!(h.state().text(), "q bar q baz foo");
+}
+
+#[test]
+fn move_and_copy_lines_through_keys() {
+    let mut h = harness(St::new("a\nb\nc"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 0);
+    assert!(press_command(&mut h, "editor.action.moveLinesDownAction"));
+    assert_eq!(h.state().text(), "b\na\nc");
+    assert!(press_command(&mut h, "editor.action.copyLinesUpAction"));
+    assert_eq!(h.state().text(), "b\na\na\nc");
+    assert!(press_command(&mut h, "editor.action.moveLinesUpAction"));
+    assert!(press_command(&mut h, "editor.action.copyLinesDownAction"));
+    assert_eq!(h.state().text(), "a\na\nb\na\nc");
+}
+
+#[test]
+fn delete_all_left_where_bound() {
+    let mut h = harness(St::new("hello world"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 6);
+    // VS Code binds deleteAllLeft on macOS only (cmd+backspace).
+    if press_command(&mut h, "deleteAllLeft") {
+        assert_eq!(h.state().text(), "world");
+    } else {
+        assert!(!is_mac(&h));
+    }
+}
+
+#[test]
+fn column_select_with_keys() {
+    let mut h = harness(St::new("abcd\nefgh\nijkl"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 1);
+    assert!(press_command(&mut h, "cursorColumnSelectRight"));
+    assert!(press_command(&mut h, "cursorColumnSelectRight"));
+    assert_eq!(ranges(&h), vec![(1, 3)]);
+    // Up/Down are not bound on Linux (VS Code's Linux keys copy lines there).
+    if press_command(&mut h, "cursorColumnSelectDown") {
+        assert_eq!(ranges(&h), vec![(1, 3), (6, 8)]);
+    }
+    assert!(press_command(&mut h, "cursorColumnSelectPageDown"));
+    assert_eq!(ranges(&h), vec![(1, 3), (6, 8), (11, 13)]);
+}
+
+fn mouse(h: &mut Harness<'_, St>, p: Pos2, pressed: bool, modifiers: Modifiers) {
+    h.event(Event::PointerMoved(p));
+    h.event(Event::PointerButton {
+        pos: p,
+        button: PointerButton::Primary,
+        pressed,
+        modifiers,
+    });
+}
+
+#[test]
+fn alt_shift_drag_makes_a_box_selection_and_alt_click_adds_a_cursor() {
+    let mut h = harness(St::new("abcdefgh\nab\nabcdefgh\nabcdefgh\n"));
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 8, 2);
+    let row_h = row0.height();
+    let at = |col: f32, line: f32| pos2(left + col * adv, row0.top() + row_h * (line + 0.5));
+    let m = Modifiers::ALT | Modifiers::SHIFT;
+    mouse(&mut h, at(1.0, 0.0), true, m);
+    h.step();
+    for i in 1..=4 {
+        let t = i as f32 / 4.0;
+        h.event(Event::PointerMoved(at(1.0 + 3.0 * t, 3.0 * t)));
+        h.step();
+    }
+    mouse(&mut h, at(4.0, 3.0), false, m);
+    h.run();
+    // Line 1 ("ab") is shorter than the box: its range is clipped to the line's end.
+    assert_eq!(
+        ranges(&h),
+        vec![(1, 4), (10, 11), (13, 16), (22, 25)],
+        "box selection over four lines"
+    );
+    // Alt+click adds a cursor.
+    caret_to(&mut h, 0);
+    mouse(&mut h, at(5.0, 2.0), true, Modifiers::ALT);
+    mouse(&mut h, at(5.0, 2.0), false, Modifiers::ALT);
+    h.run();
+    assert_eq!(ranges(&h), vec![(0, 0), (17, 17)]);
+}
+
+#[test]
+fn folds_hide_lines_and_the_gutter_marker_toggles() {
+    let text = "fn a() {\n    x;\n    y;\n}\nz\n";
+    let mut h = harness(St::new(text));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, text.find('y').unwrap());
+    let id = CodeEditor::id_for(("ed", 0usize));
+    let top = |h: &Harness<'_, St>, n: usize| {
+        CodeEditor::anchor_rect(&h.ctx, id, &format!("line[{n}]")).unwrap()
+    };
+    let row_h = top(&h, 0).height();
+    // Fold everything (a two-chord binding).
+    assert!(press_command(&mut h, "editor.foldAll"));
+    assert!(!h.state().views[0].folds().is_empty());
+    assert_eq!(top(&h, 1).height(), 0.0, "hidden lines take no space");
+    assert_eq!(top(&h, 2).height(), 0.0);
+    assert!((top(&h, 3).top() - top(&h, 0).bottom()).abs() < 0.01);
+    // The caret moved out of the hidden text, to the header's end.
+    assert_eq!(h.state().sel(0).1, text.find('\n').unwrap());
+    // Clicking a hidden line's old place lands on the next visible line.
+    let r0 = top(&h, 0);
+    click_at(&mut h, pos2(r0.left() + 1.0, r0.bottom() + row_h * 0.5));
+    let l = h.state().doc.text().byte_to_line(h.state().sel(0).1);
+    assert_eq!(l, 3);
+    // The gutter's fold marker unfolds.
+    let gutter_x = r0.left() - 6.0;
+    click_at(&mut h, pos2(gutter_x, r0.center().y));
+    assert!(h.state().views[0].folds().is_empty(), "marker unfolded");
+    assert_eq!(top(&h, 1).height(), row_h);
+    click_at(&mut h, pos2(gutter_x, r0.center().y));
+    assert!(!h.state().views[0].folds().is_empty(), "marker folds again");
+    assert!(press_command(&mut h, "editor.unfoldAll"));
+    assert!(h.state().views[0].folds().is_empty());
+}
+
+#[test]
+fn ime_commit_goes_through_the_typing_rules() {
+    let mut h = harness(St::new(""));
+    h.run();
+    focus(&mut h);
+    h.event(Event::Ime(egui::ImeEvent::Preedit {
+        text: "(".into(),
+        active_range_chars: None,
+    }));
+    h.step();
+    h.event(Event::Ime(egui::ImeEvent::Commit("(".into())));
+    h.step();
+    assert_eq!(
+        h.state().text(),
+        "()",
+        "compositionType auto-closes like typing"
+    );
+    // DeleteSurrounding is one compositionType too.
+    h.event(Event::Ime(egui::ImeEvent::DeleteSurrounding {
+        before_chars: 1,
+        after_chars: 0,
+    }));
+    h.step();
+    assert_eq!(h.state().text(), ")");
 }

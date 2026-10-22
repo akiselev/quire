@@ -176,7 +176,8 @@ pub fn diagnostics_at(doc: &Document, pos: usize) -> Vec<&quire_core::Diagnostic
         .collect()
 }
 
-/// Find matches of the view (sorted) and the index of the one at the primary selection.
+/// Find matches of the view (sorted) and the index of the one at the primary selection
+/// (`EditorView::find_current_match`).
 pub fn find_matches<'v>(
     view: &'v EditorView,
     _doc: &Document,
@@ -184,13 +185,7 @@ pub fn find_matches<'v>(
     let Some(f) = view.find() else {
         return (&[], None);
     };
-    let sel = view.selection().primary().range();
-    let cur = f
-        .matches
-        .binary_search_by(|m| m.start.cmp(&sel.start))
-        .ok()
-        .filter(|&i| f.matches[i] == sel);
-    (&f.matches, cur)
+    (&f.matches, view.find_current_match())
 }
 
 /// Find options as the bar shows them.
@@ -295,6 +290,12 @@ pub fn with_page_lines(cmd: EditorCommand, page: u32) -> EditorCommand {
             to: Motion::PageDown { lines: page },
             select,
         },
+        EditorCommand::ColumnSelectPageUp { .. } => {
+            EditorCommand::ColumnSelectPageUp { lines: page }
+        }
+        EditorCommand::ColumnSelectPageDown { .. } => {
+            EditorCommand::ColumnSelectPageDown { lines: page }
+        }
         c => c,
     }
 }
@@ -315,6 +316,21 @@ pub fn changes_text(cmd: &EditorCommand) -> bool {
             | FindPrevious
             | CloseFind
             | RevealLine { .. }
+            | InsertCursorAbove
+            | InsertCursorBelow
+            | AddNextMatch
+            | ColumnSelectLeft
+            | ColumnSelectRight
+            | ColumnSelectUp
+            | ColumnSelectDown
+            | ColumnSelectPageUp { .. }
+            | ColumnSelectPageDown { .. }
+            | ColumnSelect { .. }
+            | Fold
+            | Unfold
+            | ToggleFold
+            | FoldAll
+            | UnfoldAll
     )
 }
 
@@ -366,4 +382,107 @@ pub fn word_range_at(doc: &Document, pos: usize) -> Range<usize> {
 /// The line at `pos` with its line feed, as triple-click selects it.
 pub fn line_range_at(doc: &Document, pos: usize) -> Range<usize> {
     quire_core::words::line_range_at(doc.text(), pos.min(doc.text().len_bytes()))
+}
+
+/// IME commit / DeleteSurrounding as core's `compositionType` (one transaction, own undo group,
+/// through the typing rules).
+pub fn composition_cmd(text: &str, before: usize, after: usize) -> EditorCommand {
+    EditorCommand::CompositionType {
+        text: text.to_owned(),
+        replace_prev_chars: before,
+        replace_next_chars: after,
+    }
+}
+
+/// Alt+Shift+drag box selection between (line, visual column) points.
+pub fn column_select_cmd(anchor: (usize, u32), head: (usize, u32)) -> EditorCommand {
+    EditorCommand::ColumnSelect {
+        anchor_line: anchor.0,
+        anchor_column: anchor.1,
+        head_line: head.0,
+        head_column: head.1,
+    }
+}
+
+/// The view's folds (byte ranges), for change detection.
+pub fn folds(view: &EditorView) -> &[Range<usize>] {
+    view.folds()
+}
+
+/// Header lines of foldable ranges within `lines` (sorted, deduplicated).
+pub fn fold_headers(doc: &Document, lines: Range<usize>) -> Vec<usize> {
+    let r = doc.fold_ranges();
+    let lo = r.partition_point(|f| f.start_line < lines.start);
+    let mut v: Vec<usize> = r[lo..]
+        .iter()
+        .take_while(|f| f.start_line < lines.end)
+        .map(|f| f.start_line)
+        .collect();
+    v.dedup();
+    v
+}
+
+/// Lines hidden by the view's folds, as (first hidden, last hidden) line pairs.
+pub fn hidden_line_spans(view: &EditorView, doc: &Document) -> Vec<(usize, usize)> {
+    let t = doc.text();
+    view.folds()
+        .iter()
+        .map(|f| {
+            let a = t.byte_to_line(f.start.min(t.len_bytes()));
+            let b = t.byte_to_line(f.end.min(t.len_bytes()));
+            (a + 1, b)
+        })
+        .filter(|(a, b)| a <= b)
+        .collect()
+}
+
+/// The selection with a cursor added at `pos` (Alt+click).
+pub fn with_cursor_added(sel: &Selection, pos: usize) -> Selection {
+    sel.push(SelRange::point(pos))
+}
+
+/// Whether the header `line` is folded in the view.
+pub fn is_folded_header(view: &EditorView, doc: &Document, line: usize) -> bool {
+    view.fold_at_line(doc.text(), line).is_some()
+}
+
+/// Toggle the outermost foldable range whose header is `line` (gutter click), as a
+/// selection-only transaction with `Effect::SetFolds`; cursors inside a newly hidden range move
+/// to its header's end, as the fold commands do.
+pub fn toggle_fold_at_line(
+    doc: &mut Document,
+    view: &mut EditorView,
+    line: usize,
+) -> Option<Applied> {
+    let text = doc.text();
+    let r = doc
+        .fold_ranges()
+        .iter()
+        .filter(|r| r.start_line == line)
+        .max_by_key(|r| r.end_line)?;
+    let bytes = quire_core::folding::fold_bytes(text, r);
+    let mut folds = view.folds().to_vec();
+    if let Some(i) = folds.iter().position(|f| *f == bytes) {
+        folds.remove(i);
+    } else if let Some(open) = view.fold_at_line(text, line) {
+        folds.retain(|f| *f != open);
+    } else {
+        folds.push(bytes);
+    }
+    folds.sort_by_key(|f| (f.start, std::cmp::Reverse(f.end)));
+    let hide = |p: usize| {
+        folds
+            .iter()
+            .filter(|f| p > f.start && p <= f.end)
+            .map(|f| f.start)
+            .min()
+            .unwrap_or(p)
+    };
+    let sel = view
+        .selection()
+        .transform(|r| SelRange::new(hide(r.anchor), hide(r.head)));
+    let tr = Transaction::select(doc.version(), text.len_bytes(), sel)
+        .with_origin(Origin::Command("editor.toggleFold".into()))
+        .with_effect(quire_core::Effect::SetFolds(folds));
+    doc.apply(tr, view).ok()
 }
