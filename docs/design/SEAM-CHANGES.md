@@ -25,3 +25,10 @@ disagrees, this file wins.
    debounce, caret blink does not count).
 5. **R12: process.** Local `scripts/check.sh` only (fmt, clippy -D warnings, tests, wasm32 check of
    quire-core); no hosted CI.
+6. **Views sync themselves** (main-cadatomic, 2026-10-22). `Document::apply(&mut self, tr,
+   acting: &mut EditorView)` applies through the acting view. Other views do not depend on the host
+   handing them every `Applied`. Each `EditorView` records the `Document` version it last synced at.
+   Before use (`show_in`, commands) it maps itself forward through the Document's `RecentChanges`.
+   If it is older than that window, it clamps its selection and folds to valid positions and marks
+   find stale. A proptest covers two views with interleaved edits, with both selections valid after
+   every step.
