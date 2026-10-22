@@ -71,8 +71,24 @@ impl SyntaxTree {
     }
 
     /// The root layer's tree as an S-expression (tests and debugging).
+    #[doc(hidden)]
     pub fn root_sexp(&self) -> String {
         self.layers.layers[0].data.tree.root_node().to_sexp()
+    }
+
+    /// Every layer's language, span and tree S-expression, sorted by span (tests and
+    /// debugging; injected trees' positions may be lazily shifted, so only the shape is
+    /// comparable).
+    #[doc(hidden)]
+    pub fn layer_sexps(&self) -> Vec<(Lang, Range<usize>, String)> {
+        let mut v: Vec<_> = self
+            .layers
+            .layers
+            .iter()
+            .map(|l| (l.lang, l.span.clone(), l.data.tree.root_node().to_sexp()))
+            .collect();
+        v.sort_by_key(|a| (a.1.start, a.1.end));
+        v
     }
 
     /// Whether any layer's tree contains a syntax error.

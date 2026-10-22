@@ -46,6 +46,8 @@ pub(crate) struct LayerData {
     pub tree: Tree,
     /// Included byte ranges in tree coordinates; empty for the root (the whole text).
     pub ranges: Vec<Range<usize>>,
+    /// Made by an `injection.combined` pattern.
+    pub combined: bool,
 }
 
 /// A lazy move of a whole tree: bytes and rows (columns never change, see [`Layer::shift`]).
@@ -257,7 +259,11 @@ impl<S: Source + ?Sized> Ctx<'_, S> {
 
 /// An injection found in a parent layer, before its tree exists.
 struct Found {
-    lang: Lang,
+    /// `None`: claimed by a pattern whose language this crate lacks (no layer is made, but an
+    /// old layer there must not survive).
+    lang: Option<Lang>,
+    /// From an `injection.combined` pattern.
+    combined: bool,
     ranges: Vec<TsRange>,
     span: Range<usize>,
 }
@@ -346,6 +352,7 @@ pub(crate) fn parse<S: Source + ?Sized>(
         data: Arc::new(LayerData {
             tree: root,
             ranges: Vec::new(),
+            combined: false,
         }),
     }];
     let mut queue: Vec<(usize, Origin)> = vec![(0, origin)];
@@ -362,15 +369,20 @@ pub(crate) fn parse<S: Source + ?Sized>(
             Origin::Fresh => {
                 let found = find_injections(&out[idx].data.tree, plang, &pranges, &ctx, None);
                 for f in found {
-                    let tree = ctx.parse(f.lang, &f.ranges, None)?;
+                    let Some(lang) = f.lang else { continue };
+                    let tree = ctx.parse(lang, &f.ranges, None)?;
                     let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
                     out.push(Layer {
-                        lang: f.lang,
+                        lang,
                         span: f.span,
                         depth,
                         parent: idx as u32,
                         shift: Shift::default(),
-                        data: Arc::new(LayerData { tree, ranges }),
+                        data: Arc::new(LayerData {
+                            tree,
+                            ranges,
+                            combined: f.combined,
+                        }),
                     });
                     queue.push((out.len() - 1, Origin::Fresh));
                 }
@@ -393,14 +405,37 @@ pub(crate) fn parse<S: Source + ?Sized>(
                 let found = if changed.is_empty() {
                     Vec::new()
                 } else {
-                    find_injections(&out[idx].data.tree, plang, &pranges, &ctx, Some(&changed))
+                    let f =
+                        find_injections(&out[idx].data.tree, plang, &pranges, &ctx, Some(&changed));
+                    // A combined injection gathers matches from the whole layer: a range query
+                    // would see only part of it, so search everything again when one is found
+                    // or an old one is affected.
+                    let old_combined = old_children[old].iter().any(|&c| {
+                        let ol = &p.layers.layers[c as usize];
+                        ol.data.combined && {
+                            let m = map_pos(p.edits, ol.span.start, true)
+                                ..map_pos(p.edits, ol.span.end, false);
+                            changed.iter().any(|c| c.start < m.end && c.end > m.start)
+                                || p.edits.iter().any(|e| {
+                                    e.range.start <= ol.span.end && e.range.end >= ol.span.start
+                                })
+                        }
+                    });
+                    if old_combined || f.iter().any(|f| f.combined) {
+                        find_injections(&out[idx].data.tree, plang, &pranges, &ctx, None)
+                    } else {
+                        f
+                    }
                 };
 
+                // An old child is searched again only if the range query is sure to see it:
+                // the query reports nodes that overlap a changed range, so overlap is strict
+                // (the ranges are already widened by a byte for touching edits).
                 let hits = |r: &Range<usize>| {
-                    changed.iter().any(|c| c.start <= r.end && c.end >= r.start)
+                    changed.iter().any(|c| c.start < r.end && c.end > r.start)
                         || found
                             .iter()
-                            .any(|f| f.span.start <= r.end && f.span.end >= r.start)
+                            .any(|f| f.span.start < r.end && f.span.end > r.start)
                 };
                 // Old children outside the changed ranges carry over with their subtrees; the
                 // rest are candidates for incremental reparse of what was found.
@@ -429,9 +464,10 @@ pub(crate) fn parse<S: Source + ?Sized>(
                     }
                 }
                 for f in found {
+                    let Some(lang) = f.lang else { continue };
                     let i = cands.iter().position(|(c, m, used)| {
                         !used
-                            && p.layers.layers[*c].lang == f.lang
+                            && p.layers.layers[*c].lang == lang
                             && m.start <= f.span.end
                             && m.end >= f.span.start
                     });
@@ -446,7 +482,7 @@ pub(crate) fn parse<S: Source + ?Sized>(
                     let (tree, origin) = match reuse {
                         Some((i, before)) => {
                             cands[i].2 = true;
-                            let t = ctx.parse(f.lang, &f.ranges, Some(&before))?;
+                            let t = ctx.parse(lang, &f.ranges, Some(&before))?;
                             (
                                 t,
                                 Origin::Reparsed {
@@ -455,16 +491,20 @@ pub(crate) fn parse<S: Source + ?Sized>(
                                 },
                             )
                         }
-                        None => (ctx.parse(f.lang, &f.ranges, None)?, Origin::Fresh),
+                        None => (ctx.parse(lang, &f.ranges, None)?, Origin::Fresh),
                     };
                     let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
                     out.push(Layer {
-                        lang: f.lang,
+                        lang,
                         span: f.span,
                         depth,
                         parent: idx as u32,
                         shift: Shift::default(),
-                        data: Arc::new(LayerData { tree, ranges }),
+                        data: Arc::new(LayerData {
+                            tree,
+                            ranges,
+                            combined: f.combined,
+                        }),
                     });
                     queue.push((out.len() - 1, origin));
                 }
@@ -539,7 +579,15 @@ fn carry<S: Source + ?Sized>(
                     .ranges()
                     .map(|r| map_pos(p.edits, r.start, false)..map_pos(p.edits, r.end, false))
                     .collect();
-                (Arc::new(LayerData { tree, ranges }), Shift::default(), d)
+                (
+                    Arc::new(LayerData {
+                        tree,
+                        ranges,
+                        combined: ol.data.combined,
+                    }),
+                    Shift::default(),
+                    d,
+                )
             }
         }
     };
@@ -642,9 +690,8 @@ fn find_injections<S: Source + ?Sized>(
     hits.dedup_by_key(|h| h.node.id());
 
     let mut out: Vec<Found> = Vec::new();
-    let mut combined: HashMap<(usize, Lang), usize> = HashMap::new();
+    let mut combined: HashMap<(usize, Option<Lang>), usize> = HashMap::new();
     for h in hits {
-        let Some(lang) = h.lang else { continue };
         let pat = &inj.patterns[h.pattern];
         let mut ranges = content_ranges(h.node, pat.include_children);
         if !parent_ranges.is_empty() {
@@ -653,6 +700,7 @@ fn find_injections<S: Source + ?Sized>(
         if ranges.is_empty() {
             continue;
         }
+        let lang = h.lang;
         if pat.combined {
             if let Some(&i) = combined.get(&(h.pattern, lang)) {
                 let f = &mut out[i];
@@ -663,7 +711,12 @@ fn find_injections<S: Source + ?Sized>(
             combined.insert((h.pattern, lang), out.len());
         }
         let span = ranges[0].start_byte..ranges.last().expect("non-empty").end_byte;
-        out.push(Found { lang, ranges, span });
+        out.push(Found {
+            lang,
+            combined: pat.combined,
+            ranges,
+            span,
+        });
     }
     for f in &mut out {
         f.ranges.sort_by_key(|r| r.start_byte);
