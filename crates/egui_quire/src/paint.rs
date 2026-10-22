@@ -130,11 +130,11 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
                 continue; // folded away
             }
             let start = text.line_to_byte(line);
-            let doc_len = text.line(line).len_bytes();
             if let Some(p) = preedit.as_ref().filter(|_| line == head_line) {
                 let s = glue::line_str(text, line);
                 let col = primary.head - start;
                 let layout = preedit_layout(f, &s, col, &p.text);
+                let doc_len = s.len();
                 f.note_rows(line, layout.n_rows());
                 vis.push(VisLine {
                     line,
@@ -149,7 +149,7 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
                 vis.push(VisLine {
                     line,
                     start,
-                    doc_len,
+                    doc_len: layout.full_len(),
                     top: 0.0,
                     layout,
                     preedit: None,

@@ -42,6 +42,8 @@ pub struct Rig {
     pub view: EditorView,
     pub time: f64,
     pub salt: &'static str,
+    /// Editor width in points (None: the whole window).
+    pub width: Option<f32>,
 }
 
 /// A frame's synthetic input on top of the time and screen.
@@ -57,7 +59,7 @@ pub fn input(time: f64, events: Vec<Event>) -> RawInput {
 }
 
 /// Where the pointer rests (inside the text area).
-pub const POINTER: Pos2 = pos2(640.0, 400.0);
+pub const POINTER: Pos2 = pos2(240.0, 400.0);
 
 pub fn wheel_lines(lines: f32) -> Event {
     Event::MouseWheel {
@@ -94,6 +96,7 @@ impl Rig {
             view,
             time: 1.0,
             salt: "bench-editor",
+            width: None,
         }
     }
 
@@ -101,11 +104,14 @@ impl Rig {
     pub fn frame(&mut self, events: Vec<Event>) -> Frame {
         self.time += 1.0 / 60.0;
         let mut f = Frame::default();
-        let (doc, view, salt) = (&mut self.doc, &mut self.view, self.salt);
+        let (doc, view, salt, width) = (&mut self.doc, &mut self.view, self.salt, self.width);
         let pass_region = Region::new(COUNTING);
         let t_pass = Instant::now();
         let out = self.ctx.run_ui(input(self.time, events), |ui| {
-            let rect = ui.max_rect();
+            let mut rect = ui.max_rect();
+            if let Some(w) = width {
+                rect.max.x = rect.min.x + w;
+            }
             let region = Region::new(COUNTING);
             let t = Instant::now();
             let out = CodeEditor::new(doc, view, salt, "Bench").show_in(ui, rect);

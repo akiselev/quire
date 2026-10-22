@@ -9,7 +9,8 @@
 //!   max of the editor alone and of the whole pass, and allocations per frame (counted by a
 //!   global allocator that wraps `System`).
 //!
-//! `E1_REPORT_ONLY=1` skips criterion; `E1_OPEN_ONLY=1` also skips the frame runs. Results: `docs/design/E1.md`.
+//! `E1_REPORT_ONLY=1` skips criterion; `E1_OPEN_ONLY=1` also skips the frame runs; `E1_WRAP=1`
+//! turns soft wrap on in a 480-point-wide editor. Results: `docs/design/E1.md`.
 
 use std::hint::black_box;
 use std::time::{Duration, Instant};
@@ -49,9 +50,27 @@ fn keystroke(n: usize) -> Event {
     }
 }
 
+/// `E1_WRAP=1`: soft wrap on, in an editor 480 points wide (so about one line in four wraps).
+fn wrap() -> bool {
+    std::env::var_os("E1_WRAP").is_some()
+}
+
+fn new_rig(ctx: egui::Context, text: &str) -> Rig {
+    if !wrap() {
+        return Rig::new(ctx, text);
+    }
+    let cfg = quire_core::EditorConfig {
+        word_wrap: quire_core::WordWrap::On,
+        ..Default::default()
+    };
+    let mut r = Rig::with_config(ctx, text, cfg);
+    r.width = Some(480.0);
+    r
+}
+
 /// A rig on the 100k-line file, focused, pointer over the text, caret mid-file.
 fn rig(text: &str) -> Rig {
-    let mut r = Rig::new(Rig::warm_context(), text);
+    let mut r = new_rig(Rig::warm_context(), text);
     r.frame(vec![]);
     r.focus();
     let mid = r.doc.text().line_to_byte(LINES / 2);
@@ -139,7 +158,7 @@ fn report(text: &str) {
     // Warm: the host already runs egui.
     for _ in 0..2 {
         let t = Instant::now();
-        let mut r = Rig::new(egui::Context::default(), text);
+        let mut r = new_rig(egui::Context::default(), text);
         let doc_t = t.elapsed();
         r.frame(vec![]);
         println!(
@@ -152,7 +171,7 @@ fn report(text: &str) {
     let mut opens = Vec::new();
     for _ in 0..5 {
         let t = Instant::now();
-        let mut r = Rig::new(ctx.clone(), text);
+        let mut r = new_rig(ctx.clone(), text);
         let doc_t = t.elapsed();
         r.salt = "fresh";
         let f = r.frame(vec![]);
