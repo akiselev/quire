@@ -165,7 +165,6 @@ fn a11y_node_has_name_role_and_first_page() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn typing_appears_the_same_frame() {
     let mut h = harness(St::new(""));
     h.run();
@@ -185,7 +184,6 @@ fn typing_appears_the_same_frame() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn handled_keys_are_consumed_unhandled_left() {
     let mut h = harness(St::new("abc"));
     h.run();
@@ -200,7 +198,6 @@ fn handled_keys_are_consumed_unhandled_left() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn backspace_and_enter() {
     let mut h = harness(St::new("ab"));
     h.run();
@@ -212,7 +209,6 @@ fn backspace_and_enter() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn clipboard_copy_cut_paste() {
     let mut h = harness(St::new("hello world"));
     h.run();
@@ -238,7 +234,6 @@ fn clipboard_copy_cut_paste() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn ime_preedit_then_commit() {
     let mut h = harness(St::new("x"));
     h.run();
@@ -251,9 +246,9 @@ fn ime_preedit_then_commit() {
     assert_eq!(h.state().text(), "x", "preedit changes no buffer");
     assert!(h.state().views[0].composing());
     let v = h.state().doc.version();
-    h.event(Event::Ime(egui::ImeEvent::Commit("你".into())));
+    h.event(Event::Ime(egui::ImeEvent::Commit("ü".into())));
     h.step();
-    assert_eq!(h.state().text(), "x你");
+    assert_eq!(h.state().text(), "xü");
     assert!(!h.state().views[0].composing());
     assert_eq!(
         h.state().doc.version(),
@@ -392,7 +387,6 @@ fn ctrl_click_activates_link() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn find_bar_finds_and_moves_selection() {
     let mut h = harness(St::new("one two one two one"));
     h.run();
@@ -425,7 +419,6 @@ fn save_emits_save_requested() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn host_mode_types_but_leaves_keys() {
     let mut st = St::new("abc");
     st.host_mode = true;
@@ -451,7 +444,6 @@ fn host_mode_types_but_leaves_keys() {
 }
 
 #[test]
-#[ignore = "needs quire-core command bodies (commands::run is todo! at e75bf45)"]
 fn two_views_keep_separate_carets() {
     let mut st = St::new("0123456789");
     st.shown = 2;
