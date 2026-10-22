@@ -126,7 +126,7 @@ pub(crate) struct Mem {
     /// selection and document version they belong to, the heads).
     pub upstream: Option<(u64, Vec<usize>)>,
     pub heights: HeightIndex,
-    /// Hash of (lines, row height, folds) the height index was built for.
+    /// Hash of (row height, folds, wrap, prefix length) the height index was built for.
     pub heights_sig: u64,
     pub scroll: Vec2,
     pub last_interaction: f64,
@@ -496,14 +496,23 @@ impl<'a> CodeEditor<'a> {
         let stop_after = cfg.stop_rendering_line_after.max(1);
         let wrap = wrap_for(cfg, rect.width(), gw, pad_left, adv);
         mem.widths.sync(doc);
-        let sig = crate::galley_cache::hash_one((
-            n_lines,
-            row_h.to_bits(),
-            glue::folds(view),
-            wrap,
-            stop_after,
-        ));
-        if mem.heights_sig != sig {
+        let splices = std::mem::take(&mut mem.widths.splices);
+        let rebuilt = std::mem::take(&mut mem.widths.rebuilt);
+        let sig =
+            crate::galley_cache::hash_one((row_h.to_bits(), glue::folds(view), wrap, stop_after));
+        // With wrap on, a line-count change splices the height index the way the width table
+        // was spliced (W1): O(edit), not a rebuild of every line's estimate.
+        if wrap.is_some() && mem.heights_sig == sig && !rebuilt && mem.heights.len() != n_lines {
+            for (start, removed, inserted) in splices {
+                if start + removed > mem.heights.len() {
+                    break;
+                }
+                // Placeholder heights; the inserted lines are in `widths.changed` and get their
+                // estimate below.
+                mem.heights.splice(start..start + removed, inserted, row_h);
+            }
+        }
+        if mem.heights_sig != sig || mem.heights.len() != n_lines {
             mem.heights_sig = sig;
             mem.heights = match wrap {
                 None => HeightIndex::uniform(n_lines, row_h),

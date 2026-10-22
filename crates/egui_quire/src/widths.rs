@@ -23,6 +23,11 @@ pub(crate) struct LineWidths {
     /// Lines re-measured by incremental syncs since the caller last cleared it (soft wrap
     /// re-estimates their heights).
     pub(crate) changed: Vec<usize>,
+    /// Line splices applied by incremental syncs since the caller last took them, in order:
+    /// (first line, lines removed, lines inserted). The height index follows them (W1).
+    pub(crate) splices: Vec<(usize, usize, usize)>,
+    /// A full measure happened since the caller last cleared it (splices are then incomplete).
+    pub(crate) rebuilt: bool,
 }
 
 /// Visible columns of `chunks` (one line without its break) with tabs every `tab_size` columns.
@@ -79,6 +84,7 @@ impl LineWidths {
         self.max = self.cols.iter().copied().max().unwrap_or(0);
         self.max_dirty = false;
         self.version = Some(doc.version());
+        self.rebuilt = true;
     }
 
     /// Bring the table up to `doc`'s version.
@@ -116,6 +122,9 @@ impl LineWidths {
                 }
                 dirty.retain(|&d| d != usize::MAX);
                 self.cols.splice(old.clone(), std::iter::repeat_n(0, new_n));
+                if old.len() != new_n {
+                    self.splices.push((old.start, old.len(), new_n));
+                }
                 dirty.extend(old.start..old.start + new_n);
             }
         }
