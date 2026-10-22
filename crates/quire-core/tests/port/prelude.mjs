@@ -104,6 +104,7 @@ function expectFrom(actual, expected) {
   switch (actual.kind) {
     case 'line': step(`expectLine ${actual.arg} ${JSON.stringify(expected)}`); break;
     case 'value': step(`expectText ${JSON.stringify(String(expected).replace(/\r\n/g, '\n'))}`); break;
+    case 'serializedStops': step(`expectStops ${JSON.stringify(expected)}`); break;
     case 'lines': step(`expectText ${JSON.stringify(expected.join('\n'))}`); break;
     case 'maxColumn': step(`expectMaxColumn ${actual.arg} ${expected}`); break;
     case 'lineCount': step(`expectLineCount ${expected}`); break;
@@ -330,6 +331,55 @@ STUBS.set('TestLanguageConfigurationService', class { register() { return { disp
 STUBS.set('ServiceCollection', class { constructor() {} set() {} });
 STUBS.set('InMemoryStorageService', class { dispose() {} });
 STUBS.set('IStorageService', Symbol('IStorageService'));
+// Word operation commands (wordOperations.ts): `runEditorCommand` records the command id.
+for (const base of ['CursorWordLeft', 'CursorWordRight', 'CursorWordStartLeft', 'CursorWordStartRight', 'CursorWordEndLeft', 'CursorWordEndRight']) {
+  for (const sel of ['', 'Select']) {
+    const id = base[0].toLowerCase() + base.slice(1) + sel;
+    STUBS.set(base + sel, class { runEditorCommand() { step(`cmd ${id}`); } runCoreEditorCommand() { step(`cmd ${id}`); } });
+  }
+}
+for (const name of ['DeleteWordLeft', 'DeleteWordRight', 'DeleteWordStartLeft', 'DeleteWordStartRight', 'DeleteWordEndLeft', 'DeleteWordEndRight']) {
+  const id = name[0].toLowerCase() + name.slice(1);
+  STUBS.set(name, class { runEditorCommand() { step(`cmd ${id}`); } });
+}
+STUBS.set('isFirefox', false);
+// wordTestUtils.ts (VS Code, MIT): pipe positions.
+STUBS.set('deserializePipePositions', (text) => {
+  let out = ''; let line = 1; let ci = 0; const ps = [];
+  for (const ch of text) {
+    if (ch === '\n') { out += ch; line++; ci = 0; continue; }
+    if (ch === '|') ps.push(new Position(line, ci + 1)); else { out += ch; ci += ch.length; }
+  }
+  return [out, ps];
+});
+STUBS.set('serializePipePositions', (_text, stops) => {
+  if (isMarker(stops) && stops.kind === 'stops') return marker('serializedStops');
+  throw new Unsupported('serializePipePositions(values)');
+});
+// testRepeatedActionAndExtractPositions: the action, record and stop condition become one
+// `repeat` step (the record and stop condition are recognised from their source).
+STUBS.set('testRepeatedActionAndExtractPositions', (text, initial, action, record, stop, options = {}) => {
+  const model = makeModel(text, null, {});
+  const { editor } = makeEditor(model, options);
+  step(`moveTo ${initial.lineNumber} ${initial.column}`);
+  const n = cur.steps.length;
+  action(editor);
+  const cmds = cur.steps.splice(n);
+  if (cmds.length !== 1 || !cmds[0].startsWith('cmd ')) throw new Unsupported('repeated action shape');
+  const rec = record.toString();
+  let recKind;
+  if (/getPosition\(\)/.test(rec)) recKind = 'position';
+  else if (/text\.length - ed\.getValue\(\)\.length \+ 1/.test(rec)) recKind = 'deleted';
+  else throw new Unsupported('repeated record');
+  const st = stop.toString();
+  let until;
+  let m;
+  if ((m = st.match(/getPosition\(\)!?\.equals\(new Position\((\d+), (\d+)\)\)/))) until = `pos ${m[1]} ${m[2]}`;
+  else if (/getValue\(\)\.length === 0/.test(st)) until = 'empty';
+  else throw new Unsupported('repeated stop condition');
+  step(`repeat ${cmds[0].slice(4)} ${recKind} ${until}`);
+  return marker('stops');
+});
 globalThis.__resolve = (name) => STUBS.has(name) ? STUBS.get(name) : unsupported(name);
 
 // testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection)
@@ -363,7 +413,7 @@ globalThis.createCodeEditorServices = () => ({
     throw new Unsupported('instantiationService.get(other service)');
   },
   createInstance() { throw new Unsupported('instantiationService.createInstance'); },
-  invokeFunction() { throw new Unsupported('instantiationService.invokeFunction'); },
+  invokeFunction(fn) { return fn({ get() { throw new Unsupported('accessor.get'); } }); },
 });
 globalThis.ensureNoDisposablesAreLeakedInTestSuite = () => new DisposableStore();
 globalThis.EndOfLinePreference = { TextDefined: 0, LF: 1, CRLF: 2 };

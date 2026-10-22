@@ -21,6 +21,9 @@
 //! expectPrimarySel 1 1 1 5               the primary selection
 //! expectHead 1 5                         the primary head
 //! expectLineCount 3
+//! repeat cursorWordLeft position pos 1 1   repeat a command, recording the head (or `deleted`:
+//!                                        the deleted length) until a position (or `empty`)
+//! expectStops "|a |b"                    the recorded stops as pipes in the original text
 //! columnSelect 4 15 [drag]             VS Code mouse column select to (line, mouseColumn)
 //! setValue "..."                         replace the text (a reload)
 //! expectMaxColumn 2 5                    VS Code getLineMaxColumn
@@ -130,6 +133,8 @@ fn run_case(c: &Case) -> Result<(), String> {
     let mut view = EditorView::new(&doc);
     view.set_selection(&doc, Selection::point(0));
     let mut time: Option<u64> = None;
+    // `repeat` (VS Code `testRepeatedActionAndExtractPositions`): command, record kind, stop.
+    let mut repeat: Option<(String, String, String)> = None;
     for (line_no, step) in &c.steps {
         let (op, rest) = step.split_once(' ').unwrap_or((step.as_str(), ""));
         let rest = rest.trim();
@@ -238,6 +243,59 @@ fn run_case(c: &Case) -> Result<(), String> {
                         fmt_sel(doc.text(), &want),
                         fmt_sel(doc.text(), got)
                     )));
+                }
+            }
+            "repeat" => {
+                let mut it = rest.splitn(3, ' ');
+                let cmd = it.next().unwrap_or_default().to_string();
+                let rec = it.next().unwrap_or_default().to_string();
+                let until = it.next().unwrap_or_default().to_string();
+                repeat = Some((cmd, rec, until));
+            }
+            "expectStops" => {
+                let want: String =
+                    serde_json::from_str(rest).map_err(|e| err(format!("string: {e}")))?;
+                let (cmd_id, rec, until) = repeat.take().ok_or_else(|| err("no repeat".into()))?;
+                let cmd = EditorCommand::from_vscode_id(&cmd_id, 10)
+                    .ok_or_else(|| err(format!("unknown command id {cmd_id}")))?;
+                let original = doc.text().clone();
+                let utf16_len = |t: &Text| t.to_string().encode_utf16().count();
+                let mut stops: Vec<usize> = Vec::new(); // byte offsets in `original`
+                for _ in 0..1000 {
+                    exec(&mut doc, &mut view, cmd.clone(), time)?;
+                    let stop_pos = match rec.as_str() {
+                        "position" => {
+                            let (l, c) = doc.text().byte_to_utf16(view.selection().primary().head);
+                            original.utf16_to_byte(l, c)
+                        }
+                        _ => {
+                            let deleted = utf16_len(&original) - utf16_len(doc.text());
+                            original.utf16_to_byte(0, deleted)
+                        }
+                    };
+                    stops.push(stop_pos);
+                    let done = if until == "empty" {
+                        doc.text().is_empty()
+                    } else {
+                        let n = nums(&until);
+                        view.selection().primary().head == pos(doc.text(), n[0], n[1])
+                    };
+                    if done {
+                        break;
+                    }
+                }
+                stops.sort_unstable();
+                let src = original.to_string();
+                let mut got = String::new();
+                let mut last = 0;
+                for p in &stops {
+                    got.push_str(&src[last..*p]);
+                    got.push('|');
+                    last = *p;
+                }
+                got.push_str(&src[last..]);
+                if got != want {
+                    return Err(err(format!("stops: expected {want:?}, got {got:?}")));
                 }
             }
             "columnSelect" => {

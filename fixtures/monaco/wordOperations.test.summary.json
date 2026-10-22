@@ -1,0 +1,291 @@
+[
+ {
+  "name": "WordOperations > cursorWordLeft - simple",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - with selection",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - issue #832",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - issue #48046: Word selection doesn't work as usual",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - Recognize words",
+  "fixture": "wordOperations.test.fixture",
+  "features": [
+   "editor option wordSegmenterLocales"
+  ]
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - Does not recognize words",
+  "fixture": "wordOperations.test.fixture",
+  "features": [
+   "editor option wordSegmenterLocales"
+  ]
+ },
+ {
+  "name": "WordOperations > cursorWordLeft - issue #169904: cursors out of sync",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordLeftSelect - issue #74369: cursorWordLeft and cursorWordLeftSelect do not behave consistently",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordStartLeft",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordStartLeft - issue #51119: regression makes VS compatibility impossible",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > issue #51275 - cursorWordStartLeft does not push undo/redo stack element",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordEndLeft",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordRight - simple",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordRight - selection",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordRight - issue #832",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordRight - issue #41199",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordRight - Recognize words",
+  "fixture": "wordOperations.test.fixture",
+  "features": [
+   "editor option wordSegmenterLocales"
+  ]
+ },
+ {
+  "name": "WordOperations > cursorWordRight - Does not recognize words",
+  "fixture": "wordOperations.test.fixture",
+  "features": [
+   "editor option wordSegmenterLocales"
+  ]
+ },
+ {
+  "name": "WordOperations > moveWordEndRight",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > moveWordStartRight",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > issue #51119: cursorWordStartRight regression makes VS compatibility impossible",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > issue #64810: cursorWordStartRight skips first word after newline",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > cursorWordAccessibilityLeft",
+  "na": "new CursorWordAccessibilityLeftSelect.runEditorCommand"
+ },
+ {
+  "name": "WordOperations > cursorWordAccessibilityRight",
+  "na": "new CursorWordAccessibilityRight.runEditorCommand"
+ },
+ {
+  "name": "WordOperations > deleteWordLeft for non-empty selection",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft for cursor at beginning of document",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft for cursor at end of whitespace",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft for cursor just behind a word",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft for cursor inside of a word",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight for non-empty selection",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight for cursor at end of document",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight for cursor at beggining of whitespace",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight for cursor just before a word",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight for cursor inside of a word",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #832",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordStartLeft",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordEndLeft",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #24947 #1",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #24947 #2",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #24947 #3",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight - issue #832",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight - issue #3882",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordStartRight - issue #3882",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordEndRight - issue #3882",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordStartRight",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordEndRight",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordRight - issue #3882 (1): Ctrl+Delete removing entire line when used at the end of line",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #3882 (2): Ctrl+Delete removing entire line when used at the end of line",
+  "fixture": "wordOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "WordOperations > deleteWordLeft - issue #91855: Matching (quote, bracket, paren) doesn't get deleted when hitting Ctrl+Backspace",
+  "fixture": "wordOperations.test.fixture",
+  "features": [
+   "autoClosingDelete always"
+  ]
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - empty line",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in whitespace 1",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in whitespace 2",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in whitespace 3",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in non-words",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in words 1",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - in words 2",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - onlyWord: does not delete whitespace before last word",
+  "na": "new DeleteInsideWord.run"
+ },
+ {
+  "name": "WordOperations > deleteInsideWord - onlyWord: deletes just the word (leaves double spaces)",
+  "na": "new DeleteInsideWord.run"
+ }
+]

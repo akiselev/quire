@@ -458,6 +458,69 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Multicursor selection > Find state disassociation > leaves mode when selection changes | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > Find state disassociation > Select Highlights respects mode  | N/A: new SelectHighlightsAction | — |
 
+## wordOperations.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| WordOperations > cursorWordLeft - simple | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeft - with selection | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeft - issue #832 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeft - issue #48046: Word selection doesn't work as usual | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeft - Recognize words | `fixtures/monaco/wordOperations.test.fixture` | fail (ours: needs editor option wordSegmenterLocales) |
+| WordOperations > cursorWordLeft - Does not recognize words | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeft - issue #169904: cursors out of sync | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordLeftSelect - issue #74369: cursorWordLeft and cursorWordLeftSelect do not behave consistently | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordStartLeft | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordStartLeft - issue #51119: regression makes VS compatibility impossible | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > issue #51275 - cursorWordStartLeft does not push undo/redo stack element | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordEndLeft | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordRight - simple | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordRight - selection | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordRight - issue #832 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordRight - issue #41199 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordRight - Recognize words | `fixtures/monaco/wordOperations.test.fixture` | fail (ours: needs editor option wordSegmenterLocales) |
+| WordOperations > cursorWordRight - Does not recognize words | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > moveWordEndRight | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > moveWordStartRight | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > issue #51119: cursorWordStartRight regression makes VS compatibility impossible | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > issue #64810: cursorWordStartRight skips first word after newline | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > cursorWordAccessibilityLeft | N/A: new CursorWordAccessibilityLeftSelect.runEditorCommand | — |
+| WordOperations > cursorWordAccessibilityRight | N/A: new CursorWordAccessibilityRight.runEditorCommand | — |
+| WordOperations > deleteWordLeft for non-empty selection | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft for cursor at beginning of document | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft for cursor at end of whitespace | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft for cursor just behind a word | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft for cursor inside of a word | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight for non-empty selection | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight for cursor at end of document | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight for cursor at beggining of whitespace | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight for cursor just before a word | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight for cursor inside of a word | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #832 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordStartLeft | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordEndLeft | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #24947 #1 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #24947 #2 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #24947 #3 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight - issue #832 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight - issue #3882 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordStartRight - issue #3882 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordEndRight - issue #3882 | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordStartRight | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordEndRight | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordRight - issue #3882 (1): Ctrl+Delete removing entire line when used at the end of line | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #3882 (2): Ctrl+Delete removing entire line when used at the end of line | `fixtures/monaco/wordOperations.test.fixture` | pass |
+| WordOperations > deleteWordLeft - issue #91855: Matching (quote, bracket, paren) doesn't get deleted when hitting Ctrl+Backspace | `fixtures/monaco/wordOperations.test.fixture` | fail (ours: needs autoClosingDelete always) |
+| WordOperations > deleteInsideWord - empty line | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in whitespace 1 | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in whitespace 2 | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in whitespace 3 | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in non-words | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in words 1 | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - in words 2 | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - onlyWord: does not delete whitespace before last word | N/A: new DeleteInsideWord.run | — |
+| WordOperations > deleteInsideWord - onlyWord: deletes just the word (leaves double spaces) | N/A: new DeleteInsideWord.run | — |
+
 ## Per suite
 
 | suite | tests | pass | ours | bug | N/A |
@@ -467,9 +530,10 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | linesOperations.test.ts | 59 | 23 | 0 | 0 | 36 |
 | moveLinesCommand.test.ts | 15 | 11 | 0 | 0 | 4 |
 | multicursor.test.ts | 76 | 10 | 0 | 0 | 66 |
+| wordOperations.test.ts | 58 | 44 | 3 | 0 | 11 |
 
 ## Totals
 
-- VS Code tests listed: 428
-- translated: 230 (pass 207, fail ours 23, fail bug 0)
-- N/A: 198
+- VS Code tests listed: 486
+- translated: 277 (pass 251, fail ours 26, fail bug 0)
+- N/A: 209

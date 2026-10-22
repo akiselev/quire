@@ -1,0 +1,368 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/wordOperations/test/browser/wordOperations.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== WordOperations > cursorWordLeft - simple
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1000 1000
+repeat cursorWordLeft position pos 1 1
+expectStops "|    \t|My |First |Line\t \n|\t|My |Second |Line\n|    |Third |Line🐶\n|\n|1"
+
+=== WordOperations > cursorWordLeft - with selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 5 2
+cmd cursorWordLeftSelect
+expectPrimarySel 5 2 5 1
+
+=== WordOperations > cursorWordLeft - issue #832
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1000 1000
+repeat cursorWordLeft position pos 1 1
+expectStops "|   |/* |Just |some   |more   |text |a|+= |3 |+|5-|3 |+ |7 |*/  "
+
+=== WordOperations > cursorWordLeft - issue #48046: Word selection doesn't work as usual
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "deep.object.property"
+moveTo 1 21
+repeat cursorWordLeft position pos 1 1
+expectStops "|deep.|object.|property"
+
+=== WordOperations > cursorWordLeft - Recognize words
+status: fail-ours needs editor option wordSegmenterLocales
+# features: editor option wordSegmenterLocales
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "/* これはテストです /*"
+moveTo 1000 1000
+repeat cursorWordLeftSelect position pos 1 1
+expectStops "|/* |これ|は|テスト|です |/*"
+
+=== WordOperations > cursorWordLeft - Does not recognize words
+# features: editor option wordSegmenterLocales
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "/* これはテストです /*"
+moveTo 1000 1000
+repeat cursorWordLeftSelect position pos 1 1
+expectStops "|/* |これはテストです |/*"
+
+=== WordOperations > cursorWordLeft - issue #169904: cursors out of sync
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: ".grid1 {\n  display: grid;\n  grid-template-columns:\n    [full-start] minmax(1em, 1fr)\n    [main-start] minmax(0, 40em) [main-end]\n    minmax(1em, 1fr) [full-end];\n}\n.grid2 {\n  display: grid;\n  grid-template-columns:\n    [full-start] minmax(1em, 1fr)\n    [main-start] minmax(0, 40em) [main-end] minmax(1em, 1fr) [full-end];\n}"
+setSelections 5 44 5 44; 6 32 6 32; 12 44 12 44; 12 72 12 72
+cmd cursorWordLeft
+expectSel 5 43 5 43; 6 31 6 31; 12 43 12 43; 12 71 12 71
+
+=== WordOperations > cursorWordLeftSelect - issue #74369: cursorWordLeft and cursorWordLeftSelect do not behave consistently
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this.is.a.test"
+moveTo 1 15
+repeat cursorWordLeftSelect position pos 1 1
+expectStops "|this.|is.|a.|test"
+
+=== WordOperations > cursorWordStartLeft
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1000 1000
+repeat cursorWordStartLeft position pos 1 1
+expectStops "|   |/* |Just |some   |more   |text |a|+= |3 |+|5|-|3 |+ |7 |*/  "
+
+=== WordOperations > cursorWordStartLeft - issue #51119: regression makes VS compatibility impossible
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this.is.a.test"
+moveTo 1000 1000
+repeat cursorWordStartLeft position pos 1 1
+expectStops "|this|.|is|.|a|.|test"
+
+=== WordOperations > issue #51275 - cursorWordStartLeft does not push undo/redo stack element
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: ""
+type "f"
+type "o"
+type "o"
+type " "
+type "b"
+type "a"
+type "r"
+type " "
+type "b"
+type "a"
+type "z"
+expectText "foo bar baz"
+cmd cursorWordStartLeft
+cmd cursorWordStartLeft
+type "q"
+expectText "foo qbar baz"
+cmd undo
+expectText "foo bar baz"
+
+=== WordOperations > cursorWordEndLeft
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1000 1000
+repeat cursorWordEndLeft position pos 1 1
+expectStops "|   /*| Just| some|   more|   text| a|+=| 3| +|5|-|3| +| 7| */|  "
+
+=== WordOperations > cursorWordRight - simple
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1 1
+repeat cursorWordRight position pos 5 2
+expectStops "    \tMy| First| Line|\t |\n\tMy| Second| Line|\n    Third| Line🐶|\n|\n1|"
+
+=== WordOperations > cursorWordRight - selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1 1
+cmd cursorWordRightSelect
+expectPrimarySel 1 1 1 8
+
+=== WordOperations > cursorWordRight - issue #832
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1 1
+repeat cursorWordRight position pos 1 50
+expectStops "   /*| Just| some|   more|   text| a|+=| 3| +5|-3| +| 7| */|  |"
+
+=== WordOperations > cursorWordRight - issue #41199
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "console.log(err)"
+moveTo 1 1
+repeat cursorWordRight position pos 1 17
+expectStops "console|.log|(err|)|"
+
+=== WordOperations > cursorWordRight - Recognize words
+status: fail-ours needs editor option wordSegmenterLocales
+# features: editor option wordSegmenterLocales
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "/* これはテストです/*"
+moveTo 1 1
+repeat cursorWordRight position pos 1 14
+expectStops "/*| これ|は|テスト|です|/*|"
+
+=== WordOperations > cursorWordRight - Does not recognize words
+# features: editor option wordSegmenterLocales
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "/* これはテストです/*"
+moveTo 1 1
+repeat cursorWordRight position pos 1 14
+expectStops "/*| これはテストです|/*|"
+
+=== WordOperations > moveWordEndRight
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1 1
+repeat cursorWordEndRight position pos 1 50
+expectStops "   /*| Just| some|   more|   text| a|+=| 3| +5|-3| +| 7| */|  |"
+
+=== WordOperations > moveWordStartRight
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some   more   text a+= 3 +5-3 + 7 */  "
+moveTo 1 1
+repeat cursorWordStartRight position pos 1 50
+expectStops "   |/* |Just |some   |more   |text |a|+= |3 |+|5|-|3 |+ |7 |*/  |"
+
+=== WordOperations > issue #51119: cursorWordStartRight regression makes VS compatibility impossible
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this.is.a.test"
+moveTo 1 1
+repeat cursorWordStartRight position pos 1 15
+expectStops "this|.|is|.|a|.|test|"
+
+=== WordOperations > issue #64810: cursorWordStartRight skips first word after newline
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Hello World\nHei mailman"
+moveTo 1 1
+repeat cursorWordStartRight position pos 2 12
+expectStops "Hello |World|\n|Hei |mailman|"
+
+=== WordOperations > deleteWordLeft for non-empty selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+setSelections 3 7 3 9
+cmd deleteWordLeft
+expectLine 3 "    Thd Line🐶"
+expectHead 3 7
+
+=== WordOperations > deleteWordLeft for cursor at beginning of document
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1 1
+cmd deleteWordLeft
+expectLine 1 "    \tMy First Line\t "
+expectHead 1 1
+
+=== WordOperations > deleteWordLeft for cursor at end of whitespace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 3 11
+cmd deleteWordLeft
+expectLine 3 "    Line🐶"
+expectHead 3 5
+
+=== WordOperations > deleteWordLeft for cursor just behind a word
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 2 11
+cmd deleteWordLeft
+expectLine 2 "\tMy  Line"
+expectHead 2 5
+
+=== WordOperations > deleteWordLeft for cursor inside of a word
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1 12
+cmd deleteWordLeft
+expectLine 1 "    \tMy st Line\t "
+expectHead 1 9
+
+=== WordOperations > deleteWordRight for non-empty selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+setSelections 3 7 3 9
+cmd deleteWordRight
+expectLine 3 "    Thd Line🐶"
+expectHead 3 7
+
+=== WordOperations > deleteWordRight for cursor at end of document
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 5 3
+cmd deleteWordRight
+expectLine 5 "1"
+expectHead 5 2
+
+=== WordOperations > deleteWordRight for cursor at beggining of whitespace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 3 1
+cmd deleteWordRight
+expectLine 3 "Third Line🐶"
+expectHead 3 1
+
+=== WordOperations > deleteWordRight for cursor just before a word
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 2 5
+cmd deleteWordRight
+expectLine 2 "\tMy  Line"
+expectHead 2 5
+
+=== WordOperations > deleteWordRight for cursor inside of a word
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "    \tMy First Line\t \n\tMy Second Line\n    Third Line🐶\n\n1"
+moveTo 1 11
+cmd deleteWordRight
+expectLine 1 "    \tMy Fi Line\t "
+expectHead 1 11
+
+=== WordOperations > deleteWordLeft - issue #832
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5 */  "
+moveTo 1000 10000
+repeat deleteWordLeft position empty
+expectStops "|   |/* |Just |some |text |a|+= |3 |+|5 |*/|  "
+
+=== WordOperations > deleteWordStartLeft
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5 */  "
+moveTo 1000 10000
+repeat deleteWordStartLeft position empty
+expectStops "|   |/* |Just |some |text |a|+= |3 |+|5 |*/  "
+
+=== WordOperations > deleteWordEndLeft
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5 */  "
+moveTo 1000 10000
+repeat deleteWordEndLeft position empty
+expectStops "|   /*| Just| some| text| a|+=| 3| +|5| */|  "
+
+=== WordOperations > deleteWordLeft - issue #24947 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\n}"
+moveTo 2 1
+cmd deleteWordLeft
+expectLine 1 "{}"
+
+=== WordOperations > deleteWordLeft - issue #24947 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\n}"
+moveTo 2 1
+cmd deleteWordStartLeft
+expectLine 1 "{}"
+
+=== WordOperations > deleteWordLeft - issue #24947 #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\n}"
+moveTo 2 1
+cmd deleteWordEndLeft
+expectLine 1 "{}"
+
+=== WordOperations > deleteWordRight - issue #832
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5-3 */  "
+moveTo 1 1
+repeat deleteWordRight deleted empty
+expectStops "   |/*| |Just| |some| |text| |a|+=| |3| |+|5|-|3| |*/|  |"
+
+=== WordOperations > deleteWordRight - issue #3882
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "public void Add( int x,\n                 int y )"
+moveTo 1 24
+cmd deleteWordRight
+expectLine 1 "public void Add( int x,int y )"
+
+=== WordOperations > deleteWordStartRight - issue #3882
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "public void Add( int x,\n                 int y )"
+moveTo 1 24
+cmd deleteWordStartRight
+expectLine 1 "public void Add( int x,int y )"
+
+=== WordOperations > deleteWordEndRight - issue #3882
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "public void Add( int x,\n                 int y )"
+moveTo 1 24
+cmd deleteWordEndRight
+expectLine 1 "public void Add( int x,int y )"
+
+=== WordOperations > deleteWordStartRight
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5-3 */  "
+moveTo 1 1
+repeat deleteWordStartRight deleted empty
+expectStops "   |/* |Just |some |text |a|+= |3 |+|5|-|3 |*/  |"
+
+=== WordOperations > deleteWordEndRight
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   /* Just some text a+= 3 +5-3 */  "
+moveTo 1 1
+repeat deleteWordEndRight deleted empty
+expectStops "   /*| Just| some| text| a|+=| 3| +|5|-|3| */|  |"
+
+=== WordOperations > deleteWordRight - issue #3882 (1): Ctrl+Delete removing entire line when used at the end of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A line with text.\n   And another one"
+moveTo 1 18
+cmd deleteWordRight
+expectLine 1 "A line with text.And another one"
+
+=== WordOperations > deleteWordLeft - issue #3882 (2): Ctrl+Delete removing entire line when used at the end of line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "A line with text.\n   And another one"
+moveTo 2 1
+cmd deleteWordLeft
+expectLine 1 "A line with text.   And another one"
+
+=== WordOperations > deleteWordLeft - issue #91855: Matching (quote, bracket, paren) doesn't get deleted when hitting Ctrl+Backspace
+status: fail-ours needs autoClosingDelete always
+# features: autoClosingDelete always
+config: {"autoClosingPairs":[["\"","\""]],"surroundingPairs":[["\"","\""]],"brackets":[],"lineComment":null,"blockComment":null}
+text: "a \"\""
+moveTo 1 4
+cmd deleteWordLeft
+expectLine 1 "a "
+
