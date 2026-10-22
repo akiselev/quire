@@ -1,0 +1,21 @@
+@import url("base.css");
+
+:root {
+  --accent: #ff3e00;
+}
+
+/* Buttons */
+.btn, a.link > span::before {
+  color: var(--accent);
+  margin: 0 auto 1.5em;
+  font-family: "Inter", sans-serif !important;
+}
+
+@media (max-width: 600px) {
+  #main:hover { display: none; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

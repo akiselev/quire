@@ -1,6 +1,7 @@
 ; Source: tree-sitter-javascript 0.25.0, queries/highlights.scm (MIT, Copyright (c) 2014 Max Brunsfeld).
 ; https://github.com/tree-sitter/tree-sitter-javascript. See THIRD_PARTY_NOTICES.md.
 ; Precedence: when several patterns capture the same node, the last one wins.
+; Changed for quire: the overrides at the end.
 
 ; Variables
 ;----------
@@ -207,3 +208,6 @@
   "yield"
 ] @keyword
 
+; quire overrides (MIT OR Apache-2.0)
+; A regex's slashes belong to the regex, not to the "/" operator pattern above.
+(regex "/" @string.special)

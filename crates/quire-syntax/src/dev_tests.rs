@@ -56,7 +56,7 @@ fn svelte_dump() {
     eprintln!("{}", render(&l, s));
 }
 
-#[path = "../tests/support/gen.rs"]
+#[path = "../tests/support/fixture_gen.rs"]
 mod gen_fixture;
 
 /// Quick E5 timing (run with --release --ignored --nocapture).
@@ -407,5 +407,15 @@ fn root_reparse_cost() {
             line.push_str(&format!(" edit@{frac}: {:?}", t.elapsed() / n));
         }
         eprintln!("{line}");
+    }
+}
+
+#[test]
+#[ignore]
+fn dump_sexp() {
+    let s = std::env::var("QS_SRC").unwrap_or_else(|_| "<p>None &amp; zero</p>\n".into());
+    let lang = Lang::from_name(&std::env::var("QS_LANG").unwrap_or_else(|_| "svelte".into())).unwrap();
+    for l in &parse(lang, &s).layers {
+        eprintln!("{:?} {:?}: {}", l.lang, l.span, l.data.tree.root_node().to_sexp());
     }
 }

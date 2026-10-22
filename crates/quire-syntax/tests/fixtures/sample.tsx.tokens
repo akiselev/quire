@@ -1,0 +1,14 @@
+keyword:"import" type:"React" keyword:"from" string:"\"react\"" punctuation.delimiter:";"
+
+keyword:"type" type:"Props" operator:"=" punctuation.bracket:"{" property:"label" type+lib:"string" punctuation.delimiter:";" property:"onClick" punctuation.bracket:"()" operator:"=>" keyword:"void" punctuation.bracket:"}" punctuation.delimiter:";"
+
+keyword:"export" keyword:"function" type:"Button" punctuation.bracket:"({" punctuation.delimiter:"," punctuation.bracket:"}" type:"Props" punctuation.bracket:")" type:"JSX" punctuation.delimiter:"." type:"Element" punctuation.bracket:"{"
+keyword:"const" punctuation.bracket:"[" variable:"n" punctuation.delimiter:"," variable:"setN" punctuation.bracket:"]" operator:"=" type:"React" punctuation.delimiter:"." method:"useState" punctuation.bracket:"<" type+lib:"number" punctuation.bracket:">(" number:"0" punctuation.bracket:")" punctuation.delimiter:";"
+keyword:"return" punctuation.bracket:"("
+punctuation.bracket:"<" tag:"button" attribute:"className" operator:"=" string:"\"btn\"" attribute:"onClick" operator:"=" punctuation.bracket:"{()" operator:"=>" function:"setN" punctuation.bracket:"(" variable:"n" operator:"+" number:"1" punctuation.bracket:")}>"
+punctuation.bracket:"{" variable:"label" punctuation.bracket:"}" punctuation.bracket:"{" variable:"n" punctuation.bracket:"}"
+punctuation.bracket:"<" type:"Icon" attribute:"name" operator:"=" string:"\"plus\"" punctuation.bracket:"/>"
+punctuation.bracket:"</" tag:"button" punctuation.bracket:">"
+punctuation.bracket:")" punctuation.delimiter:";"
+punctuation.bracket:"}"
+

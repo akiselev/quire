@@ -1,0 +1,22 @@
+keyword:"@import" function:"url" punctuation.bracket:"(" string:"\"base.css\"" punctuation.bracket:")" punctuation.delimiter:";"
+
+punctuation.delimiter:":" attribute:"root" punctuation.bracket:"{"
+variable:"--accent" punctuation.delimiter:":" punctuation.delimiter:"#" string.special:"ff3e00" punctuation.delimiter:";"
+punctuation.bracket:"}"
+
+comment:"/* Buttons */"
+punctuation.delimiter:"." property:"btn" punctuation.delimiter:"," tag:"a" punctuation.delimiter:"." property:"link" operator:">" tag:"span" punctuation.delimiter:"::" attribute:"before" punctuation.bracket:"{"
+property:"color" punctuation.delimiter:":" function:"var" punctuation.bracket:"(" variable:"--accent" punctuation.bracket:")" punctuation.delimiter:";"
+property:"margin" punctuation.delimiter:":" number:"0" constant:"auto" number:"1.5" type:"em" punctuation.delimiter:";"
+property:"font-family" punctuation.delimiter:":" string:"\"Inter\"" punctuation.delimiter:"," constant:"sans-serif" keyword:"!important" punctuation.delimiter:";"
+punctuation.bracket:"}"
+
+keyword:"@media" punctuation.bracket:"(" property:"max-width" punctuation.delimiter:":" number:"600" type:"px" punctuation.bracket:")" punctuation.bracket:"{"
+punctuation.delimiter:"#" property:"main" punctuation.delimiter:":" attribute:"hover" punctuation.bracket:"{" property:"display" punctuation.delimiter:":" constant:"none" punctuation.delimiter:";" punctuation.bracket:"}"
+punctuation.bracket:"}"
+
+keyword:"@keyframes" punctuation.bracket:"{"
+keyword:"from" punctuation.bracket:"{" property:"transform" punctuation.delimiter:":" function:"rotate" punctuation.bracket:"(" number:"0" type:"deg" punctuation.bracket:")" punctuation.delimiter:";" punctuation.bracket:"}"
+keyword:"to" punctuation.bracket:"{" property:"transform" punctuation.delimiter:":" function:"rotate" punctuation.bracket:"(" number:"360" type:"deg" punctuation.bracket:")" punctuation.delimiter:";" punctuation.bracket:"}"
+punctuation.bracket:"}"
+

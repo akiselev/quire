@@ -1,7 +1,7 @@
 ; Source: tree-sitter-css 0.25.0, queries/highlights.scm (MIT, Copyright (c) 2018 Max Brunsfeld).
 ; https://github.com/tree-sitter/tree-sitter-css. See THIRD_PARTY_NOTICES.md.
 ; Changed for quire: the custom-property (--x) patterns moved after the generic ones, because the
-; last pattern that captures a node wins.
+; last pattern that captures a node wins; keyword values (plain_value) are constants.
 
 (comment) @comment
 
@@ -35,6 +35,9 @@
 (namespace_name) @property
 (property_name) @property
 (feature_name) @property
+
+; quire: keyword values (auto, none, blue, ...)
+(plain_value) @constant
 
 ; Custom properties (moved below the generic patterns: last pattern wins)
 ((property_name) @variable

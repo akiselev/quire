@@ -44,6 +44,11 @@ pub(crate) fn highlight<S: Source + ?Sized>(
         let Some(cfg) = config::get(layer.lang) else {
             continue;
         };
+        // An injection replaces its parent's styles inside its ranges (no string colour
+        // showing through a CSS template's whitespace).
+        for r in layer.ranges() {
+            spans.push((layer.depth, r.start, r.end, style::NONE));
+        }
         let sh = layer.shift;
         cursor.set_byte_range(sh.tree(start)..sh.tree(end));
         let text = |n: Node<'_>| chunks.slices(sh.real(n.start_byte())..sh.real(n.end_byte()));

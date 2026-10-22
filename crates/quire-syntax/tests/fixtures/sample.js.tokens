@@ -1,0 +1,20 @@
+keyword:"import" variable:"fs" keyword:"from" string:"'node:fs'" punctuation.delimiter:";"
+
+keyword:"const" constant:"MAX_SIZE" operator:"=" number:"10" punctuation.delimiter:";"
+
+keyword:"export" keyword:"class" constructor:"Store" keyword:"extends" constructor:"Map" punctuation.bracket:"{"
+keyword:"get" method:"size" punctuation.bracket:"()" punctuation.bracket:"{" keyword:"return" variable+lib:"super" punctuation.delimiter:"." property:"size" punctuation.delimiter:";" punctuation.bracket:"}"
+punctuation.bracket:"}"
+
+keyword:"function" function:"greet" punctuation.bracket:"(" parameter:"name" punctuation.delimiter:"," punctuation.bracket:"{" operator:"=" constant+lib:"false" punctuation.bracket:"}" operator:"=" punctuation.bracket:"{})" punctuation.bracket:"{"
+keyword:"const" variable:"msg" operator:"=" string:"`Hello, " punctuation:"${" variable:"name" punctuation:"}" string:"!`" punctuation.delimiter:";"
+variable+lib:"console" punctuation.delimiter:"." method:"log" punctuation.bracket:"(" variable:"loud" variable:"msg" punctuation.delimiter:"." method:"toUpperCase" punctuation.bracket:"()" variable:"msg" punctuation.bracket:")" punctuation.delimiter:";"
+keyword:"return" keyword:"typeof" variable:"name" operator:"===" string:"'string'" operator:"&&" variable:"name" punctuation.delimiter:"." property:"length" operator:"<" constant:"MAX_SIZE" punctuation.delimiter:";"
+punctuation.bracket:"}"
+
+keyword:"const" variable:"styles" operator:"=" function:"css" string:"`"
+punctuation.delimiter:"." property:"btn" punctuation.bracket:"{" property:"color" punctuation.delimiter:":" constant:"blue" punctuation.delimiter:";" punctuation.bracket:"}"
+string:"`" punctuation.delimiter:";"
+
+keyword:"const" variable:"el" operator:"=" punctuation.bracket:"<" tag:"div" attribute:"className" operator:"=" string:"\"x\"" punctuation.bracket:">{" function:"greet" punctuation.bracket:"(" string:"'a'" punctuation.bracket:")}</" tag:"div" punctuation.bracket:">" punctuation.delimiter:";"
+

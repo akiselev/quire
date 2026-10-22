@@ -1,0 +1,31 @@
+keyword:"import" punctuation.bracket:"{" variable:"readFile" punctuation.bracket:"}" keyword:"from" string:"\"node:fs/promises\"" punctuation.delimiter:";"
+
+keyword:"export" keyword:"interface" type:"Point" punctuation.bracket:"{"
+keyword:"readonly" property:"x" type+lib:"number" punctuation.delimiter:";"
+property:"y" type+lib:"number" punctuation.delimiter:";"
+punctuation.bracket:"}"
+
+keyword:"enum" type:"Color" punctuation.bracket:"{" property:"Red" operator:"=" number:"1" punctuation.delimiter:"," property:"Green" punctuation.bracket:"}"
+
+keyword:"type" type:"Pair" punctuation.bracket:"<" type:"T" punctuation.bracket:">" operator:"=" punctuation.bracket:"[" type:"T" punctuation.delimiter:"," type:"T" punctuation.bracket:"]" punctuation.delimiter:";"
+
+keyword:"export" keyword:"abstract" keyword:"class" type:"Shape" punctuation.bracket:"<" type:"T" keyword:"extends" type:"Point" operator:"=" type:"Point" punctuation.bracket:">" keyword:"implements" type:"Iterable" punctuation.bracket:"<" type:"T" punctuation.bracket:">" punctuation.bracket:"{"
+keyword:"private" keyword:"static" property:"count" operator:"=" number:"0" punctuation.delimiter:";"
+method:"constructor" punctuation.bracket:"(" keyword:"public" keyword:"readonly" parameter:"origin" type:"T" punctuation.bracket:")" punctuation.bracket:"{"
+variable+lib:"super" punctuation.bracket:"()" punctuation.delimiter:";"
+punctuation.bracket:"}"
+keyword:"abstract" property:"area" punctuation.bracket:"()" type+lib:"number" punctuation.delimiter:";"
+operator:"*" punctuation.bracket:"[" type:"Symbol" punctuation.delimiter:"." property:"iterator" punctuation.bracket:"]()" type:"Iterator" punctuation.bracket:"<" type:"T" punctuation.bracket:">" punctuation.bracket:"{"
+keyword:"yield" variable+lib:"this" punctuation.delimiter:"." property:"origin" punctuation.delimiter:";"
+punctuation.bracket:"}"
+punctuation.bracket:"}"
+
+keyword:"export" keyword:"async" keyword:"function" function:"load" punctuation.bracket:"(" parameter:"path" type+lib:"string" punctuation.delimiter:"," parameter:"opts" punctuation.bracket:"{" property:"strict" type+lib:"boolean" punctuation.bracket:"})" type:"Promise" punctuation.bracket:"<" type+lib:"string" punctuation.bracket:">" punctuation.bracket:"{"
+keyword:"const" variable:"text" operator:"=" keyword:"await" function:"readFile" punctuation.bracket:"(" variable:"path" punctuation.delimiter:"," string:"\"utf8\"" punctuation.bracket:")" punctuation.delimiter:";"
+comment:"// A comment"
+keyword:"return" variable:"opts" punctuation.delimiter:"?." property:"strict" variable:"text" punctuation.delimiter:"." method:"trim" punctuation.bracket:"()" string:"`" punctuation:"${" variable:"text" punctuation:"}" string:"\\n`" punctuation.delimiter:";"
+punctuation.bracket:"}"
+
+keyword:"const" variable:"re" operator:"=" string.special:"/ab+c/gi" punctuation.delimiter:";"
+keyword:"let" variable:"n" type+lib:"unknown" operator:"=" constant+lib:"null" keyword:"as" type+lib:"unknown" keyword:"as" type+lib:"number" punctuation.delimiter:";"
+
