@@ -631,14 +631,18 @@ impl Document {
             if let Some(f) = &mut self.syntax_folds {
                 crate::folding::map_fold_ranges(f, &line_edits);
             }
-            // Indentation folds: follow the levels incrementally; the ranges are rebuilt (from
-            // the levels, not the text) only when a level or the line count changed.
+            // Indentation folds: follow the levels incrementally, and the ranges around the
+            // edited lines only (E1 P3).
             match self.indent_levels.get_mut() {
-                Some(lv) => {
-                    if lv.update(&self.text, &line_edits) {
-                        self.indent_folds = OnceLock::new();
+                Some(lv) => match lv.update(&self.text, &line_edits) {
+                    crate::folding::LevelChange::None => {}
+                    crate::folding::LevelChange::Lines { old, new } => {
+                        if let Some(r) = self.indent_folds.get_mut() {
+                            lv.update_ranges(r, old, new);
+                        }
                     }
-                }
+                    crate::folding::LevelChange::All => self.indent_folds = OnceLock::new(),
+                },
                 None => self.indent_folds = OnceLock::new(),
             }
             self.recent.push(tr.changes.clone(), line_edits);

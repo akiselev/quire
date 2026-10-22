@@ -139,6 +139,24 @@ pub(crate) fn layout_line_job(
     mono: Mono,
     tabs: TabStops,
 ) -> Arc<Galley> {
+    // E1 P2: printable ASCII in the plain font needs no shaping.
+    if crate::ascii::eligible(text, spans, default)
+        && let Some(g) = crate::ascii::layout(ctx, text, spans, default, mono, tabs)
+    {
+        return g;
+    }
+    layout_line_job_shaped(ctx, text, spans, default, mono, tabs)
+}
+
+/// [`layout_line_job`] through egui's shaper only.
+pub(crate) fn layout_line_job_shaped(
+    ctx: &Context,
+    text: &str,
+    spans: &[(usize, TextFormat)],
+    default: &TextFormat,
+    mono: Mono,
+    tabs: TabStops,
+) -> Arc<Galley> {
     let n_tabs = text.bytes().filter(|&b| b == b'\t').count();
     if n_tabs == 0 {
         return ctx.fonts_mut(|f| f.layout_job(build_job(text, spans, default, &[])));

@@ -8,6 +8,7 @@ pub use egui;
 pub use quire_core;
 
 mod a11y;
+mod ascii;
 pub mod chord;
 pub mod command;
 mod editor;

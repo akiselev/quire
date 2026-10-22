@@ -162,6 +162,8 @@ pub(crate) struct Mem {
     /// Monospace metrics with what they were measured for: font, pixels per point, and a cheap
     /// probe (advance of 'M', row height) that changes when the font definitions do.
     pub mono_cache: Option<(egui::FontId, f32, (f32, f32), layout::Mono)>,
+    /// The font atlas the cached galleys point into; when egui rebuilds it, the caches go.
+    pub atlas: Option<crate::ascii::AtlasState>,
 }
 
 #[derive(Clone, Debug)]
@@ -382,6 +384,13 @@ impl<'a> CodeEditor<'a> {
         let shared = load_mem(&ctx, id);
         let mut mem = shared.lock().unwrap_or_else(|e| e.into_inner());
 
+        // Galleys hold atlas coordinates: drop them when egui rebuilt the atlas.
+        let atlas = crate::ascii::AtlasState::now(&ctx);
+        if mem.atlas.is_some_and(|a| a.rebuilt_by(&atlas)) {
+            mem.galleys.clear();
+            mem.wraps.clear();
+        }
+        mem.atlas = Some(atlas);
         let row_h = layout::row_height(&ctx, &theme.font);
         let ppp = ctx.pixels_per_point();
         let probe = ctx.fonts_mut(|f| (f.glyph_width(&theme.font, 'M'), f.row_height(&theme.font)));

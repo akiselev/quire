@@ -38,6 +38,21 @@ pub fn indent_fold_ranges(text: &Text, tab_size: u32) -> Vec<FoldRange> {
 /// A blank line in [`IndentLevels`].
 const BLANK: u32 = u32::MAX;
 
+/// What [`IndentLevels::update`] changed.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) enum LevelChange {
+    /// No level and no line count changed: the ranges stand.
+    None,
+    /// Old lines `old` became new lines `new` (same start), and some level or the line count
+    /// changed there: [`IndentLevels::update_ranges`] brings the ranges up to date.
+    Lines {
+        old: std::ops::Range<usize>,
+        new: std::ops::Range<usize>,
+    },
+    /// The levels were recomputed: recompute the ranges too.
+    All,
+}
+
 /// Indentation level per line ([`BLANK`] for blank lines), kept up to date through line edits so
 /// that typing does not rescan the whole document (E1: a full scan was about 1 µs per line,
 /// 100 ms per keystroke at 100k lines).
@@ -81,9 +96,9 @@ impl IndentLevels {
         indent_level(text, line, tab_size).unwrap_or(BLANK)
     }
 
-    /// Follows one change (`edits` against the old text; `text` is the new text). Returns
-    /// whether any level or the line count changed (then the ranges must be recomputed).
-    pub(crate) fn update(&mut self, text: &Text, edits: &[LineEdit]) -> bool {
+    /// Follows one change (`edits` against the old text; `text` is the new text). Returns what
+    /// changed, for the ranges.
+    pub(crate) fn update(&mut self, text: &Text, edits: &[LineEdit]) -> LevelChange {
         // Merge edits that touch the same lines into disjoint blocks: (old first line, old last
         // line, new line count).
         let mut blocks: Vec<(usize, usize, usize)> = Vec::new();
@@ -104,14 +119,19 @@ impl IndentLevels {
         }
         let mut changed = false;
         let mut offset = 0isize;
+        // The hull of the blocks: old lines first..old_end became new lines first..new_end.
+        let first = blocks.first().map_or(0, |b| b.0);
+        let (mut old_end, mut new_end) = (first, first);
         for (s, e, new_len) in blocks {
             let old_len = e - s + 1;
             let at = (s as isize + offset) as usize;
             if at + old_len > self.levels.len() {
                 // Out of step (should not happen): start over.
                 *self = IndentLevels::compute(text, self.tab_size);
-                return true;
+                return LevelChange::All;
             }
+            old_end = e + 1;
+            new_end = at + new_len;
             let fresh: Vec<u32> = (at..at + new_len)
                 .map(|l| Self::level_of(text, l, self.tab_size))
                 .collect();
@@ -123,9 +143,90 @@ impl IndentLevels {
         }
         if self.levels.len() != text.len_lines() {
             *self = IndentLevels::compute(text, self.tab_size);
-            return true;
+            return LevelChange::All;
         }
-        changed
+        if changed {
+            LevelChange::Lines {
+                old: first..old_end,
+                new: first..new_end,
+            }
+        } else {
+            LevelChange::None
+        }
+    }
+
+    /// The fold range headed by `line`, if any (what [`Self::ranges`] yields for it): the
+    /// next non-blank line is more indented, and the range runs to the line before the next
+    /// non-blank line at `line`'s indentation or less (or to the last line).
+    fn range_at(&self, line: usize) -> Option<FoldRange> {
+        let lv = &self.levels;
+        let indent = *lv.get(line)?;
+        if indent == BLANK {
+            return None;
+        }
+        let next = (line + 1..lv.len()).find(|&l| lv[l] != BLANK)?;
+        if lv[next] <= indent {
+            return None;
+        }
+        let end = (next + 1..lv.len())
+            .find(|&l| lv[l] <= indent)
+            .map_or(lv.len() - 1, |t| t - 1);
+        Some(FoldRange {
+            start_line: line,
+            end_line: end,
+            kind: FoldKind::Other,
+        })
+    }
+
+    /// Brings `ranges` (this provider's ranges before the change) up to date after
+    /// [`LevelChange::Lines`], in O(ranges) plus the scans for the ranges that enclose the edit,
+    /// instead of rebuilding them from every line (E1 P3: 0.6–1.8 ms per Enter at 100k lines).
+    ///
+    /// A range depends only on its own line and the lines below it, up to the line that ends
+    /// it. So ranges headed below the edit only shift; ranges headed inside it are recomputed;
+    /// above it, only ranges that reach the edit (end + 1 ≥ its first line) and the nearest
+    /// non-blank line above it (whose next non-blank line may now be in the edit) can change.
+    pub(crate) fn update_ranges(
+        &self,
+        ranges: &mut Vec<FoldRange>,
+        old: std::ops::Range<usize>,
+        new: std::ops::Range<usize>,
+    ) {
+        let a = new.start;
+        let delta = new.len() as isize - old.len() as isize;
+        let lo = ranges.partition_point(|r| r.start_line < a);
+        let hi = ranges.partition_point(|r| r.start_line < old.end);
+        for r in &mut ranges[hi..] {
+            r.start_line = (r.start_line as isize + delta) as usize;
+            r.end_line = (r.end_line as isize + delta) as usize;
+        }
+        let inside: Vec<FoldRange> = new.clone().filter_map(|l| self.range_at(l)).collect();
+        ranges.splice(lo..hi, inside);
+        // Above the edit.
+        let mut redo: Vec<usize> = ranges[..lo]
+            .iter()
+            .filter(|r| r.end_line + 1 >= a)
+            .map(|r| r.start_line)
+            .collect();
+        if let Some(p) = (0..a).rev().find(|&l| self.levels[l] != BLANK)
+            && redo.last() != Some(&p)
+        {
+            redo.push(p);
+        }
+        for l in redo {
+            let at = ranges[..lo].partition_point(|r| r.start_line < l);
+            let has = at < lo && ranges[at].start_line == l;
+            match (self.range_at(l), has) {
+                (Some(r), true) => ranges[at] = r,
+                (Some(r), false) => {
+                    ranges.insert(at, r);
+                }
+                (None, true) => {
+                    ranges.remove(at);
+                }
+                (None, false) => {}
+            }
+        }
     }
 
     /// The fold ranges (VS Code's `computeRanges`, bottom-up).
@@ -317,12 +418,21 @@ mod tests {
             let c = crate::ChangeSet::replace(t.len_bytes(), edits).unwrap();
             let le = LineEdit::compute(&c, &t);
             t = c.apply(&t).unwrap();
-            let before = lv.ranges();
+            let mut ranges = lv.ranges();
             let changed = lv.update(&t, &le);
             let fresh = IndentLevels::compute(&t, 4);
             assert_eq!(lv.levels, fresh.levels, "text {:?}", t.to_string());
-            if !changed {
-                assert_eq!(before, fresh.ranges());
+            match changed {
+                LevelChange::None => {}
+                LevelChange::Lines { old, new } => lv.update_ranges(&mut ranges, old, new),
+                LevelChange::All => ranges = lv.ranges(),
+            }
+            assert_eq!(ranges, fresh.ranges(), "text {:?}", t.to_string());
+            for l in 0..t.len_lines() {
+                assert_eq!(
+                    fresh.range_at(l),
+                    fresh.ranges().into_iter().find(|r| r.start_line == l)
+                );
             }
         }
         assert_eq!(lines(&lv.ranges()), lines(&indent_fold_ranges(&t, 4)));
