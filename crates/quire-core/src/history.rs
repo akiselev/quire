@@ -143,6 +143,11 @@ impl History {
         self.open.is_some()
     }
 
+    /// The input kind of the open group's last edit (for typing classification).
+    pub fn last_input_kind(&self) -> Option<InputKind> {
+        self.open.as_ref().and_then(|g| g.last_kind)
+    }
+
     /// The version the open group started at.
     pub fn open_group_since(&self) -> Option<Version> {
         self.open.as_ref().map(|g| g.from)

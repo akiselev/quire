@@ -123,6 +123,9 @@ pub enum Effect {
     RevealLine(usize),
     /// Set or clear the view's find query.
     SetFind(Option<FindQuery>),
+    /// Closing characters the editor inserted (auto-close), positions after the changes; the
+    /// view tracks them for overtype and pair delete while a cursor stays inside the pair.
+    AutoClosed(Vec<crate::view::AutoClosed>),
 }
 
 /// An edit (or a selection change) against one version of a document.

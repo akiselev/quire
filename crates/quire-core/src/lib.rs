@@ -41,7 +41,7 @@ pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};
 pub use transaction::{Effect, GroupHint, InputKind, Origin, Transaction};
 pub use version::Version;
-pub use view::{EditorView, Preedit, Reveal, Scroll, SyncOutcome};
+pub use view::{AutoClosed, EditorView, Preedit, Reveal, Scroll, SyncOutcome};
 
 #[cfg(test)]
 mod assert_traits {

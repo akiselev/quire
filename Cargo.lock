@@ -2420,11 +2420,14 @@ version = "0.1.0"
 dependencies = [
  "imara-diff",
  "proptest",
+ "quire-core",
  "regex-automata",
  "ropey",
  "schemars",
  "serde",
+ "serde_json",
  "smallvec",
+ "unicode-segmentation",
 ]
 
 [[package]]

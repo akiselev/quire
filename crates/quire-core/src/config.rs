@@ -50,6 +50,12 @@ pub struct EditorConfig {
     pub insert_spaces: bool,
     /// Characters that separate words, beside whitespace.
     pub word_separators: String,
+    /// Bracket pairs for indentation on Enter (`{` then Enter indents; between `{}` the closing
+    /// bracket moves to its own line).
+    pub brackets: Vec<(String, String)>,
+    /// Backspace in leading whitespace deletes to the previous indent stop (VS Code
+    /// `editor.useTabStops`).
+    pub use_tab_stops: bool,
     /// Bracket and quote pairs for auto-close, auto-surround and overtype.
     pub auto_closing_pairs: Vec<(String, String)>,
     /// Characters before which auto-closing happens (VS Code's `autoCloseBefore`).
@@ -90,6 +96,11 @@ impl Default for EditorConfig {
             indent_size: 4,
             insert_spaces: true,
             word_separators: DEFAULT_WORD_SEPARATORS.to_string(),
+            brackets: [("(", ")"), ("[", "]"), ("{", "}")]
+                .iter()
+                .map(|(a, b)| (a.to_string(), b.to_string()))
+                .collect(),
+            use_tab_stops: true,
             auto_closing_pairs: [
                 ("(", ")"),
                 ("[", "]"),

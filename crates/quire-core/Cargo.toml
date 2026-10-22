@@ -21,11 +21,14 @@ ropey.workspace = true
 smallvec.workspace = true
 imara-diff.workspace = true
 regex-automata.workspace = true
+unicode-segmentation.workspace = true
 serde = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 
 [dev-dependencies]
 proptest.workspace = true
+serde_json.workspace = true
+quire-core = { path = ".", features = ["serde"] }
 
 [lints]
 workspace = true

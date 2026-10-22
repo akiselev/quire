@@ -23,7 +23,10 @@ pub enum Motion {
     Up,
     /// One line down, keeping the goal column.
     Down,
-    /// To the previous word start (VS Code `cursorWordStartLeft`, the default `cursorWordLeft`).
+    /// To the previous word start, skipping a lone separator before a word (VS Code
+    /// `cursorWordLeft`, "word start fast").
+    WordLeft,
+    /// To the previous word start (`cursorWordStartLeft`).
     WordStartLeft,
     /// To the previous word end (`cursorWordEndLeft`).
     WordEndLeft,
@@ -110,12 +113,24 @@ pub enum EditorCommand {
     /// Delete.
     #[cfg_attr(feature = "serde", serde(rename = "deleteRight"))]
     DeleteRight,
-    /// Delete to the previous word start.
+    /// Delete to the previous word start (whitespace runs first).
     #[cfg_attr(feature = "serde", serde(rename = "deleteWordLeft"))]
     DeleteWordLeft,
-    /// Delete to the next word end.
+    /// Delete to the next word end (whitespace runs first).
     #[cfg_attr(feature = "serde", serde(rename = "deleteWordRight"))]
     DeleteWordRight,
+    /// Delete to the previous word start.
+    #[cfg_attr(feature = "serde", serde(rename = "deleteWordStartLeft"))]
+    DeleteWordStartLeft,
+    /// Delete to the previous word end.
+    #[cfg_attr(feature = "serde", serde(rename = "deleteWordEndLeft"))]
+    DeleteWordEndLeft,
+    /// Delete to the next word start.
+    #[cfg_attr(feature = "serde", serde(rename = "deleteWordStartRight"))]
+    DeleteWordStartRight,
+    /// Delete to the next word end.
+    #[cfg_attr(feature = "serde", serde(rename = "deleteWordEndRight"))]
+    DeleteWordEndRight,
     /// Tab: indent selected lines, or insert an indent at cursors.
     #[cfg_attr(feature = "serde", serde(rename = "tab"))]
     Tab,
@@ -204,6 +219,10 @@ impl EditorCommand {
             DeleteRight => "deleteRight",
             DeleteWordLeft => "deleteWordLeft",
             DeleteWordRight => "deleteWordRight",
+            DeleteWordStartLeft => "deleteWordStartLeft",
+            DeleteWordEndLeft => "deleteWordEndLeft",
+            DeleteWordStartRight => "deleteWordStartRight",
+            DeleteWordEndRight => "deleteWordEndRight",
             Tab => "tab",
             Outdent => "outdent",
             IndentLines => "editor.action.indentLines",
@@ -239,7 +258,8 @@ impl EditorCommand {
             "cursorRight" => Some(Motion::Right),
             "cursorUp" => Some(Motion::Up),
             "cursorDown" => Some(Motion::Down),
-            "cursorWordLeft" | "cursorWordStartLeft" => Some(Motion::WordStartLeft),
+            "cursorWordLeft" => Some(Motion::WordLeft),
+            "cursorWordStartLeft" => Some(Motion::WordStartLeft),
             "cursorWordEndLeft" => Some(Motion::WordEndLeft),
             "cursorWordStartRight" => Some(Motion::WordStartRight),
             "cursorWordRight" | "cursorWordEndRight" => Some(Motion::WordEndRight),
@@ -263,6 +283,10 @@ impl EditorCommand {
             "deleteRight" => DeleteRight,
             "deleteWordLeft" => DeleteWordLeft,
             "deleteWordRight" => DeleteWordRight,
+            "deleteWordStartLeft" => DeleteWordStartLeft,
+            "deleteWordEndLeft" => DeleteWordEndLeft,
+            "deleteWordStartRight" => DeleteWordStartRight,
+            "deleteWordEndRight" => DeleteWordEndRight,
             "tab" => Tab,
             "outdent" => Outdent,
             "editor.action.indentLines" => IndentLines,

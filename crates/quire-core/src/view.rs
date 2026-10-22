@@ -45,6 +45,16 @@ pub enum Reveal {
     Line(usize),
 }
 
+/// A closing character inserted by auto-close: `close` is its byte range, `open_start` where
+/// the opening character starts.
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct AutoClosed {
+    /// Start of the opening character(s).
+    pub open_start: usize,
+    /// The closing character(s).
+    pub close: Range<usize>,
+}
+
 /// How [`EditorView::sync`] caught up.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SyncOutcome {
@@ -68,6 +78,7 @@ pub struct EditorView {
     reveal: Option<Reveal>,
     focused: bool,
     preedit: Option<Preedit>,
+    auto_closed: Vec<AutoClosed>,
 }
 
 impl EditorView {
@@ -83,6 +94,7 @@ impl EditorView {
             reveal: None,
             focused: false,
             preedit: None,
+            auto_closed: Vec::new(),
         }
     }
 
@@ -153,6 +165,11 @@ impl EditorView {
         changed
     }
 
+    /// Auto-inserted closing characters still tracked (VS Code's `autoClosedCharacters`).
+    pub fn auto_closed(&self) -> &[AutoClosed] {
+        &self.auto_closed
+    }
+
     /// Whether an IME composition is active (the host must not route Enter or Escape elsewhere).
     pub fn composing(&self) -> bool {
         self.preedit.is_some()
@@ -180,6 +197,21 @@ impl EditorView {
             self.selection = sel;
             self.selection_version += 1;
         }
+        self.prune_auto_closed();
+    }
+
+    fn prune_auto_closed(&mut self) {
+        if self.auto_closed.is_empty() {
+            return;
+        }
+        let sel = &self.selection;
+        self.auto_closed.retain(|a| {
+            a.close.start < a.close.end
+                && sel
+                    .ranges()
+                    .iter()
+                    .any(|r| r.head > a.open_start && r.head <= a.close.start)
+        });
     }
 
     /// Catches up with the document: maps selection, folds, find matches and scroll anchor
@@ -220,9 +252,9 @@ impl EditorView {
     }
 
     fn map_changes(&mut self, c: &ChangeSet, cursor_bias: Bias) {
+        self.map_secondary(c);
         let sel = self.selection.map(c, cursor_bias);
         self.set_selection_raw(sel);
-        self.map_secondary(c);
     }
 
     fn map_secondary(&mut self, c: &ChangeSet) {
@@ -238,6 +270,16 @@ impl EditorView {
             }
             f.matches.retain(|m| m.start < m.end);
             f.stale = true;
+        }
+        for a in &mut self.auto_closed {
+            let len = a.close.end - a.close.start;
+            a.open_start = c.map_pos(a.open_start, Bias::After);
+            let close = map_range(&a.close, c);
+            a.close = if close.end - close.start == len {
+                close
+            } else {
+                close.start..close.start
+            };
         }
         self.scroll.anchor = c.map_pos(self.scroll.anchor, Bias::Before);
         if let Some(Reveal::Pos { pos, .. }) = &mut self.reveal {
@@ -261,12 +303,13 @@ impl EditorView {
         }
         self.scroll.anchor = text.clamp_to_boundary(self.scroll.anchor);
         self.reveal = None;
+        self.auto_closed.clear();
     }
 
     /// After a local change made through this view.
     pub(crate) fn after_local_change(&mut self, c: &ChangeSet, version: Version, sel: Selection) {
-        self.set_selection_raw(sel);
         self.map_secondary(c);
+        self.set_selection_raw(sel);
         self.synced_at = version;
     }
 
@@ -280,6 +323,10 @@ impl EditorView {
             }
             Effect::RevealLine(l) => self.reveal = Some(Reveal::Line(*l)),
             Effect::SetFind(q) => self.set_find(doc, q.clone()),
+            Effect::AutoClosed(list) => {
+                self.auto_closed.extend(list.iter().cloned());
+                self.prune_auto_closed();
+            }
         }
     }
 

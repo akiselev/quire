@@ -45,10 +45,15 @@ impl WordClassifier {
     }
 }
 
-/// The word (or separator run) at `pos`, as double-click selects it. Whitespace between words
-/// selects the whitespace run; prefers the word to the right, then to the left.
+/// The word at `pos`, as double-click selects it (VS Code `WordOperations.word`: a word touching
+/// the position, else a separator run containing it). Between words, the whitespace run.
 pub fn word_range_at(text: &Text, pos: usize, cls: &WordClassifier) -> Range<usize> {
     let pos = text.clamp_to_boundary(pos);
+    let m = crate::commands::model::Model::new(text);
+    let (a, b) = crate::commands::words::word_at(&m, cls, m.pos(pos));
+    if a != b {
+        return m.off(a)..m.off(b);
+    }
     let right = text.char_at(pos).map(|c| cls.class(c));
     let left = text.char_before(pos).map(|c| cls.class(c));
     let class = match (left, right) {
