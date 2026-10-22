@@ -1,4 +1,4 @@
-; JavaScript (with JSX). quire query.
+; JavaScript (with JSX). quire query, MIT OR Apache-2.0.
 ; inherits: _javascript,_jsx
 
 ; Source: tree-sitter-javascript 0.25.0, queries/highlights-params.scm (MIT, Copyright (c) 2014

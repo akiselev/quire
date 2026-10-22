@@ -4,6 +4,7 @@ description = "The quire code editor widget for egui 0.37"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
 repository.workspace = true
 publish.workspace = true
 

@@ -1,4 +1,4 @@
-; Svelte indents (tree-sitter-htmlx-svelte). quire query.
+; Svelte indents (tree-sitter-htmlx-svelte). quire query, MIT OR Apache-2.0.
 ; @indent: lines after the node's first line, up to its last, get one more level.
 ; @outdent: a line that starts with this node or token gets one level less.
 ; The block lists follow tree-sitter-htmlx-svelte 0.1.16 queries/indents.scm (MIT, Copyright (c)

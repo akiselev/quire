@@ -106,7 +106,7 @@
 
 (block_sigil) @keyword.control
 
-; quire overrides
+; quire overrides (MIT OR Apache-2.0)
 ; Plain text is not a token; script/style bodies and {expressions} are painted by their
 ; injected languages.
 (text) @none

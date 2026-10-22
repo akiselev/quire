@@ -1,4 +1,4 @@
-; JavaScript and TypeScript folds. quire query.
+; JavaScript and TypeScript folds. quire query, MIT OR Apache-2.0.
 ; A captured node that spans more than one line is a fold range.
 [
   (statement_block)

@@ -1,4 +1,4 @@
-; JavaScript and TypeScript indents. quire query.
+; JavaScript and TypeScript indents. quire query, MIT OR Apache-2.0.
 ; @indent: lines after the node's first line, up to its last, get one more level.
 ; @outdent: a line that starts with this token gets one level less.
 [

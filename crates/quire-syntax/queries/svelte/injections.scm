@@ -1,4 +1,4 @@
-; Svelte injections (tree-sitter-htmlx-svelte). quire query.
+; Svelte injections (tree-sitter-htmlx-svelte). quire query, MIT OR Apache-2.0.
 ; Patterns after tree-sitter-htmlx-svelte 0.1.16 queries/injections.scm and
 ; queries/htmlx/injections.scm (MIT, Copyright (c) 2025 mixednuts). See THIRD_PARTY_NOTICES.md.
 ; When several patterns inject into the same content node, the FIRST pattern wins, so the

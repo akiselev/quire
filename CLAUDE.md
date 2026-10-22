@@ -23,8 +23,8 @@ quire depends on neither.
 - Positions are UTF-8 byte offsets, valid only with their `Version`.
 - One mutation path: `Document::apply(Transaction)` (and `apply_remote`). Commands are pure:
   command → transaction.
-- Licences: quire's own licence is not decided (user, 2026-10-22: "remove until decided"); add no
-  licence fields or files. VS Code/Monaco (MIT): literal translation allowed, keep
+- Licences: MIT OR Apache-2.0 (user, 2026-10-22; the repository is public; `publish = false` stays
+  until the user decides). VS Code/Monaco (MIT): literal translation allowed, keep
   Microsoft's notice in each translated file and in `THIRD_PARTY_NOTICES.md`. CodeMirror 6
   (MIT): design, notice if code is translated. Zed `text`/`rope`/`editor` (GPL): designs only,
   never copy. Helix/tree-house (MPL-2.0): depend freely; copied query files keep their header and

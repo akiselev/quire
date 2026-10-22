@@ -208,6 +208,6 @@
   "yield"
 ] @keyword
 
-; quire overrides
+; quire overrides (MIT OR Apache-2.0)
 ; A regex's slashes belong to the regex, not to the "/" operator pattern above.
 (regex "/" @string.special)

@@ -1,6 +1,6 @@
 # Third-party notices
 
-quire's own licence is not decided yet. Parts of it are translated from, or test data derived
+quire is licensed under MIT OR Apache-2.0. Parts of it are translated from, or test data derived
 from, the projects below. Each translated file also carries the notice in its header.
 
 ## Visual Studio Code / Monaco Editor
@@ -80,7 +80,7 @@ nvim-treesitter: Apache-2.0). See each file.
 
 Query files under `crates/quire-syntax/queries/` are copied or adapted from the grammars'
 bundled queries; each file's header names its source and what quire changed. Files without a
-source line are quire's own (licence not decided yet). No Helix (MPL-2.0) or nvim-treesitter query is
+source line are quire's own (MIT OR Apache-2.0). No Helix (MPL-2.0) or nvim-treesitter query is
 copied.
 
 | quire file | Source |

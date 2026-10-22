@@ -1,4 +1,4 @@
-; JavaScript and TypeScript injections. quire query.
+; JavaScript and TypeScript injections. quire query, MIT OR Apache-2.0.
 ; Tagged templates: css`...`, styled.div`...`: the tag or member name names the language (unknown
 ; names are skipped); the fragments of one template are parsed together.
 ; Pattern from tree-sitter-javascript 0.25.0 queries/injections.scm (MIT, Copyright (c) 2014
