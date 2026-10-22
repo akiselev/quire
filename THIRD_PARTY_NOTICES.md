@@ -1,6 +1,6 @@
 # Third-party notices
 
-quire is licensed under MIT OR Apache-2.0. Parts of it are translated from, or test data derived
+quire's own licence is not decided yet. Parts of it are translated from, or test data derived
 from, the projects below. Each translated file also carries the notice in its header.
 
 ## Visual Studio Code / Monaco Editor

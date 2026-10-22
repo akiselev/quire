@@ -8,5 +8,5 @@ A code editor for egui 0.37, in three crates:
   the UI thread through a host-supplied spawner.
 - `egui_quire`: the widget (virtualised lines, VS Code keymap, find, gutter, IME, AccessKit).
 
-Licensed under either of MIT or Apache-2.0 at your option. See `THIRD_PARTY_NOTICES.md` for
+The licence is not decided yet (no licence is granted for now). See `THIRD_PARTY_NOTICES.md` for
 translated VS Code material.
