@@ -1,0 +1,38 @@
+[
+ {
+  "name": "Editor Core - Range > empty range",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > swap start and stop same line",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > swap start and stop",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > no swap same line",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > no swap",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > compareRangesUsingEnds",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > containsPosition",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > containsRange",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ },
+ {
+  "name": "Editor Core - Range > areIntersecting",
+  "na": "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries"
+ }
+]

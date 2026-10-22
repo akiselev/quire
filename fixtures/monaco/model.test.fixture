@@ -1,0 +1,45 @@
+# Translated from Visual Studio Code, src/vs/editor/test/common/model/model.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Model - Model > model getValue
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\r\n\t\tMy Second Line\n    Third Line\n\r\n1"
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== Editor Model - Model > getValueInRange
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\r\n\t\tMy Second Line\n    Third Line\n\r\n1"
+expectValueInRange 1 1 1 1 ""
+expectValueInRange 1 1 1 2 "M"
+expectValueInRange 1 2 1 3 "y"
+expectValueInRange 1 1 1 14 "My First Line"
+expectValueInRange 1 1 2 1 "My First Line\n"
+expectValueInRange 1 1 2 2 "My First Line\n\t"
+expectValueInRange 1 1 2 3 "My First Line\n\t\t"
+expectValueInRange 1 1 2 17 "My First Line\n\t\tMy Second Line"
+expectValueInRange 1 1 3 1 "My First Line\n\t\tMy Second Line\n"
+expectValueInRange 1 1 4 1 "My First Line\n\t\tMy Second Line\n    Third Line\n"
+
+=== Editor Model - Model Line Separators > model getValue
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line \t\tMy Second Line\n    Third Line \r\n1"
+expectText "My First Line \t\tMy Second Line\n    Third Line \n1"
+
+=== Editor Model - Model Line Separators > model lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line \t\tMy Second Line\n    Third Line \r\n1"
+expectLineCount 3
+
+=== Editor Model - Model Line Separators > Bug 13333:Model should line break on lonely CR too #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line \t\tMy Second Line\n    Third Line \r\n1"
+
+=== Editor Model - Model Line Separators > Bug 13333:Model should line break on lonely CR too #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Hello\rWorld!\r\nAnother line"
+expectLineCount 3
+expectText "Hello\nWorld!\nAnother line"
+

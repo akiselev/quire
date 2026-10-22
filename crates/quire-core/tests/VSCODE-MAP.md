@@ -293,6 +293,91 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Overtype Mode > paste multi-line text | N/A: InputMode.setInputMode | — |
 | Overtype Mode > composition type | N/A: InputMode.setInputMode | — |
 
+## cursorColumns.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| CursorColumns > visibleColumnFromColumn | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > toStatusbarColumn | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > columnFromVisibleColumn | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > nextRenderTabStop | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > nextIndentTabStop | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > prevRenderTabStop | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+| CursorColumns > prevIndentTabStop | N/A: internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts | — |
+
+## editStack.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| EditStack > issue #118041: unicode character undo bug | N/A: VS Code's TextChange serialisation; quire's history stores ChangeSets | — |
+
+## editableTextModel.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, insert LTR | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, delete RTL | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, insert RTL | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert LTR | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert RTL 1 | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert RTL 2 | N/A: model.mightContainRTL | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, insert ASCII | N/A: model.mightContainNonBasicASCII | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, delete NON-ASCII | N/A: model.mightContainNonBasicASCII | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, insert NON-ASCII | N/A: model.mightContainNonBasicASCII | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with ASCII, insert ASCII | N/A: model.mightContainNonBasicASCII | — |
+| EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with ASCII, insert NON-ASCII | N/A: model.mightContainNonBasicASCII | — |
+| EditorModel - EditableTextModel.applyEdits > high-low surrogates 1 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > high-low surrogates 2 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > high-low surrogates 3 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > high-low surrogates 4 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky (2) | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert empty text | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > last op is no-op | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert text without newline 1 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert text without newline 2 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert one newline | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert text with one newline | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert text with two newlines | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert text with many newlines | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > insert multiple newlines | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete empty text | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete text from one line | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete text from one line 2 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete all text from a line | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete text from two lines | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete text from many lines | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > delete everything | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > two unrelated edits | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > two edits on one line | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > many edits | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > many edits reversed | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > replacing newlines 1 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > replacing newlines 2 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > advanced 1 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > advanced simplified | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > issue #144 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > issue #2586 Replacing selected end-of-line with newline locks up the document | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > issue #3980 | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: two inserts at the same position | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace touching | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping replaces | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping deletes | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: two touching replaces | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: two touching deletes | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > touching edits: replace and insert | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| EditorModel - EditableTextModel.applyEdits > change while emitting events 1 | N/A: assertSyncedModels() | — |
+| EditorModel - EditableTextModel.applyEdits > change while emitting events 2 | N/A: assertSyncedModels() | — |
+| EditorModel - EditableTextModel.applyEdits > issue #1580: Changes in line endings are not correctly reflected in the extension host, leading to invalid offsets sent to external refactoring tools | N/A: model.getEOL | — |
+| EditorModel - EditableTextModel.applyEdits > issue #47733: Undo mangles unicode characters | N/A: model.validateRange | — |
+| EditorModel - EditableTextModel.applyEdits > issue #48741: Broken undo stack with move lines up with multiple cursors | N/A: applyEdits undo edits | — |
+| CRLF edit normalization > edit ending with \r followed by \n in buffer should strip trailing \r | N/A: model.getEOL | — |
+| CRLF edit normalization > edit ending with \r\n should NOT be modified | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| CRLF edit normalization > edit ending with \r NOT followed by \n should NOT be modified | `fixtures/monaco/editableTextModel.test.fixture` | pass |
+| CRLF edit normalization > edit in LF buffer should NOT strip trailing \r | N/A: model.getEOL | — |
+| CRLF edit normalization > LSP include sorting scenario - edit ending with \r should be normalized | N/A: model.getEOL | — |
+
 ## linesOperations.test.ts
 
 | VS Code test | quire | status |
@@ -356,6 +441,115 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Contrib - Line Operations > with full line selection at top of lines | `fixtures/monaco/linesOperations.test.fixture` | pass |
 | Editor Contrib - Line Operations > with full line selection at end of lines | `fixtures/monaco/linesOperations.test.fixture` | pass |
 | Editor Contrib - Line Operations > multicursor 1 | `fixtures/monaco/linesOperations.test.fixture` | pass |
+
+## model.line.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| ModelLine - getIndentLevel > getIndentLevel | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single delete 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single delete 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single delete 3 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single delete 4 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single delete 5 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi delete 6 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi delete 7 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi delete 8 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi delete 9 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single insert 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single insert 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single insert 3 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single insert 4 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > single insert 5 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi insert 6 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi insert 7 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi insert 8 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > multi insert 9 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > insertion on empty line | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 3 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 4 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 5 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 6 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 7 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 8 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 9 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on insertion 10 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete second token 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > insert right before second token | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete first char | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete 2nd and 3rd chars | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete first token | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete second token | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete second token + a bit of the third one | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete second and third token | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > delete everything | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > noop | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > equivalent to deleting first two chars | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > equivalent to deleting from 5 to the end | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on replace 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > updates tokens on replace 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > split at the beginning | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > split at the end | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > split inthe middle 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > split inthe middle 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > append empty 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > append empty 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > append 1 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > append 2 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+| ModelLinesTokens > append 3 | N/A: VS Code's tokenization registry; quire tokens come from quire-syntax | — |
+
+## model.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Editor Model - Model > model getValue | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Model > model insert empty text | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert text without newline 1 | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert text without newline 2 | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert text with one newline | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert text with two newlines | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert text with many newlines | N/A: EditOperation.insert | — |
+| Editor Model - Model > model insert empty text does not trigger eventing | N/A: mock() | — |
+| Editor Model - Model > model insert text without newline eventing | N/A: mock() | — |
+| Editor Model - Model > model insert text with one newline eventing | N/A: mock() | — |
+| Editor Model - Model > model delete empty text | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete text from one line | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete text from one line 2 | N/A: EditOperation.insert | — |
+| Editor Model - Model > model delete all text from a line | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete text from two lines | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete text from many lines | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete everything | N/A: EditOperation.delete | — |
+| Editor Model - Model > model delete empty text does not trigger eventing | N/A: mock() | — |
+| Editor Model - Model > model delete text from one line eventing | N/A: mock() | — |
+| Editor Model - Model > model delete all text from a line eventing | N/A: mock() | — |
+| Editor Model - Model > model delete text from two lines eventing | N/A: mock() | — |
+| Editor Model - Model > model delete text from many lines eventing | N/A: mock() | — |
+| Editor Model - Model > getValueInRange | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Model > getValueLengthInRange | N/A: model.getValueLengthInRange | — |
+| Editor Model - Model > setValue eventing | N/A: mock() | — |
+| Editor Model - Model > issue #46342: Maintain edit operation order in applyEdits | N/A: applyEdits undo edits | — |
+| Editor Model - Model Line Separators > model getValue | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Model Line Separators > model lines | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Model Line Separators > Bug 13333:Model should line break on lonely CR too #1 | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Model Line Separators > Bug 13333:Model should line break on lonely CR too #2 | `fixtures/monaco/model.test.fixture` | pass |
+| Editor Model - Words > Get word at position | N/A: model.getWordAtPosition | — |
+| Editor Model - Words > getWordAtPosition at embedded language boundaries | N/A: createModelServices() | — |
+| Editor Model - Words > issue #61296: VS code freezes when editing CSS file with emoji | N/A: createModelServices() | — |
+
+## modelEditOperation.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Editor Model - Model Edit Operation > Insert inline | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/inline 1 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/inline 2 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/inline 3 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/multi line 1 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/multi line 2 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace inline/multi line 3 | N/A: applyEdits undo edits | — |
+| Editor Model - Model Edit Operation > Replace muli line/multi line | N/A: applyEdits undo edits | — |
 
 ## moveLinesCommand.test.ts
 
@@ -457,6 +651,65 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Multicursor selection > Find state disassociation > enters mode | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > Find state disassociation > leaves mode when selection changes | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > Find state disassociation > Select Highlights respects mode  | N/A: new SelectHighlightsAction | — |
+
+## range.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Editor Core - Range > empty range | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > swap start and stop same line | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > swap start and stop | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > no swap same line | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > no swap | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > compareRangesUsingEnds | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > containsPosition | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > containsRange | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+| Editor Core - Range > areIntersecting | N/A: VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries | — |
+
+## textModel.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| TextModelData.fromString > one line text | N/A: createTextBuffer() | — |
+| TextModelData.fromString > multiline text | N/A: createTextBuffer() | — |
+| TextModelData.fromString > Non Basic ASCII 1 | N/A: createTextBuffer() | — |
+| TextModelData.fromString > containsRTL 1 | N/A: createTextBuffer() | — |
+| TextModelData.fromString > containsRTL 2 | N/A: createTextBuffer() | — |
+| Editor Model - TextModel > TextModel does not use events internally | N/A: createModelServices() | — |
+| Editor Model - TextModel > getValueLengthInRange | N/A: model.getValueLengthInRange | — |
+| Editor Model - TextModel > getValueLengthInRange different EOL | N/A: model.getValueLengthInRange | — |
+| Editor Model - TextModel > guess indentation 1 | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #44991: Wrong indentation size auto-detection | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #55818: Broken indentation detection | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #70832: Broken indentation detection | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #62143: Broken indentation detection | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #84217: Broken indentation detection | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #65668: YAML file indented with 2 spaces | N/A: model.getOptions | — |
+| Editor Model - TextModel > issue #249040: 4-space indent should win over 2-space when predominant | N/A: model.getOptions | — |
+| Editor Model - TextModel > validatePosition | N/A: model.validatePosition | — |
+| Editor Model - TextModel > validatePosition around high-low surrogate pairs 1 | N/A: model.validatePosition | — |
+| Editor Model - TextModel > validatePosition around high-low surrogate pairs 2 | N/A: model.validatePosition | — |
+| Editor Model - TextModel > validatePosition handle NaN. | N/A: model.validatePosition | — |
+| Editor Model - TextModel > issue #71480: validatePosition handle floats | N/A: model.validatePosition | — |
+| Editor Model - TextModel > issue #71480: validateRange handle floats | N/A: model.validateRange | — |
+| Editor Model - TextModel > validateRange around high-low surrogate pairs 1 | N/A: model.validateRange | — |
+| Editor Model - TextModel > validateRange around high-low surrogate pairs 2 | N/A: model.validateRange | — |
+| Editor Model - TextModel > modifyPosition | N/A: model.modifyPosition | — |
+| Editor Model - TextModel > normalizeIndentation 1 | N/A: model.normalizeIndentation | — |
+| Editor Model - TextModel > normalizeIndentation 2 | N/A: model.normalizeIndentation | — |
+| Editor Model - TextModel > getLineFirstNonWhitespaceColumn | N/A: model.getLineFirstNonWhitespaceColumn | — |
+| Editor Model - TextModel > getLineLastNonWhitespaceColumn | N/A: model.getLineLastNonWhitespaceColumn | — |
+| Editor Model - TextModel > #50471. getValueInRange with invalid range | N/A: NaN position | — |
+| Editor Model - TextModel > issue #168836: updating tabSize should also update indentSize when indentSize is set to "tabSize" | N/A: model.getOptions | — |
+| TextModel.mightContainRTL > nope | N/A: model.mightContainRTL | — |
+| TextModel.mightContainRTL > yes | N/A: model.mightContainRTL | — |
+| TextModel.mightContainRTL > setValue resets 1 | N/A: model.mightContainRTL | — |
+| TextModel.mightContainRTL > setValue resets 2 | N/A: model.mightContainRTL | — |
+| TextModel.createSnapshot > empty file | N/A: model.createSnapshot | — |
+| TextModel.createSnapshot > file with BOM | N/A: UTF8_BOM_CHARACTER.valueOf | — |
+| TextModel.createSnapshot > regular file | N/A: model.createSnapshot | — |
+| TextModel.createSnapshot > large file | N/A: model.createSnapshot | — |
+| TextModel.createSnapshot > issue #119632: invalid range | N/A: model._validateRangeRelaxedNoAllocations | — |
 
 ## textModelSearch.test.ts
 
@@ -609,14 +862,22 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 |---|---|---|---|---|---|
 | copyLinesCommand.test.ts | 10 | 8 | 0 | 0 | 2 |
 | cursor.test.ts | 268 | 155 | 23 | 0 | 90 |
+| cursorColumns.test.ts | 7 | 0 | 0 | 0 | 7 |
+| editStack.test.ts | 1 | 0 | 0 | 0 | 1 |
+| editableTextModel.test.ts | 62 | 43 | 0 | 0 | 19 |
 | linesOperations.test.ts | 59 | 23 | 0 | 0 | 36 |
+| model.line.test.ts | 53 | 0 | 0 | 0 | 53 |
+| model.test.ts | 33 | 6 | 0 | 0 | 27 |
+| modelEditOperation.test.ts | 8 | 0 | 0 | 0 | 8 |
 | moveLinesCommand.test.ts | 15 | 11 | 0 | 0 | 4 |
 | multicursor.test.ts | 76 | 10 | 0 | 0 | 66 |
+| range.test.ts | 9 | 0 | 0 | 0 | 9 |
+| textModel.test.ts | 40 | 0 | 0 | 0 | 40 |
 | textModelSearch.test.ts | 77 | 46 | 12 | 0 | 19 |
 | wordOperations.test.ts | 58 | 44 | 3 | 0 | 11 |
 
 ## Totals
 
-- VS Code tests listed: 563
-- translated: 335 (pass 297, fail ours 38, fail bug 0)
-- N/A: 228
+- VS Code tests listed: 776
+- translated: 384 (pass 346, fail ours 38, fail bug 0)
+- N/A: 392

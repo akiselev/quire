@@ -65,6 +65,7 @@ globalThis.Range = Range;
 globalThis.Selection = Selection;
 
 function selArgs(s) {
+  if (s && [s.startLineNumber, s.startColumn, s.endLineNumber, s.endColumn].some((v) => Number.isNaN(v))) throw new Unsupported('NaN position');
   if (s instanceof Selection) return `${s.selectionStartLineNumber} ${s.selectionStartColumn} ${s.positionLineNumber} ${s.positionColumn}`;
   if (s instanceof Range) return `${s.startLineNumber} ${s.startColumn} ${s.endLineNumber} ${s.endColumn}`;
   if (s && s.selectionStartLineNumber !== undefined) return `${s.selectionStartLineNumber} ${s.selectionStartColumn} ${s.positionLineNumber} ${s.positionColumn}`;
@@ -111,6 +112,7 @@ function expectFrom(actual, expected) {
     case 'findMatches': step(`expectFindAll ${actual.arg} => ${[...expected].map(matchArgs).join('; ')}`); break;
     case 'findNext': step(`expectFindNext ${actual.arg} => ${matchArgs(expected)}`); break;
     case 'findPrev': step(`expectFindPrev ${actual.arg} => ${matchArgs(expected)}`); break;
+    case 'valueInRange': step(`expectValueInRange ${actual.arg} ${JSON.stringify(String(expected).replace(/\r\n/g, '\n'))}`); break;
     case 'lines': step(`expectText ${JSON.stringify(expected.join('\n'))}`); break;
     case 'maxColumn': step(`expectMaxColumn ${actual.arg} ${expected}`); break;
     case 'lineCount': step(`expectLineCount ${expected}`); break;
@@ -138,6 +140,13 @@ assert.deepStrictEqual = (a, e) => {
 assert.deepEqual = assert.deepStrictEqual;
 assert.ok = (v) => { if (isMarker(v)) throw new Unsupported('assert.ok(marker)'); };
 assert.notStrictEqual = (a) => { if (isMarker(a)) throw new Unsupported('notStrictEqual'); };
+assert.throws = (fn) => {
+  const n = cur ? cur.steps.length : 0;
+  try { fn(); } catch (e) { if (e instanceof Unsupported) throw e; }
+  const added = cur ? cur.steps.splice(n) : [];
+  if (added.length === 1 && added[0].startsWith('applyEdits ')) { step(`expectRefused ${added[0]}`); return; }
+  throw new Unsupported('assert.throws');
+};
 globalThis.assert = assert;
 
 // ---- commands ----
@@ -211,6 +220,18 @@ function makeModel(text, languageId, modelOpts) {
     getLineMaxColumn: (n) => marker('maxColumn', n),
     setEOL: (eol) => step(`setEOL ${eol === 1 ? 'crlf' : 'lf'}`),
     getFullModelRange: () => ({ __full: true }),
+    applyEdits: (edits, computeUndo) => {
+      if (computeUndo) throw new Unsupported('applyEdits undo edits');
+      const list = edits.map((e) => {
+        if (e.forceMoveMarkers) throw new Unsupported('forceMoveMarkers');
+        return [...selArgs(e.range).split(' ').map(Number), e.text ?? ''];
+      });
+      step(`applyEdits ${JSON.stringify(list)}`);
+    },
+    getValueInRange: (r, eol) => {
+      if (eol !== undefined && eol !== 1 && eol !== 0) throw new Unsupported('getValueInRange CRLF');
+      return marker('valueInRange', selArgs(r));
+    },
     setValue: (v) => step(`setValue ${JSON.stringify(v)}`),
     undo: () => step('cmd undo'),
     redo: () => step('cmd redo'),
@@ -434,6 +455,25 @@ function matchArgs(m) {
   if (!(m instanceof FindMatch) || m.matches) throw new Unsupported('find match value');
   return selArgs(m.range);
 }
+// editableTextModelTestUtils.ts: apply edits (all against the original), check, apply the inverse.
+STUBS.set('testApplyEditsWithSyncedModels', (original, edits, expected, inputEditsAreInvalid = false) => {
+  const model = makeModel(original.join('\n'), null, {});
+  startCase(model, {});
+  const list = edits.map((e) => {
+    if (e.forceMoveMarkers) throw new Unsupported('forceMoveMarkers');
+    return [...selArgs(e.range).split(' ').map(Number), e.text ?? ''];
+  });
+  step(`applyEdits ${JSON.stringify(list)}`);
+  step(`expectText ${JSON.stringify(expected.join('\n'))}`);
+  step('applyInverse');
+  step(`expectText ${JSON.stringify(original.join('\n'))}`);
+});
+globalThis.__testApplyEditsFails = (original, edits) => {
+  const model = makeModel(original.join('\n'), null, {});
+  startCase(model, {});
+  const list = edits.map((e) => [...selArgs(e.range).split(' ').map(Number), e.text ?? '']);
+  step(`expectRefused applyEdits ${JSON.stringify(list)}`);
+};
 globalThis.__resolve = (name) => STUBS.has(name) ? STUBS.get(name) : unsupported(name);
 
 // testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection)

@@ -27,6 +27,10 @@
 //! expectFindAll {query} => 1 1 1 4; …   all matches (VS Code TextModelSearch.findMatches)
 //! expectFindNext 1 1 {query} => r|none   the match found from a position (`end`: text end)
 //! expectFindPrev end {query} => r|none
+//! applyEdits [[1,1,1,3,"x"],[2,1,2,1,"y"]]  VS Code model.applyEdits (simultaneous edits)
+//! expectValueInRange 1 1 2 3 "..."     VS Code model.getValueInRange (LF)
+//! expectRefused applyEdits [...]       the edits are refused (overlap)
+//! applyInverse                           apply the inverse of the last applyEdits
 //! setEOL crlf                            no-op (the in-memory text is LF)
 //! columnSelect 4 15 [drag]             VS Code mouse column select to (line, mouseColumn)
 //! setValue "..."                         replace the text (a reload)
@@ -139,6 +143,7 @@ fn run_case(c: &Case) -> Result<(), String> {
     let mut time: Option<u64> = None;
     // `repeat` (VS Code `testRepeatedActionAndExtractPositions`): command, record kind, stop.
     let mut repeat: Option<(String, String, String)> = None;
+    let mut last_inverse: Option<quire_core::ChangeSet> = None;
     for (line_no, step) in &c.steps {
         let (op, rest) = step.split_once(' ').unwrap_or((step.as_str(), ""));
         let rest = rest.trim();
@@ -248,6 +253,75 @@ fn run_case(c: &Case) -> Result<(), String> {
                         fmt_sel(doc.text(), got)
                     )));
                 }
+            }
+            "expectRefused" => {
+                // `expectRefused applyEdits [...]`: the edits overlap, so no change set exists.
+                let json = rest
+                    .strip_prefix("applyEdits ")
+                    .ok_or_else(|| err("shape".into()))?;
+                let list: Vec<(usize, usize, usize, usize, String)> =
+                    serde_json::from_str(json).map_err(|e| err(format!("edits: {e}")))?;
+                let t = doc.text();
+                let edits: Vec<_> = list
+                    .iter()
+                    .map(|(a, b, c, d, s)| {
+                        let (x, y) = (pos(t, *a, *b), pos(t, *c, *d));
+                        (x.min(y)..x.max(y), s.clone())
+                    })
+                    .collect();
+                if quire_core::ChangeSet::replace(t.len_bytes(), edits).is_ok() {
+                    return Err(err("expected the edits to be refused".into()));
+                }
+            }
+            "applyEdits" => {
+                // VS Code `model.applyEdits`: ranges against the current text, applied at once.
+                let text = doc.text().clone();
+                let mut edits = Vec::new();
+                let list: Vec<(usize, usize, usize, usize, String)> =
+                    serde_json::from_str(rest).map_err(|e| err(format!("edits: {e}")))?;
+                for (l1, c1, l2, c2, ins) in list {
+                    let n = [l1, c1, l2, c2];
+                    let a = pos(&text, n[0], n[1]);
+                    let mut b = pos(&text, n[2], n[3]);
+                    // VS Code `validateRange`: an end inside a surrogate pair moves after it.
+                    if (n[0], n[1]) != (n[2], n[3]) && text.byte_to_utf16(b) != (n[2] - 1, n[3] - 1)
+                    {
+                        b = text.next_char_boundary(b);
+                    }
+                    edits.push((
+                        a.min(b)..a.max(b),
+                        quire_core::text::normalize_line_endings(&ins).into_owned(),
+                    ));
+                }
+                let changes = quire_core::ChangeSet::replace(text.len_bytes(), edits)
+                    .map_err(|e| err(format!("{e}")))?;
+                last_inverse = Some(changes.invert(&text));
+                let tr = quire_core::Transaction::new(doc.version(), changes);
+                doc.apply(tr, &mut view)
+                    .map_err(|e| err(format!("refused: {e}")))?;
+            }
+            "expectValueInRange" => {
+                let i = rest.find('"').ok_or_else(|| err("string".into()))?;
+                let n = nums(&rest[..i]);
+                if n.len() != 4 {
+                    return Err(err("expectValueInRange needs 4 numbers".into()));
+                }
+                let want: String =
+                    serde_json::from_str(&rest[i..]).map_err(|e| err(format!("string: {e}")))?;
+                let t = doc.text();
+                let (a, b) = (pos(t, n[0], n[1]), pos(t, n[2], n[3]));
+                let got = t.slice(a.min(b)..a.max(b)).to_string();
+                if got != want {
+                    return Err(err(format!(
+                        "value in range: expected {want:?}, got {got:?}"
+                    )));
+                }
+            }
+            "applyInverse" => {
+                let inv = last_inverse.take().ok_or_else(|| err("no edits".into()))?;
+                let tr = quire_core::Transaction::new(doc.version(), inv);
+                doc.apply(tr, &mut view)
+                    .map_err(|e| err(format!("refused: {e}")))?;
             }
             "setEOL" => {
                 // The in-memory text is always LF; the file line ending does not change positions.

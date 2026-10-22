@@ -1,0 +1,162 @@
+[
+ {
+  "name": "TextModelData.fromString > one line text",
+  "na": "createTextBuffer()"
+ },
+ {
+  "name": "TextModelData.fromString > multiline text",
+  "na": "createTextBuffer()"
+ },
+ {
+  "name": "TextModelData.fromString > Non Basic ASCII 1",
+  "na": "createTextBuffer()"
+ },
+ {
+  "name": "TextModelData.fromString > containsRTL 1",
+  "na": "createTextBuffer()"
+ },
+ {
+  "name": "TextModelData.fromString > containsRTL 2",
+  "na": "createTextBuffer()"
+ },
+ {
+  "name": "Editor Model - TextModel > TextModel does not use events internally",
+  "na": "createModelServices()"
+ },
+ {
+  "name": "Editor Model - TextModel > getValueLengthInRange",
+  "na": "model.getValueLengthInRange"
+ },
+ {
+  "name": "Editor Model - TextModel > getValueLengthInRange different EOL",
+  "na": "model.getValueLengthInRange"
+ },
+ {
+  "name": "Editor Model - TextModel > guess indentation 1",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #44991: Wrong indentation size auto-detection",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #55818: Broken indentation detection",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #70832: Broken indentation detection",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #62143: Broken indentation detection",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #84217: Broken indentation detection",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #65668: YAML file indented with 2 spaces",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #249040: 4-space indent should win over 2-space when predominant",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "Editor Model - TextModel > validatePosition",
+  "na": "model.validatePosition"
+ },
+ {
+  "name": "Editor Model - TextModel > validatePosition around high-low surrogate pairs 1",
+  "na": "model.validatePosition"
+ },
+ {
+  "name": "Editor Model - TextModel > validatePosition around high-low surrogate pairs 2",
+  "na": "model.validatePosition"
+ },
+ {
+  "name": "Editor Model - TextModel > validatePosition handle NaN.",
+  "na": "model.validatePosition"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #71480: validatePosition handle floats",
+  "na": "model.validatePosition"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #71480: validateRange handle floats",
+  "na": "model.validateRange"
+ },
+ {
+  "name": "Editor Model - TextModel > validateRange around high-low surrogate pairs 1",
+  "na": "model.validateRange"
+ },
+ {
+  "name": "Editor Model - TextModel > validateRange around high-low surrogate pairs 2",
+  "na": "model.validateRange"
+ },
+ {
+  "name": "Editor Model - TextModel > modifyPosition",
+  "na": "model.modifyPosition"
+ },
+ {
+  "name": "Editor Model - TextModel > normalizeIndentation 1",
+  "na": "model.normalizeIndentation"
+ },
+ {
+  "name": "Editor Model - TextModel > normalizeIndentation 2",
+  "na": "model.normalizeIndentation"
+ },
+ {
+  "name": "Editor Model - TextModel > getLineFirstNonWhitespaceColumn",
+  "na": "model.getLineFirstNonWhitespaceColumn"
+ },
+ {
+  "name": "Editor Model - TextModel > getLineLastNonWhitespaceColumn",
+  "na": "model.getLineLastNonWhitespaceColumn"
+ },
+ {
+  "name": "Editor Model - TextModel > #50471. getValueInRange with invalid range",
+  "na": "NaN position"
+ },
+ {
+  "name": "Editor Model - TextModel > issue #168836: updating tabSize should also update indentSize when indentSize is set to \"tabSize\"",
+  "na": "model.getOptions"
+ },
+ {
+  "name": "TextModel.mightContainRTL > nope",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "TextModel.mightContainRTL > yes",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "TextModel.mightContainRTL > setValue resets 1",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "TextModel.mightContainRTL > setValue resets 2",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "TextModel.createSnapshot > empty file",
+  "na": "model.createSnapshot"
+ },
+ {
+  "name": "TextModel.createSnapshot > file with BOM",
+  "na": "UTF8_BOM_CHARACTER.valueOf"
+ },
+ {
+  "name": "TextModel.createSnapshot > regular file",
+  "na": "model.createSnapshot"
+ },
+ {
+  "name": "TextModel.createSnapshot > large file",
+  "na": "model.createSnapshot"
+ },
+ {
+  "name": "TextModel.createSnapshot > issue #119632: invalid range",
+  "na": "model._validateRangeRelaxedNoAllocations"
+ }
+]

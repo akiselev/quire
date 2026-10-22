@@ -1,0 +1,30 @@
+[
+ {
+  "name": "CursorColumns > visibleColumnFromColumn",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > toStatusbarColumn",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > columnFromVisibleColumn",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > nextRenderTabStop",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > nextIndentTabStop",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > prevRenderTabStop",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ },
+ {
+  "name": "CursorColumns > prevIndentTabStop",
+  "na": "internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts"
+ }
+]

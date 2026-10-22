@@ -1,0 +1,6 @@
+[
+ {
+  "name": "EditStack > issue #118041: unicode character undo bug",
+  "na": "VS Code's TextChange serialisation; quire's history stores ChangeSets"
+ }
+]

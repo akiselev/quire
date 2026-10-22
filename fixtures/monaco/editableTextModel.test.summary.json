@@ -1,0 +1,293 @@
+[
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, insert LTR",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, delete RTL",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with RTL, insert RTL",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert LTR",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert RTL 1",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainRTL > start with LTR, insert RTL 2",
+  "na": "model.mightContainRTL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, insert ASCII",
+  "na": "model.mightContainNonBasicASCII"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, delete NON-ASCII",
+  "na": "model.mightContainNonBasicASCII"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with NON-ASCII, insert NON-ASCII",
+  "na": "model.mightContainNonBasicASCII"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with ASCII, insert ASCII",
+  "na": "model.mightContainNonBasicASCII"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits updates mightContainNonBasicASCII > start with ASCII, insert NON-ASCII",
+  "na": "model.mightContainNonBasicASCII"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > high-low surrogates 1",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > high-low surrogates 2",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > high-low surrogates 3",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > high-low surrogates 4",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky (2)",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert empty text",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > last op is no-op",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert text without newline 1",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert text without newline 2",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert one newline",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert text with one newline",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert text with two newlines",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert text with many newlines",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > insert multiple newlines",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete empty text",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete text from one line",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete text from one line 2",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete all text from a line",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete text from two lines",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete text from many lines",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > delete everything",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > two unrelated edits",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > two edits on one line",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > many edits",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > many edits reversed",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > replacing newlines 1",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > replacing newlines 2",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > advanced 1",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > advanced simplified",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #144",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #2586 Replacing selected end-of-line with newline locks up the document",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #3980",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: two inserts at the same position",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace touching",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping replaces",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping deletes",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: two touching replaces",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: two touching deletes",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > touching edits: replace and insert",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > change while emitting events 1",
+  "na": "assertSyncedModels()"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > change while emitting events 2",
+  "na": "assertSyncedModels()"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #1580: Changes in line endings are not correctly reflected in the extension host, leading to invalid offsets sent to external refactoring tools",
+  "na": "model.getEOL"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #47733: Undo mangles unicode characters",
+  "na": "model.validateRange"
+ },
+ {
+  "name": "EditorModel - EditableTextModel.applyEdits > issue #48741: Broken undo stack with move lines up with multiple cursors",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "CRLF edit normalization > edit ending with \\r followed by \\n in buffer should strip trailing \\r",
+  "na": "model.getEOL"
+ },
+ {
+  "name": "CRLF edit normalization > edit ending with \\r\\n should NOT be modified",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "CRLF edit normalization > edit ending with \\r NOT followed by \\n should NOT be modified",
+  "fixture": "editableTextModel.test.fixture",
+  "features": []
+ },
+ {
+  "name": "CRLF edit normalization > edit in LF buffer should NOT strip trailing \\r",
+  "na": "model.getEOL"
+ },
+ {
+  "name": "CRLF edit normalization > LSP include sorting scenario - edit ending with \\r should be normalized",
+  "na": "model.getEOL"
+ }
+]

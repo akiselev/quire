@@ -1,0 +1,345 @@
+# Translated from Visual Studio Code, src/vs/editor/test/common/model/editableTextModel.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== EditorModel - EditableTextModel.applyEdits > high-low surrogates 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "📚some\nvery nice\ntext"
+applyEdits [[1,2,1,2,"a"]]
+expectText "a📚some\nvery nice\ntext"
+applyInverse
+expectText "📚some\nvery nice\ntext"
+
+=== EditorModel - EditableTextModel.applyEdits > high-low surrogates 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "📚some\nvery nice\ntext"
+applyEdits [[1,2,1,3,"a"]]
+expectText "asome\nvery nice\ntext"
+applyInverse
+expectText "📚some\nvery nice\ntext"
+
+=== EditorModel - EditableTextModel.applyEdits > high-low surrogates 3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "📚some\nvery nice\ntext"
+applyEdits [[1,1,1,2,"a"]]
+expectText "asome\nvery nice\ntext"
+applyInverse
+expectText "📚some\nvery nice\ntext"
+
+=== EditorModel - EditableTextModel.applyEdits > high-low surrogates 4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "📚some\nvery nice\ntext"
+applyEdits [[1,1,1,3,"a"]]
+expectText "asome\nvery nice\ntext"
+applyInverse
+expectText "📚some\nvery nice\ntext"
+
+=== EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "something\n A\n\n B\nsomething else"
+applyEdits [[2,1,2,2,""],[3,1,4,2,""]]
+expectText "something\nA\nB\nsomething else"
+applyInverse
+expectText "something\n A\n\n B\nsomething else"
+
+=== EditorModel - EditableTextModel.applyEdits > Bug 19872: Undo is funky (2)
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "something\nA\nB\nsomething else"
+applyEdits [[2,1,2,1," "],[3,1,3,1,"\n "]]
+expectText "something\n A\n\n B\nsomething else"
+applyInverse
+expectText "something\nA\nB\nsomething else"
+
+=== EditorModel - EditableTextModel.applyEdits > insert empty text
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,1,""]]
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > last op is no-op
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,2,""],[4,1,4,1,""]]
+expectText "y First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert text without newline 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,1,"foo "]]
+expectText "foo My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert text without newline 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,3,1,3," foo"]]
+expectText "My foo First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert one newline
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,4,1,4,"\n"]]
+expectText "My \nFirst Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert text with one newline
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,3,1,3," new line\nNo longer"]]
+expectText "My new line\nNo longer First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert text with two newlines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,3,1,3," new line\nOne more line in the middle\nNo longer"]]
+expectText "My new line\nOne more line in the middle\nNo longer First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert text with many newlines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,3,1,3,"\n\n\n\n"]]
+expectText "My\n\n\n\n First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > insert multiple newlines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,3,1,3,"\n\n\n\n"],[3,15,3,15,"a\nb"]]
+expectText "My\n\n\n\n First Line\n\t\tMy Second Line\n    Third Linea\nb\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete empty text
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,1,""]]
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete text from one line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,2,""]]
+expectText "y First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete text from one line 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,3,"a"]]
+expectText "a First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete all text from a line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,1,14,""]]
+expectText "\n\t\tMy Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete text from two lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,4,2,6,""]]
+expectText "My Second Line\n    Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete text from many lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,4,3,5,""]]
+expectText "My Third Line\n\n1"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > delete everything
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+applyEdits [[1,1,5,2,""]]
+expectText ""
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n1"
+
+=== EditorModel - EditableTextModel.applyEdits > two unrelated edits
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "My First Line\n\t\tMy Second Line\n    Third Line\n\n123"
+applyEdits [[2,1,2,3,"\t"],[3,1,3,5,""]]
+expectText "My First Line\n\tMy Second Line\nThird Line\n\n123"
+applyInverse
+expectText "My First Line\n\t\tMy Second Line\n    Third Line\n\n123"
+
+=== EditorModel - EditableTextModel.applyEdits > two edits on one line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+applyEdits [[5,3,5,7,""],[5,12,5,16,""]]
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+applyInverse
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+
+=== EditorModel - EditableTextModel.applyEdits > many edits
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\"x\" : 1}"
+applyEdits [[1,2,1,2,"\n  "],[1,5,1,6,""],[1,9,1,9,"\n"]]
+expectText "{\n  \"x\": 1\n}"
+applyInverse
+expectText "{\"x\" : 1}"
+
+=== EditorModel - EditableTextModel.applyEdits > many edits reversed
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\n  \"x\": 1\n}"
+applyEdits [[1,2,2,3,""],[2,6,2,6," "],[2,9,3,1,""]]
+expectText "{\"x\" : 1}"
+applyInverse
+expectText "{\n  \"x\": 1\n}"
+
+=== EditorModel - EditableTextModel.applyEdits > replacing newlines 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "{\n\"a\": true,\n\n\"b\": true\n}"
+applyEdits [[1,2,2,1,"\n\t"],[2,11,4,1,"\n\t"]]
+expectText "{\n\t\"a\": true,\n\t\"b\": true\n}"
+applyInverse
+expectText "{\n\"a\": true,\n\n\"b\": true\n}"
+
+=== EditorModel - EditableTextModel.applyEdits > replacing newlines 2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "some text\nsome more text\nnow comes an empty line\n\nafter empty line\nand the last line"
+applyEdits [[1,5,3,1," text\nsome more text\nsome more text"],[3,2,4,1,"o more lines\nasd\nasd\nasd"],[5,1,5,6,"zzzzzzzz"],[5,11,6,16,"1\n2\n3\n4"]]
+expectText "some text\nsome more text\nsome more textno more lines\nasd\nasd\nasd\nzzzzzzzz empt1\n2\n3\n4ne"
+applyInverse
+expectText "some text\nsome more text\nnow comes an empty line\n\nafter empty line\nand the last line"
+
+=== EditorModel - EditableTextModel.applyEdits > advanced 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: " {       \"d\": [\n             null\n        ] /*comment*/\n        ,\"e\": /*comment*/ [null] }"
+applyEdits [[1,1,1,2,""],[1,3,1,10,"\n  "],[1,16,2,14,"\n    "],[2,18,3,9,"\n  "],[3,22,4,9,""],[4,10,4,10,"\n  "],[4,28,4,28,"\n    "],[4,32,4,32,"\n  "],[4,33,4,34,"\n"]]
+expectText "{\n  \"d\": [\n    null\n  ] /*comment*/,\n  \"e\": /*comment*/ [\n    null\n  ]\n}"
+applyInverse
+expectText " {       \"d\": [\n             null\n        ] /*comment*/\n        ,\"e\": /*comment*/ [null] }"
+
+=== EditorModel - EditableTextModel.applyEdits > advanced simplified
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "   abc\n ,def"
+applyEdits [[1,1,1,4,""],[1,7,2,2,""],[2,3,2,3,"\n"]]
+expectText "abc,\ndef"
+applyInverse
+expectText "   abc\n ,def"
+
+=== EditorModel - EditableTextModel.applyEdits > issue #144
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "package caddy\n\nfunc main() {\n\tfmt.Println(\"Hello World! :)\")\n}\n"
+applyEdits [[1,1,6,1,"package caddy\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello World! :)\")\n}\n"]]
+expectText "package caddy\n\nimport \"fmt\"\n\nfunc main() {\n\tfmt.Println(\"Hello World! :)\")\n}\n"
+applyInverse
+expectText "package caddy\n\nfunc main() {\n\tfmt.Println(\"Hello World! :)\")\n}\n"
+
+=== EditorModel - EditableTextModel.applyEdits > issue #2586 Replacing selected end-of-line with newline locks up the document
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "something\ninteresting"
+applyEdits [[1,10,2,1,"\n"]]
+expectText "something\ninteresting"
+applyInverse
+expectText "something\ninteresting"
+
+=== EditorModel - EditableTextModel.applyEdits > issue #3980
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "class A {\n    someProperty = false;\n    someMethod() {\n    this.someMethod();\n    }\n}"
+applyEdits [[1,8,1,9,"\n"],[3,17,3,18,"\n"],[3,18,3,18,"    "],[4,5,4,5,"    "]]
+expectText "class A\n{\n    someProperty = false;\n    someMethod()\n    {\n        this.someMethod();\n    }\n}"
+applyInverse
+expectText "class A {\n    someProperty = false;\n    someMethod() {\n    this.someMethod();\n    }\n}"
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: two inserts at the same position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,1,"a"],[1,1,1,1,"b"]]
+expectText "abhello world"
+applyInverse
+expectText "hello world"
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace touching
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,1,"b"],[1,1,1,3,"ab"]]
+expectText "babllo world"
+applyInverse
+expectText "hello world"
+
+=== EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping replaces
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+expectRefused applyEdits [[1,1,1,2,"b"],[1,1,1,3,"ab"]]
+
+=== EditorModel - EditableTextModel.applyEdits > overlapping edits: two overlapping deletes
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+expectRefused applyEdits [[1,1,1,2,""],[1,1,1,3,""]]
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: two touching replaces
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,2,"H"],[1,2,1,3,"E"]]
+expectText "HEllo world"
+applyInverse
+expectText "hello world"
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: two touching deletes
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,2,""],[1,2,1,3,""]]
+expectText "llo world"
+applyInverse
+expectText "hello world"
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: insert and replace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,1,"H"],[1,1,1,3,"e"]]
+expectText "Hello world"
+applyInverse
+expectText "hello world"
+
+=== EditorModel - EditableTextModel.applyEdits > touching edits: replace and insert
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+applyEdits [[1,1,1,3,"H"],[1,3,1,3,"e"]]
+expectText "Hello world"
+applyInverse
+expectText "hello world"
+
+=== CRLF edit normalization > edit ending with \r\n should NOT be modified
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc\r\ndef\r\n"
+setEOL crlf
+applyEdits [[1,1,1,4,"xyz\r\n"]]
+expectLine 1 "xyz"
+expectLine 2 ""
+expectLine 3 "def"
+expectLineCount 4
+
+=== CRLF edit normalization > edit ending with \r NOT followed by \n should NOT be modified
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abcdef"
+setEOL crlf
+applyEdits [[1,1,1,4,"xyz\r"]]
+expectLineCount 2
+

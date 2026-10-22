@@ -1,0 +1,34 @@
+[
+ {
+  "name": "Editor Model - Model Edit Operation > Insert inline",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/inline 1",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/inline 2",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/inline 3",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/multi line 1",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/multi line 2",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace inline/multi line 3",
+  "na": "applyEdits undo edits"
+ },
+ {
+  "name": "Editor Model - Model Edit Operation > Replace muli line/multi line",
+  "na": "applyEdits undo edits"
+ }
+]

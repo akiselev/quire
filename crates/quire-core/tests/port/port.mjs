@@ -33,7 +33,8 @@ const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m, sp
   const def = spec.match(/^(\w+)\s*(,|$)/);
   if (def) names.add(def[1]);
   return '';
-}).replace(/^import\s+'[^']+';\s*$/gm, '').replace(/@I\w+\s+(?=\w+\s*:)/g, '').replace(/^function assertCursor\(/m, 'function __upstream_assertCursor(');
+}).replace(/^import\s+'[^']+';\s*$/gm, '').replace(/@I\w+\s+(?=\w+\s*:)/g, '').replace(/^function assertCursor\(/m, 'function __upstream_assertCursor(')
+  .replace(/^(\s*)function testApplyEditsFails\(/m, '$1const testApplyEditsFails = globalThis.__testApplyEditsFails;\n$1function __upstream_testApplyEditsFails(');
 let header = '';
 for (const n of names) {
   if (!known.has(n)) header += `const ${n} = globalThis.__resolve(${JSON.stringify(n)});\n`;
@@ -115,6 +116,14 @@ function mapConfig(t) {
   return { cfg, features };
 }
 
+// Suites that test VS Code types or helpers quire does not have, as a whole.
+const SUITE_NA = {
+  'range.test.ts': "VS Code's line/column Range type; quire ranges are byte ranges (std::ops::Range<usize>) on char boundaries",
+  'cursorColumns.test.ts': 'internal visible-column helpers (quire-core commands::model); their behaviour is covered through cursor.test.ts',
+  'model.line.test.ts': "VS Code's tokenization registry; quire tokens come from quire-syntax",
+  'editStack.test.ts': "VS Code's TextChange serialisation; quire's history stores ChangeSets",
+};
+if (SUITE_NA[basename(rel)]) for (const t of results) { t.unsupported = SUITE_NA[basename(rel)]; t.skip = false; }
 const esc = (s) => s.replace(/\n/g, ' ');
 let fx = `# Translated from Visual Studio Code, ${rel}\n# (microsoft/vscode @ ${sha}) by tests/port/port.mjs.\n#\n# Copyright (c) Microsoft Corporation. All rights reserved.\n# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).\n\n`;
 const summary = [];
