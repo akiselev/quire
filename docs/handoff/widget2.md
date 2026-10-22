@@ -1,71 +1,62 @@
-# Handoff: widget2 (QE1 gaps, `egui_quire`)
+# Handoff: widget2 (QE1 gaps and ED2 bindings, `egui_quire`)
 
-## Branches
-- On master: `ffcf3b5` (horizontal extent), `d3407bf` (PRIMARY), `78cc4b5` and `c07ef2f` (snapshots),
-  and `86d5aed` (multi-cursor kittest). Each passed the full `scripts/check.sh`.
-- On branch `widget2` (pushed to origin) and awaiting coordinator approval, because they add
-  public API:
-  - A, tab stops (`18c76a0`, `5cada0c`): new fields `Mono.tab_px` and `LineShaper.tab_size`,
-    and `LineLayout::without_fast_path()`. `LineLayout` now has a private field.
-  - B, two-chord bindings (`b628a08`, `3f65106`): `KeySeq`, `Binding.{linux,win,mac}:
-    Option<KeySeq>`, `Binding::keys`, `Keymap::keys_for`, `Keymap::lookup_seq`, `KeyLookup`.
-  - D, page-shift announcement (`fcac227`): `EditorText.line_announcement`.
-- `widget2` also carries a copy of the multi-cursor test. When rebasing onto master, drop the
-  duplicate. The snapshots on `widget2` are recorded with tab stops; master's are recorded
-  without them.
+Everything has landed on master. The last widget commit is `aa79b12`, and each push passed the
+full `scripts/check.sh`.
 
-## Done (all items in the widget2 brief)
-1. Tabs go to tab stops (`EditorConfig::tab_size`). Each tab is its own `LayoutJob` section,
-   and the text after it gets `leading_space` (the change from egui's fixed 4-space tab to the
-   stop).
-   - ASCII lines compute the stops from columns.
-   - Other lines are laid out twice: once to find where each tab starts, then with the
-     corrections.
-   - Caret, hit-testing (`LineLayout::char_xs`/`col_at`), a11y run widths, preedit lines and
-     trailing-tab width all follow.
-2. Horizontal extent comes from `widths::LineWidths`: visible columns per line, kept up to date
-   from `doc.recent().since(v)` `LineEdit`s.
-   - Only edited lines are re-measured.
-   - The maximum is rescanned from the u32 table only when the longest line shrinks.
-   - A full measure happens on first use, on a tab-size change, or when the table is stale.
-   - The galley widths seen since the last edit cover wide glyphs.
-3. Two-chord bindings.
-   - The pending chord is private (`Mem::pending_chord`) and waits indefinitely, as in VS Code
-     (the coordinator withdrew the 3 s timeout).
-   - Escape or a non-matching key cancels the chord and is consumed. Focus loss cancels it.
-   - A prefix wins over a one-chord binding on the same keys.
-   - The default keymap gains `ctrl+k ctrl+c` addCommentLine, `ctrl+k ctrl+u`
-     removeCommentLine and mac `ctrl+k` deleteAllRight. They stay unresolved until core adds
-     them.
-4. The height index stays in `egui_quire` (coordinator agreed): it has no second consumer.
-5. Linux PRIMARY is supported by egui 0.37 (`OutputCommand::TextSelectionSettled`,
-   `Event::MiddleClickPaste`, egui-winit clipboard.rs).
-   - The focused view reports its selection once it settles and has changed.
-   - A middle click pastes at the pointer.
-6. Page shifts are announced by a `Role::Status` child with `Live::Polite`, whose label is
-   `EditorText.line_announcement`.
-7. Snapshots: `tests/snapshots.rs` has light and dark images.
-   - The `wgpu` and `snapshot` features of egui_kittest are enabled through a macOS-only
-     dev-dependency table, because other backends rasterise differently.
-   - Update with `UPDATE_SNAPSHOTS=1`.
-8. Playground: it runs (24 s, no log output). `screencapture` from this shell records only the
-   wallpaper (no Screen Recording permission), so there is no image.
-9. Multiple cursors and selections already draw from `Selection`. A kittest counts the caret
-   and selection rects and types into all cursors.
-   - Core has not landed insertCursor*, addSelectionToNextFindMatch, moveLines*, copyLines* or
-     deleteAllLeft. The pinned-missing list is unchanged except for the three new chord
-     commands.
-10. Core's find state has no current-match index yet; it is still derived (`glue::find_matches`).
+## Landed
+- **Tab stops** (`EditorConfig::tab_size`), in the monospace and galley paths.
+  - Each tab is its own `LayoutJob` section, and the text after it gets a `leading_space`
+    correction.
+  - Caret, hit-testing, a11y run widths, preedit and trailing-tab width all follow.
+  - `layout`, `galley_cache` and `height` are `#[doc(hidden)]`.
+- **Horizontal extent** from `widths::LineWidths`: visible columns per line, maintained from the
+  recent `LineEdit`s.
+- **Two-chord bindings:** `KeySeq`, `Keymap::lookup_seq`, `KeyLookup`.
+  - The pending chord waits indefinitely, as in VS Code.
+  - Escape or a non-matching key cancels it and is swallowed; focus loss also cancels it.
+- **Linux PRIMARY:** `TextSelectionSettled` is sent once the selection settles, and
+  `MiddleClickPaste` pastes at the pointer.
+- **Page-shift announcement:** a `Role::Status` child with `Live::Polite`, labelled with
+  `EditorText.line_announcement`.
+- **Snapshots** (`tests/snapshots.rs`): light and dark, macOS (Metal) only. Update with
+  `UPDATE_SNAPSHOTS=1`.
+- **Core ED2 commands bound and tested through the keymap:**
+  - insertCursorAbove/Below, addSelectionToNextFindMatch, move/copy lines, deleteAllLeft
+    (macOS only, as in VS Code);
+  - cursorColumnSelect* (Up/Down are not bound on Linux, where VS Code's keys copy lines);
+  - editor.fold/unfold (ctrl+shift+[ and ]), and toggleFold/foldAll/unfoldAll on the ctrl+k
+    chords.
+- **Mouse:** Alt+Shift+drag makes a box selection (`columnSelect`); Alt+click adds a cursor.
+- **Folds:**
+  - Hidden lines have zero height in the height index, so `line_at` never lands on them and
+    painting skips them.
+  - Folded headers get a "⋯" placeholder.
+  - The gutter fold column shows chevrons (always for folded headers, on gutter hover otherwise).
+    A click toggles via a selection transaction with `Effect::SetFolds`.
+- **Find bar:** uses `EditorView::find_current_match`.
+- **IME:** commit and DeleteSurrounding go through `compositionType`.
+- **SyntaxDriver** (quire-syntax, always built now):
+  - Fresh trees feed `Document::set_fold_ranges`.
+  - Host integration is in `examples/playground.rs` (Svelte sample, thread spawner) and
+    `tests/syntax.rs` (quire-syntax is a dev-dependency only). The host loop: `update` before
+    `show` with the last `visible_lines`, waker = `ctx.request_repaint`, `next_deadline` sets
+    `request_repaint_after`, and `settled` follows the driver's pending work. No new egui_quire
+    API.
 
 ## Tests
 `scripts/cargo.sh test -p egui_quire`:
-- on `widget2`: 6 unit tests, 46 kittests (`tests/editor.rs`), 2 snapshot tests (macOS);
-- on master: 6 unit tests, 37 kittests, 2 snapshot tests.
+- 6 unit tests;
+- 54 kittests (`tests/editor.rs`);
+- 1 syntax integration test (`tests/syntax.rs`);
+- 2 snapshot tests (macOS).
 
 ## Next
-- When A, B and D are approved: rebase `widget2` onto master, drop the duplicate multi-cursor
-  commit, re-record snapshots if they differ, run `check.sh`, then push.
-- Bind the core commands when they land (resolution is automatic through
-  `EditorCommand::from_vscode_id` or serde), then shrink the list in
-  `keymap_resolves_against_core_commands`.
-- Use core's current-match index if it adds one.
+- **B5:** when core3 lands addCommentLine, removeCommentLine, deleteAllRight and blockComment,
+  they resolve automatically: the keymap entries already exist, including blockComment as
+  shift+alt+a, and ctrl+shift+a on Linux. Then empty the pinned list in
+  `keymap_resolves_against_core_commands` and add kittests that press them.
+- The playground runs, but no screenshot was possible: `screencapture` from the shell lacks
+  Screen Recording permission.
+- **Open:**
+  - Box-selection columns come from x / advance; wide CJK glyphs are approximate.
+  - The a11y page still includes hidden (folded) lines.
