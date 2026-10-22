@@ -50,10 +50,10 @@ quire depends on neither.
   own branch (`git worktree add ../quire-wt/<name> -b <name>` from `~/projects/quire`).
 - Commit early. To land: `git fetch && git rebase origin/master`, run the touched crate's
   tests, then `git push origin HEAD:master` (fast-forward only; never force-push master).
-- **No `gh` CLI at all** (user, 2026-10-22): no `gh auth`, `api`, `repo`, `run` or `pr`, and no
-  gh credential helper. Git talks to GitHub over ssh with the user's keys
-  (`ssh://git@github.com/akiselev/quire.git`). VS Code sources come from raw.githubusercontent.com.
-  Poll anything at most every 5 minutes.
+- **No credentials in committed files** (user, 2026-10-22): scripts, configs and docs carry no
+  tokens, credential helpers or auth setup. Agents may use `gh` interactively. Remotes are ssh
+  (`ssh://git@github.com/akiselev/quire.git`). The GitHub API limit is shared by every session:
+  read shas with `git fetch`/`git ls-remote`, and poll at most every 5 minutes.
 - Commit messages say what changed and which milestone (QE0, QE1, QE2, QE4).
 - **Master stays green:** a lane lands on master only after its end-of-lane `scripts/check.sh` passes.
   Unfinished code stays on your branch.
