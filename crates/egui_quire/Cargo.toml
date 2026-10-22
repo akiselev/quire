@@ -18,6 +18,11 @@ serde_json.workspace = true
 egui_kittest.workspace = true
 eframe.workspace = true
 
+# Snapshot images render through wgpu (Metal); they are recorded and compared on macOS only, as
+# other backends (lavapipe, GL) rasterise differently.
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
+
 [[example]]
 name = "playground"
 
