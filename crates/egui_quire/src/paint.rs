@@ -314,7 +314,7 @@ fn squiggle(p: &egui::Painter, x0: f32, x1: f32, y: f32, color: Color32) {
 pub(crate) fn scrollbars(f: &mut FrameCx<'_>, ui: &Ui) {
     let g = f.geom;
     let content_h = f.mem.heights.total() + g.text.height() * 0.5;
-    let content_w = f.mem.max_seen_width + g.adv * 4.0;
+    let content_w = f.content_width();
     let bar = 8.0;
     let color = ui.visuals().widgets.inactive.bg_fill;
     let color_active = ui.visuals().widgets.active.bg_fill;

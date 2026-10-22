@@ -19,6 +19,7 @@ pub mod keymap;
 pub mod layout;
 mod paint;
 pub mod theme;
+mod widths;
 
 pub use a11y::{page_size as a11y_page_size, run_id as a11y_run_id};
 pub use chord::Chord;

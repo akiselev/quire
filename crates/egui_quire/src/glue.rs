@@ -1,5 +1,5 @@
 //! Every call from the widget into `quire-core` goes through here, so the widget's view of the
-//! core API is in one place.
+//! core API is in one place (beside `widths.rs`, which follows the document's recent changes).
 
 use std::borrow::Cow;
 use std::ops::Range;

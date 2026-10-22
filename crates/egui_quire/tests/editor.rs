@@ -1032,3 +1032,50 @@ fn cut_with_empty_selection_copies_the_line_it_deletes() {
     assert_eq!(copied, vec!["two\n".to_owned()]);
     assert_eq!(h.state().text(), "one\nthree");
 }
+// ---------------------------------------------------------------------------------------------
+// Horizontal extent from the longest line.
+
+fn wheel(h: &mut Harness<'_, St>, delta: Vec2) {
+    let r = h.state().rects[0];
+    h.event(Event::PointerMoved(r.center()));
+    h.event(Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta,
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Wheel,
+        modifiers: Modifiers::NONE,
+    });
+    h.run_steps(40);
+}
+
+#[test]
+fn horizontal_extent_is_the_longest_line_even_off_screen() {
+    // The long line is far below the viewport: never laid out, still scrollable to.
+    let mut text: String = (0..300).map(|i| format!("{i}\n")).collect();
+    text.push_str(&"x".repeat(400));
+    text.push('\n');
+    let mut h = harness(St::new(&text));
+    h.run();
+    wheel(&mut h, vec2(-100_000.0, 0.0));
+    let x = h.state().views[0].scroll().horizontal;
+    let adv = egui_quire::layout::mono(&h.ctx, &egui::FontId::monospace(13.0)).advance();
+    let view_w = h.state().rects[0].width();
+    // 400 columns plus margin, minus the visible text width (gutter excluded): at least
+    // 400 columns minus the whole editor width.
+    assert!(
+        x > 400.0 * adv - view_w && x < 410.0 * adv,
+        "scroll x {x} (adv {adv})"
+    );
+    // Another party deletes the long line; the extent shrinks and the scroll clamps.
+    let start = h.state().doc.text().line_to_byte(300);
+    let len = h.state().doc.text().len_bytes();
+    {
+        let st = h.state_mut();
+        let cs = quire_core::ChangeSet::replace(len, [(start..len, "")]).unwrap();
+        let tr = quire_core::Transaction::new(st.doc.version(), cs);
+        let St { doc, views, .. } = st;
+        doc.apply(tr, &mut views[1]).unwrap();
+    }
+    h.run();
+    assert_eq!(h.state().views[0].scroll().horizontal, 0.0);
+}

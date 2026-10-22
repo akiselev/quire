@@ -127,7 +127,12 @@ pub(crate) struct Mem {
     pub find: FindBar,
     pub a11y_page_start: usize,
     pub scroll_to_caret: bool,
+    /// Widest line laid out since the text last changed (wide glyphs exceed column widths).
     pub max_seen_width: f32,
+    /// Document version `max_seen_width` belongs to.
+    pub seen_version: Option<Version>,
+    /// Visible columns per line, for the horizontal extent.
+    pub widths: crate::widths::LineWidths,
     pub diag_hover: Option<Range<usize>>,
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
@@ -353,6 +358,11 @@ impl<'a> CodeEditor<'a> {
             pad_left: (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point,
         };
 
+        mem.widths.sync(doc);
+        if mem.seen_version != Some(glue::version(doc)) {
+            mem.seen_version = Some(glue::version(doc));
+            mem.max_seen_width = 0.0;
+        }
         mem.scroll = glue::scroll_px(view, doc, &mem.heights);
         mem.style_salt = theme.galley_hash();
         let response = ui.interact(rect, id, Sense::click_and_drag());
@@ -1014,16 +1024,16 @@ impl FrameCx<'_> {
         }
     }
 
-    fn content_size(&self) -> Vec2 {
-        // Width: widest laid-out line seen is not tracked yet; allow scrolling to the longest line
-        // measured in characters (monospace estimate).
+    fn content_size(&mut self) -> Vec2 {
         let h = self.mem.heights.total() + self.geom.text.height() * 0.5;
-        vec2(self.max_line_width(), h)
+        vec2(self.content_width(), h)
     }
 
-    fn max_line_width(&self) -> f32 {
-        // O(lines) scan of line lengths is avoided: use the longest visible line plus a margin.
-        self.mem.galleys_max_width().max(self.geom.text.width()) + self.geom.adv * 4.0
+    /// Horizontal extent: the longest line (columns × advance, or the widest galley laid out
+    /// since the last edit when wide glyphs make that larger) plus a margin.
+    pub fn content_width(&mut self) -> f32 {
+        let cols = self.mem.widths.max_cols() as f32 * self.geom.adv + self.geom.pad_left;
+        cols.max(self.mem.max_seen_width) + self.geom.adv * 4.0
     }
 
     fn clamp_scroll(&mut self) {
@@ -1188,11 +1198,5 @@ impl FrameCx<'_> {
                 .events
                 .push(EditorEvent::DiagnosticAction { command_id, args });
         }
-    }
-}
-
-impl Mem {
-    pub(crate) fn galleys_max_width(&self) -> f32 {
-        self.max_seen_width
     }
 }
