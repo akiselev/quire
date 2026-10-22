@@ -1,7 +1,7 @@
 //! AccessKit: the editor node (`Role::MultilineTextInput`, host-supplied name) with `TextRun`
 //! children for a page of lines around the caret (50 lines, 500 when a screen reader is active),
-//! following egui 0.37's `text_selection/accesskit_text.rs`. The page shifts when the caret
-//! leaves it. Run ids: `Id::unique((editor_id, "run", line))` for a line's first chunk and
+//! following egui 0.37's `text_selection/accesskit_text.rs`. The page counts visible lines only:
+//! lines hidden by folds get no run. It shifts when the caret leaves it. Run ids: `Id::unique((editor_id, "run", line))` for a line's first chunk and
 //! `Id::unique((editor_id, "run", line, k))` for chunk `k > 0` (AccessKit runs hold ≤ 255 chars).
 
 use egui::accesskit::{self, Role};
@@ -57,8 +57,15 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
     let lines = text.len_lines().max(1);
     let sel = glue::selection(f.view).primary();
     let head_line = text.byte_to_line(sel.head.min(text.len_bytes()));
-    if head_line < f.mem.a11y_page_start || head_line >= f.mem.a11y_page_start + n {
-        f.mem.a11y_page_start = (head_line / n) * n;
+    // Pages are counted in visible rows: hidden (folded) lines have zero height, every visible
+    // line one row, so a line's row is y / row_h and the line at row r is line_at(mid-row r).
+    let row_h = f.geom.row_h;
+    let row_of = |line: usize| (f.mem.heights.y_of(line) / row_h).round() as usize;
+    let head_row = row_of(head_line);
+    let start_row = row_of(f.mem.a11y_page_start);
+    if head_row < start_row || head_row >= start_row + n {
+        let row = (head_row / n) * n;
+        f.mem.a11y_page_start = f.mem.heights.line_at((row as f32 + 0.5) * row_h);
         // The runs a screen reader was reading are gone: say where the caret is now.
         f.mem.a11y_announce = Some(
             strings
@@ -81,21 +88,25 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
             n.set_label(msg);
         });
     }
-    let page = f.mem.a11y_page_start..(f.mem.a11y_page_start + n).min(lines);
+    let first_row = row_of(f.mem.a11y_page_start);
+    let rows = (f.mem.heights.total() / row_h).round() as usize;
+    let page: Vec<usize> = (first_row..(first_row + n).min(rows))
+        .map(|r| f.mem.heights.line_at((r as f32 + 0.5) * row_h))
+        .filter(|&l| l < lines)
+        .collect();
 
     let to_global = f
         .ctx
         .layer_transform_to_global(ui.layer_id())
         .unwrap_or_default();
     let left = f.geom.text_left(f.mem);
-    let row_h = f.geom.row_h;
 
     // (line, chunk start chars) of the selection ends, mapped to run positions.
     let pos_of = |b: usize| -> Option<accesskit::TextPosition> {
         let text = glue::text(f.doc);
         let b = b.min(text.len_bytes());
         let line = text.byte_to_line(b);
-        if !page.contains(&line) {
+        if page.binary_search(&line).is_err() {
             return None;
         }
         let col_chars = text
@@ -121,7 +132,7 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
         });
     }
 
-    for line in page.clone() {
+    for &line in &page {
         let layout = f.layout_line(line);
         let top = f.geom.line_top(f.mem, line);
         let last = line + 1 >= lines;

@@ -1734,6 +1734,55 @@ fn folds_hide_lines_and_the_gutter_marker_toggles() {
 }
 
 #[test]
+fn a11y_page_skips_folded_lines() {
+    // Line 0 opens a block of 30 indented lines (1..=30), line 31 closes it, 100 lines follow.
+    let mut text = String::from("block {\n");
+    text.extend((1..=30).map(|i| format!("    in {i}\n")));
+    text.push_str("}\n");
+    text.extend((32..132).map(|i| format!("line {i}\n")));
+    let mut h = harness(St::new(&text));
+    h.run();
+    focus(&mut h);
+    let id = CodeEditor::id_for(("ed", 0usize));
+    assert!(press_command(&mut h, "editor.foldAll"));
+    h.run();
+    let node = h.get_by_label("Source");
+    let runs: Vec<_> = node
+        .accesskit_node()
+        .children()
+        .filter(|c| c.role() == Role::TextRun)
+        .collect();
+    assert_eq!(runs.len(), 50, "50 visible lines");
+    assert_eq!(runs[0].value().as_deref(), Some("block {\n"));
+    assert_eq!(runs[1].value().as_deref(), Some("}\n"), "hidden lines get no run");
+    assert_eq!(runs[49].value().as_deref(), Some("line 79\n"));
+    // Run ids stay keyed by document line: the caret on line 31 maps to run (31, 0).
+    let close = h.state().doc.text().line_to_byte(31);
+    caret_to(&mut h, close);
+    let sel = h
+        .get_by_label("Source")
+        .accesskit_node()
+        .data()
+        .text_selection()
+        .copied()
+        .expect("selection mapped");
+    assert_eq!(
+        sel.focus.node,
+        egui_quire::a11y_run_id(id, 31, 0).accesskit_id()
+    );
+    // The next visible line after the page starts the next page.
+    let start = h.state().doc.text().line_to_byte(80);
+    caret_to(&mut h, start);
+    let node = h.get_by_label("Source");
+    let first = node
+        .accesskit_node()
+        .children()
+        .find(|c| c.role() == Role::TextRun)
+        .unwrap();
+    assert_eq!(first.value().as_deref(), Some("line 80\n"));
+}
+
+#[test]
 fn ime_commit_goes_through_the_typing_rules() {
     let mut h = harness(St::new(""));
     h.run();
