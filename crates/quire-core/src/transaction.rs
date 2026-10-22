@@ -43,6 +43,12 @@ pub enum Effect {
     SetWordWrap(crate::config::WordWrap),
 }
 
+impl From<NoEffect> for Effect {
+    fn from(n: NoEffect) -> Self {
+        match n {}
+    }
+}
+
 impl DocEffect for Effect {
     fn writes_document(&self) -> bool {
         matches!(self, Effect::SetInsertSpaces(_))

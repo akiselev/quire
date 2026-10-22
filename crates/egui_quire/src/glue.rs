@@ -385,8 +385,7 @@ pub fn take_reveal(view: &mut EditorView, doc: &Document) -> Option<(usize, bool
 
 /// The word at `pos` as double-click selects it.
 pub fn word_range_at(doc: &Document, pos: usize) -> Range<usize> {
-    let cls = quire_core::words::WordClassifier::new(&doc.config().word_separators);
-    quire_core::words::word_range_at(doc.text(), pos, &cls)
+    doc.edit_rules().words.word_at(doc.text(), pos)
 }
 
 /// The line at `pos` with its line feed, as triple-click selects it.

@@ -34,7 +34,7 @@ use crate::text::Text;
 use crate::transaction::{AuthorId, Effect, Origin, Transaction};
 use crate::version::Version;
 use crate::view::EditorView;
-use quire_text::{DocRules, TextDocument};
+use quire_text::{DocRules, EditRules, TextDocument, WordClassifier, WordRules};
 use smallvec::SmallVec;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -178,6 +178,9 @@ impl SettledProbe {
 pub struct Document {
     /// Text, version, history and recent changes (quire-text).
     doc: TextDocument,
+    /// The command rules the config implies, with its word classifier (rebuilt only in
+    /// `set_config`).
+    edit_rules: EditRules,
     tokens: TokenStore,
     diagnostics: Diagnostics,
     saved_at: Option<Version>,
@@ -216,8 +219,15 @@ impl Document {
             indent_levels: OnceLock::new(),
             degraded: crate::large::check(&text, &config.large_file),
             doc: TextDocument::from_text(text, Arc::new(doc_rules(&config, UndoMode::Local))),
+            edit_rules: edit_rules(&config),
             config,
         }
+    }
+
+    /// The quire-text command rules the config implies (VS Code's word rules with the config's
+    /// separators, smart home, the empty-selection clipboard), built once per config.
+    pub fn edit_rules(&self) -> &EditRules {
+        &self.edit_rules
     }
 
     /// The quire-text document underneath (text, version, history, recent changes).
@@ -272,6 +282,12 @@ impl Document {
         {
             let rules = doc_rules(&config, self.doc.undo_mode());
             self.doc.set_rules(Arc::new(rules));
+        }
+        if config.word_separators != self.config.word_separators
+            || config.smart_home != self.config.smart_home
+            || config.empty_selection_clipboard != self.config.empty_selection_clipboard
+        {
+            self.edit_rules = edit_rules(&config);
         }
         if config.large_file != self.config.large_file {
             self.degraded = crate::large::check(self.doc.text(), &config.large_file);
@@ -643,6 +659,16 @@ impl Document {
             }
         }
         config_changed
+    }
+}
+
+/// The quire-text command rules an [`EditorConfig`] implies.
+fn edit_rules(config: &EditorConfig) -> EditRules {
+    EditRules {
+        words: WordRules::VsCode(WordClassifier::new(&config.word_separators)),
+        smart_home: config.smart_home,
+        empty_selection_clipboard: config.empty_selection_clipboard,
+        ..EditRules::default()
     }
 }
 

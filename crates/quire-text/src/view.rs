@@ -17,6 +17,16 @@ pub struct Preedit {
     pub active: Option<Range<usize>>,
 }
 
+/// The source of a preedit ([`TextView::preedit_kind`]).
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum PreeditKind {
+    /// An input method.
+    #[default]
+    Ime,
+    /// GTK's hex Unicode entry (Ctrl+Shift+U): `u` and the digits typed so far.
+    Hex,
+}
+
 /// How [`TextView::sync`] caught up.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SyncOutcome {
@@ -46,6 +56,7 @@ pub struct TextView {
     synced_at: Version,
     focused: bool,
     preedit: Option<Preedit>,
+    preedit_kind: PreeditKind,
 }
 
 impl TextView {
@@ -57,6 +68,7 @@ impl TextView {
             synced_at: doc.version(),
             focused: false,
             preedit: None,
+            preedit_kind: PreeditKind::Ime,
         }
     }
 
@@ -107,9 +119,20 @@ impl TextView {
         self.preedit.as_ref()
     }
 
-    /// Sets or clears the preedit.
+    /// Sets or clears the preedit (an input method's).
     pub fn set_preedit(&mut self, p: Option<Preedit>) {
+        self.set_preedit_of(p, PreeditKind::Ime);
+    }
+
+    /// Sets or clears the preedit, saying where it comes from.
+    pub fn set_preedit_of(&mut self, p: Option<Preedit>, kind: PreeditKind) {
         self.preedit = p.filter(|p| !p.text.is_empty());
+        self.preedit_kind = kind;
+    }
+
+    /// Where the active preedit comes from.
+    pub fn preedit_kind(&self) -> PreeditKind {
+        self.preedit_kind
     }
 
     /// Sets the selection directly (view state; no document change). Positions are clamped to the

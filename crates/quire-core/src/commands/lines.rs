@@ -11,7 +11,7 @@
 //! path when `indentRulesSupport` is null), and selections whose line spans touch move as one
 //! block (VS Code would produce overlapping edits there).
 
-use super::{Out, RangeEdit, St, build};
+use super::{Out, St};
 use crate::change::{Bias, ChangeSet};
 use crate::selection::{SelRange, Selection};
 use crate::text::Text;
@@ -208,95 +208,4 @@ pub(crate) fn move_lines(st: &St, down: bool) -> Option<Out> {
         SelRange::new(map(r.anchor), map(r.head)).with_goal(goal)
     });
     out(changes, sel)
-}
-
-/// `DeleteAllLeftAction`: delete from each cursor to its line start (at column 0: join with the
-/// previous line); a selection deletes from its first line's start to its end.
-pub(crate) fn delete_all_left(st: &St) -> Option<Out> {
-    let text = &st.text;
-    let edits = st
-        .sel
-        .ranges()
-        .iter()
-        .map(|r| {
-            let line = text.byte_to_line(r.from());
-            let ls = text.line_to_byte(line);
-            let range = if r.is_empty() {
-                if r.head == ls {
-                    if line == 0 {
-                        0..0
-                    } else {
-                        text.line_range(line - 1).end..ls
-                    }
-                } else {
-                    ls..r.head
-                }
-            } else {
-                ls..r.to()
-            };
-            Some(RangeEdit::replace(range, ""))
-        })
-        .collect();
-    let (changes, sel) = build(text, &st.sel, edits);
-    out(changes, sel)
-}
-
-/// `DeleteAllRightAction`: delete from each cursor to its line end (at the line end: join with
-/// the next line) and each selection; overlapping ranges merge; the cursors end at the starts,
-/// the primary one first.
-pub(crate) fn delete_all_right(st: &St) -> Option<Out> {
-    let text = &st.text;
-    let primary = st.sel.primary();
-    let mut ranges: Vec<std::ops::Range<usize>> = st
-        .sel
-        .ranges()
-        .iter()
-        .map(|r| {
-            if r.is_empty() {
-                let lr = text.line_range(text.byte_to_line(r.head));
-                if r.head == lr.end {
-                    r.head..(lr.end + 1).min(text.len_bytes())
-                } else {
-                    r.head..lr.end
-                }
-            } else {
-                r.range()
-            }
-        })
-        .collect();
-    ranges.sort_by_key(|r| (r.start, r.end));
-    // Merge ranges that intersect (touching counts, as in VS Code's `Range.intersectRanges`).
-    let mut merged: Vec<std::ops::Range<usize>> = Vec::new();
-    for r in ranges {
-        if let Some(last) = merged.last_mut()
-            && r.start <= last.end
-        {
-            last.end = last.end.max(r.end);
-            continue;
-        }
-        merged.push(r);
-    }
-    let changes =
-        ChangeSet::replace(text.len_bytes(), merged.iter().map(|r| (r.clone(), ""))).ok()?;
-    if changes.is_empty() {
-        return None;
-    }
-    let mut cursors: Vec<SelRange> = Vec::new();
-    let mut primary_cursor: Option<SelRange> = None;
-    let mut removed = 0;
-    for r in &merged {
-        let c = SelRange::point(r.start - removed);
-        removed += r.end - r.start;
-        let p = primary.range();
-        let intersects = r.start <= p.end && p.start <= r.end;
-        if intersects && primary_cursor.is_none() {
-            primary_cursor = Some(c);
-        } else {
-            cursors.push(c);
-        }
-    }
-    if let Some(p) = primary_cursor {
-        cursors.insert(0, p);
-    }
-    out(changes, Selection::new(cursors, 0))
 }

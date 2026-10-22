@@ -5,7 +5,7 @@
 use super::model::{
     Model, Pos, col_from_visible, next_indent_tab_stop, prev_indent_tab_stop, visible_col,
 };
-use super::words::{self, WordNav};
+
 use super::{Ctx, Out, RangeEdit, St, build, track};
 use crate::change::{Bias, ChangeSet};
 use crate::config::{AutoClosingStrategy, EditorConfig, IndentAction, OvertypeStrategy};
@@ -128,40 +128,13 @@ pub(crate) fn composition_type(
     let text = st.text.clone();
     let mut state = st;
     let mut acc: Option<ChangeSet> = None;
-    if prev > 0 || next > 0 {
-        let edits = state
-            .sel
-            .ranges()
-            .iter()
-            .map(|r| {
-                if !r.is_empty() {
-                    return None;
-                }
-                let line = text.line_range(text.byte_to_line(r.head));
-                let mut a = r.head;
-                for c in text.chars_before(r.head).take(prev) {
-                    if a <= line.start {
-                        break;
-                    }
-                    a -= c.len_utf8();
-                }
-                let mut b = r.head;
-                for c in text.chars_at(r.head).take(next) {
-                    if b >= line.end {
-                        break;
-                    }
-                    b += c.len_utf8();
-                }
-                Some(RangeEdit::replace(a..b, ""))
-            })
-            .collect();
-        let (changes, sel) = build(&text, &state.sel, edits);
-        if !changes.is_empty() {
-            map_auto_closed(&mut state.auto_closed, &changes);
-            state.text = changes.apply(&text).ok()?;
-            state.sel = sel;
-            acc = Some(changes);
-        }
+    if let Some((changes, sel)) =
+        quire_text::ops::edit::delete_surrounding(&text, &state.sel, prev, next)
+    {
+        map_auto_closed(&mut state.auto_closed, &changes);
+        state.text = changes.apply(&text).ok()?;
+        state.sel = sel;
+        acc = Some(changes);
     }
     let typed_out = if typed.is_empty() {
         None
@@ -205,32 +178,9 @@ fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
     Some(simple_type(st, ch, st.last_kind))
 }
 
-/// `SimpleCharacterTypeOperation`.
+/// `SimpleCharacterTypeOperation` (quire-text's).
 fn simple_type(st: &St, ch: &str, last_kind: Option<InputKind>) -> Out {
-    let kind = if ch == " " {
-        match last_kind {
-            Some(InputKind::TypingFirstSpace) | Some(InputKind::TypingConsecutiveSpace) => {
-                InputKind::TypingConsecutiveSpace
-            }
-            _ => InputKind::TypingFirstSpace,
-        }
-    } else {
-        InputKind::Typing
-    };
-    let edits = st
-        .sel
-        .ranges()
-        .iter()
-        .map(|r| Some(RangeEdit::replace(r.range(), ch)))
-        .collect();
-    let (changes, sel) = build(&st.text, &st.sel, edits);
-    Out {
-        changes,
-        sel,
-        kind,
-        auto_closed: Vec::new(),
-        close_before: false,
-    }
+    quire_text::ops::edit::insert_typed(&st.text, &st.sel, ch, last_kind).into()
 }
 
 fn indentation_at(m: &Model, b: usize) -> String {
@@ -707,65 +657,6 @@ fn auto_close(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
 // ---------------------------------------------------------------------------------------------
 // paste, cut, delete
 
-pub(crate) fn paste(st: &St, t: &str, per_cursor: bool) -> Option<Out> {
-    let n = st.sel.len();
-    let lines: Option<Vec<&str>> = if per_cursor && n > 1 {
-        let trimmed = t.strip_suffix('\n').unwrap_or(t);
-        let v: Vec<&str> = trimmed.split('\n').collect();
-        (v.len() == n).then_some(v)
-    } else {
-        None
-    };
-    let edits = st
-        .sel
-        .ranges()
-        .iter()
-        .enumerate()
-        .map(|(i, r)| {
-            let s = lines.as_ref().map_or(t, |v| v[i]);
-            Some(RangeEdit::replace(r.range(), s))
-        })
-        .collect();
-    let (changes, sel) = build(&st.text, &st.sel, edits);
-    out(&st.text, changes, sel, InputKind::Paste)
-}
-
-pub(crate) fn cut(ctx: &Ctx, st: &St) -> Option<Out> {
-    let text = &st.text;
-    let m = Model::new(text);
-    let mut last_cut_end_line: Option<usize> = None;
-    let edits = st
-        .sel
-        .ranges()
-        .iter()
-        .map(|r| {
-            if !r.is_empty() {
-                return Some(RangeEdit::replace(r.range(), ""));
-            }
-            if !ctx.cfg.empty_selection_clipboard {
-                return None;
-            }
-            let p = m.pos(r.head);
-            let lc = m.line_count();
-            let range = if p.line + 1 < lc {
-                text.line_to_byte(p.line)..text.line_to_byte(p.line + 1)
-            } else if p.line > 0 && last_cut_end_line != Some(p.line) {
-                text.line_range(p.line - 1).end..text.line_range(p.line).end
-            } else {
-                text.line_range(p.line)
-            };
-            last_cut_end_line = Some(text.byte_to_line(range.end));
-            if range.is_empty() {
-                None
-            } else {
-                Some(RangeEdit::replace(range, ""))
-            }
-        })
-        .collect();
-    let (changes, sel) = build(text, &st.sel, edits);
-    out(text, changes, sel, InputKind::Other)
-}
-
 fn is_auto_closing_pair_delete(ctx: &Ctx, st: &St) -> bool {
     let cfg = ctx.cfg;
     if (cfg.auto_closing_brackets == AutoClosingStrategy::Never
@@ -852,33 +743,38 @@ pub(crate) fn delete_left(ctx: &Ctx, st: &St) -> Option<Out> {
     out(text, changes, sel, InputKind::DeletingLeft)
 }
 
-pub(crate) fn delete_right(st: &St) -> Option<Out> {
-    let text = &st.text;
-    let m = Model::new(text);
-    let edits = st
-        .sel
-        .ranges()
-        .iter()
-        .map(|r| {
-            if !r.is_empty() {
-                return Some(RangeEdit::replace(r.range(), ""));
+/// Whether a lowered delete needs the editor's own path: an auto-closed pair delete (Backspace
+/// and the left word deletions), or Backspace with a cursor inside indentation under
+/// `use_tab_stops`.
+pub(crate) fn needs_editor_delete(ctx: &Ctx, st: &St, cmd: &crate::command::EditorCommand) -> bool {
+    use crate::command::EditorCommand as C;
+    match cmd {
+        C::DeleteLeft => {
+            if is_auto_closing_pair_delete(ctx, st) {
+                return true;
             }
-            let b = m.next_grapheme(r.head);
-            if b == r.head {
-                None
-            } else {
-                Some(RangeEdit::replace(r.head..b, ""))
+            if !ctx.cfg.use_tab_stops {
+                return false;
             }
-        })
-        .collect();
-    let (changes, sel) = build(text, &st.sel, edits);
-    out(text, changes, sel, InputKind::DeletingRight)
+            let m = Model::new(&st.text);
+            st.sel.ranges().iter().any(|r| {
+                if !r.is_empty() {
+                    return false;
+                }
+                let p = m.pos(r.head);
+                p.col > 0 && p.col <= m.first_non_ws(p.line).unwrap_or(m.line_chars(p.line).len())
+            })
+        }
+        C::DeleteWordLeft | C::DeleteWordStartLeft | C::DeleteWordEndLeft => {
+            is_auto_closing_pair_delete(ctx, st)
+        }
+        _ => false,
+    }
 }
 
-pub(crate) fn delete_word(ctx: &Ctx, st: &St, left: bool, nav: WordNav, ws: bool) -> Option<Out> {
+/// Deletes the auto-closed pair around every cursor.
+pub(crate) fn pair_delete(st: &St) -> Option<Out> {
     let text = &st.text;
-    let m = Model::new(text);
-    let pair_delete = left && is_auto_closing_pair_delete(ctx, st);
     let edits = st
         .sel
         .ranges()
@@ -887,25 +783,9 @@ pub(crate) fn delete_word(ctx: &Ctx, st: &St, left: bool, nav: WordNav, ws: bool
             if !r.is_empty() {
                 return Some(RangeEdit::replace(r.range(), ""));
             }
-            if pair_delete {
-                let a = text.prev_char_boundary(r.head);
-                let b = text.next_char_boundary(r.head);
-                return Some(RangeEdit::replace(a..b, ""));
-            }
-            let p = m.pos(r.head);
-            let res = if left {
-                words::delete_word_left(&m, &ctx.cls, p, nav, ws)
-            } else {
-                words::delete_word_right(&m, &ctx.cls, p, nav, ws)
-            };
-            let (a, b) = res?;
-            let (a, b) = (m.off(a), m.off(b));
-            let (a, b) = (a.min(b), a.max(b));
-            if a == b {
-                None
-            } else {
-                Some(RangeEdit::replace(a..b, ""))
-            }
+            let a = text.prev_char_boundary(r.head);
+            let b = text.next_char_boundary(r.head);
+            Some(RangeEdit::replace(a..b, ""))
         })
         .collect();
     let (changes, sel) = build(text, &st.sel, edits);

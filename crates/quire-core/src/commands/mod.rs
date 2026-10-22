@@ -24,16 +24,19 @@ mod motion;
 mod multi;
 pub(crate) use quire_text::words::vscode as words;
 
-use crate::change::{Bias, ChangeSet};
+pub(crate) use quire_text::ops::{RangeEdit, build, track};
+
+use crate::change::ChangeSet;
 use crate::command::{CommandOutput, EditorCommand, HostRequest};
 use crate::config::EditorConfig;
 use crate::document::{Document, Refusal};
-use crate::history::UndoMode;
-use crate::selection::{SelRange, Selection};
+use crate::selection::Selection;
 use crate::text::Text;
 use crate::transaction::{Effect, GroupHint, InputKind, Origin, Transaction};
 use crate::view::{AutoClosed, EditorView};
 use crate::words::WordClassifier;
+use quire_text::command::{Dir, EditCommand, Unit};
+use quire_text::words::WordStop;
 use std::ops::Range;
 
 /// What the pure command functions see: a text, a selection and the view's tracked auto-closed
@@ -56,111 +59,22 @@ pub(crate) struct Out {
     pub close_before: bool,
 }
 
-/// An edit for one selection range; `anchor`/`head` are relative to the edit's start in the new
-/// text.
-pub(crate) struct RangeEdit {
-    pub range: Range<usize>,
-    pub insert: String,
-    pub anchor: usize,
-    pub head: usize,
-}
-
-impl RangeEdit {
-    /// Replace `range` with `insert`, cursor after the insert.
-    pub fn replace(range: Range<usize>, insert: impl Into<String>) -> Self {
-        let insert = insert.into();
-        let n = insert.len();
-        RangeEdit {
-            range,
-            insert,
-            anchor: n,
-            head: n,
+impl From<quire_text::ops::edit::OpEdit> for Out {
+    fn from(o: quire_text::ops::edit::OpEdit) -> Self {
+        Out {
+            changes: o.changes,
+            sel: o.sel,
+            kind: o.kind,
+            auto_closed: Vec::new(),
+            close_before: o.close_before,
         }
     }
-}
-
-/// Builds a change set from per-range edits (`None`: the range has no edit and is mapped).
-/// Overlapping deletions are merged.
-pub(crate) fn build(
-    text: &Text,
-    sel: &Selection,
-    edits: Vec<Option<RangeEdit>>,
-) -> (ChangeSet, Selection) {
-    let mut idx: Vec<usize> = (0..edits.len()).filter(|&i| edits[i].is_some()).collect();
-    idx.sort_by_key(|&i| edits[i].as_ref().map(|e| (e.range.start, e.range.end)));
-    // Merge overlapping edits (keep the first's insert, union the ranges).
-    let mut merged: Vec<(Range<usize>, String, Vec<usize>)> = Vec::new();
-    for &i in &idx {
-        let e = edits[i].as_ref().expect("edit");
-        if let Some(last) = merged.last_mut()
-            && (e.range.start < last.0.end
-                || (e.range.start == last.0.start
-                    && e.range.start == e.range.end
-                    && last.0.start == last.0.end))
-        {
-            last.0.end = last.0.end.max(e.range.end);
-            last.2.push(i);
-            continue;
-        }
-        merged.push((e.range.clone(), e.insert.clone(), vec![i]));
-    }
-    let changes = ChangeSet::replace(
-        text.len_bytes(),
-        merged.iter().map(|(r, s, _)| (r.clone(), s.as_str())),
-    )
-    .expect("command edits are sorted and in bounds");
-    let mut new_ranges: Vec<Option<SelRange>> = vec![None; edits.len()];
-    let mut delta: isize = 0;
-    for (r, s, members) in &merged {
-        let new_start = (r.start as isize + delta) as usize;
-        for &i in members {
-            let e = edits[i].as_ref().expect("edit");
-            let (a, h) = if members.len() == 1 {
-                (e.anchor, e.head)
-            } else {
-                (0, 0)
-            };
-            new_ranges[i] = Some(SelRange::new(
-                new_start + a.min(s.len()),
-                new_start + h.min(s.len()),
-            ));
-        }
-        delta += s.len() as isize - (r.end - r.start) as isize;
-    }
-    let ranges: Vec<SelRange> = sel
-        .ranges()
-        .iter()
-        .enumerate()
-        .map(|(i, r)| {
-            new_ranges
-                .get(i)
-                .copied()
-                .flatten()
-                .unwrap_or_else(|| r.map(&changes, Bias::Before))
-        })
-        .collect();
-    (changes, Selection::new(ranges, sel.primary_index()))
-}
-
-/// Maps a selection the way VS Code's `trackSelection` does: a cursor at a line end stays before
-/// text inserted at it, any other cursor moves after; a non-empty range never grows at its edges.
-pub(crate) fn track(text: &Text, changes: &ChangeSet, sel: &Selection) -> Selection {
-    sel.transform(|r| {
-        if r.is_empty() {
-            let line = text.byte_to_line(r.head);
-            let at_end = text.line_range(line).end == r.head;
-            r.map(changes, if at_end { Bias::Before } else { Bias::After })
-        } else {
-            r.map(changes, Bias::Before)
-        }
-    })
 }
 
 pub(crate) struct Ctx<'a> {
     pub cfg: &'a EditorConfig,
-    pub cls: WordClassifier,
-    /// The view's folds: vertical motion skips hidden lines.
-    pub folds: &'a [Range<usize>],
+    /// The document's cached classifier (`Document::edit_rules`).
+    pub cls: &'a WordClassifier,
 }
 
 fn tr_from(doc: &Document, changes: ChangeSet, sel: Selection, origin: Origin) -> Transaction {
@@ -173,6 +87,169 @@ fn cmd_origin(cmd: &EditorCommand) -> Origin {
     Origin::Command(std::borrow::Cow::Borrowed(cmd.id()))
 }
 
+/// The quire-text command an editor command lowers to, where they overlap (one implementation
+/// of motion, deletion and undo).
+fn lower(cmd: &EditorCommand) -> Option<EditCommand> {
+    use crate::command::Motion as M;
+    use EditorCommand as C;
+    let mv = |unit, dir, extend| EditCommand::Move { unit, dir, extend };
+    let del = |unit, dir| EditCommand::Delete { unit, dir };
+    Some(match cmd {
+        C::CursorMove { to, select } => {
+            let (unit, dir) = match to {
+                M::Left => (Unit::Grapheme, Dir::Back),
+                M::Right => (Unit::Grapheme, Dir::Forward),
+                M::Up => (Unit::VisualLine, Dir::Back),
+                M::Down => (Unit::VisualLine, Dir::Forward),
+                M::PageUp { .. } => (Unit::Page, Dir::Back),
+                M::PageDown { .. } => (Unit::Page, Dir::Forward),
+                M::WordLeft => (Unit::Word(WordStop::StartFast), Dir::Back),
+                M::WordStartLeft => (Unit::Word(WordStop::Start), Dir::Back),
+                M::WordEndLeft => (Unit::Word(WordStop::End), Dir::Back),
+                M::WordStartRight => (Unit::Word(WordStop::Start), Dir::Forward),
+                M::WordEndRight => (Unit::Word(WordStop::End), Dir::Forward),
+                M::LineStart => (Unit::LineEdge, Dir::Back),
+                M::LineEnd => (Unit::LineEdge, Dir::Forward),
+                M::DocumentStart => (Unit::DocEdge, Dir::Back),
+                M::DocumentEnd => (Unit::DocEdge, Dir::Forward),
+            };
+            mv(unit, dir, *select)
+        }
+        C::SetSelection { selection } => EditCommand::SetSelection(selection.clone()),
+        C::SelectAll => EditCommand::SelectAll,
+        C::Paste { text, per_cursor } => EditCommand::Insert {
+            text: text.clone(),
+            kind: InputKind::Paste,
+            distribute: *per_cursor,
+        },
+        C::Cut => EditCommand::Cut,
+        C::DeleteLeft => del(Unit::Grapheme, Dir::Back),
+        C::DeleteRight => del(Unit::Grapheme, Dir::Forward),
+        C::DeleteWordLeft => del(Unit::Word(WordStop::StartOrSpace), Dir::Back),
+        C::DeleteWordStartLeft => del(Unit::Word(WordStop::Start), Dir::Back),
+        C::DeleteWordEndLeft => del(Unit::Word(WordStop::End), Dir::Back),
+        C::DeleteWordRight => del(Unit::Word(WordStop::EndOrSpace), Dir::Forward),
+        C::DeleteWordStartRight => del(Unit::Word(WordStop::Start), Dir::Forward),
+        C::DeleteWordEndRight => del(Unit::Word(WordStop::End), Dir::Forward),
+        C::DeleteAllLeft => del(Unit::LineEdge, Dir::Back),
+        C::DeleteAllRight => del(Unit::LineEdge, Dir::Forward),
+        C::Undo => EditCommand::Undo,
+        C::Redo => EditCommand::Redo,
+        _ => return None,
+    })
+}
+
+/// Rows for vertical motion: logical lines, folds skipped, `page` lines per page.
+pub(crate) struct FoldedLines<'a> {
+    pub base: quire_text::NoWrap,
+    pub folds: &'a [Range<usize>],
+}
+
+impl quire_text::VisualLines for FoldedLines<'_> {
+    fn locate(
+        &self,
+        text: &Text,
+        byte: usize,
+        up: bool,
+    ) -> (quire_text::VisualLine, quire_text::Goal) {
+        self.base.locate(text, byte, up)
+    }
+    fn offset(
+        &self,
+        text: &Text,
+        line: quire_text::VisualLine,
+        delta: isize,
+    ) -> Result<quire_text::VisualLine, quire_text::Edge> {
+        let l = motion::step_lines(text, self.folds, line.line, delta);
+        if l < 0 {
+            Err(quire_text::Edge::Start)
+        } else if l >= text.len_lines() as isize {
+            Err(quire_text::Edge::End)
+        } else {
+            Ok(quire_text::VisualLine {
+                line: l as usize,
+                row: 0,
+            })
+        }
+    }
+    fn byte_at(
+        &self,
+        text: &Text,
+        line: quire_text::VisualLine,
+        goal: quire_text::Goal,
+    ) -> (usize, bool) {
+        self.base.byte_at(text, line, goal)
+    }
+    fn range(&self, text: &Text, line: quire_text::VisualLine) -> Range<usize> {
+        self.base.range(text, line)
+    }
+    fn lines_per_page(&self) -> usize {
+        self.base.lines_per_page()
+    }
+}
+
+/// Resolves a lowered command through quire-text and restores quire's transaction shape: the
+/// origin (word and line deletions are commands, a cut is `Input(Other)`), the reveal effect,
+/// and host requests as quire's.
+fn run_lowered(
+    doc: &Document,
+    view: &EditorView,
+    cmd: &EditorCommand,
+    ecmd: &EditCommand,
+) -> Result<CommandOutput, Refusal> {
+    use EditorCommand as C;
+    let cfg = doc.config();
+    let page = match cmd {
+        C::CursorMove {
+            to:
+                crate::command::Motion::PageUp { lines } | crate::command::Motion::PageDown { lines },
+            ..
+        } => *lines,
+        _ => 1,
+    };
+    let layout = FoldedLines {
+        base: quire_text::NoWrap {
+            tab_size: cfg.tab_size,
+            page_lines: page,
+        },
+        folds: view.folds(),
+    };
+    let r = doc
+        .text_document()
+        .resolve(view.text_view(), ecmd, doc.edit_rules(), &layout);
+    if let Some(req) = r.requests.first() {
+        match req {
+            quire_text::HostRequest::Undo => return Ok(CommandOutput::Request(HostRequest::Undo)),
+            quire_text::HostRequest::Redo => return Ok(CommandOutput::Request(HostRequest::Redo)),
+            _ => {}
+        }
+    }
+    let Some(tr) = r.tr else {
+        return Ok(CommandOutput::Nothing);
+    };
+    let mut tr: Transaction = tr.with_effect_type();
+    match cmd {
+        C::DeleteWordLeft
+        | C::DeleteWordRight
+        | C::DeleteWordStartLeft
+        | C::DeleteWordEndLeft
+        | C::DeleteWordStartRight
+        | C::DeleteWordEndRight
+        | C::DeleteAllLeft
+        | C::DeleteAllRight => tr.origin = cmd_origin(cmd),
+        C::Cut => tr.origin = Origin::Input(InputKind::Other),
+        _ => {}
+    }
+    let undo = matches!(cmd, C::Undo | C::Redo);
+    if !undo {
+        tr = tr.with_effect(Effect::ScrollIntoView {
+            pos: 0,
+            center: false,
+        });
+    }
+    Ok(CommandOutput::Transaction(tr).with_reveal_primary())
+}
+
 pub(crate) fn run(
     doc: &Document,
     view: &EditorView,
@@ -182,8 +259,11 @@ pub(crate) fn run(
     let cfg = doc.config();
     let ctx = Ctx {
         cfg,
-        cls: WordClassifier::new(&cfg.word_separators),
-        folds: view.folds(),
+        cls: doc
+            .edit_rules()
+            .words
+            .classifier()
+            .expect("quire's documents use VS Code's word rules"),
     };
     let text = doc.text();
     let sel = view.selection();
@@ -223,15 +303,14 @@ pub(crate) fn run(
             }
         })
     };
+    let editor_delete = matches!(
+        cmd,
+        C::DeleteLeft | C::DeleteWordLeft | C::DeleteWordStartLeft | C::DeleteWordEndLeft
+    ) && edit::needs_editor_delete(&ctx, &st(), cmd);
+    if !editor_delete && let Some(e) = lower(cmd) {
+        return run_lowered(doc, view, cmd, &e);
+    }
     match cmd {
-        C::CursorMove { to, select: ext } => {
-            select(motion::cursor_move(&ctx, text, sel, *to, *ext))
-        }
-        C::SetSelection { selection } => {
-            let s = selection.clamped(text);
-            select(s)
-        }
-        C::SelectAll => select(Selection::single(0, text.len_bytes())),
         C::ExpandLineSelection => select(motion::expand_line_selection(text, sel)),
         C::RemoveSecondaryCursors => select(sel.clone().into_primary()),
         C::Type { text: typed } => {
@@ -244,46 +323,13 @@ pub(crate) fn run(
             let r = edit_out(out, Origin::Input(kind.unwrap_or(InputKind::Typing)))?;
             Ok(r)
         }
-        C::Paste {
-            text: t,
-            per_cursor,
-        } => {
-            let t = crate::text::normalize_line_endings(t);
-            edit_out(
-                edit::paste(&st(), &t, *per_cursor),
-                Origin::Input(InputKind::Paste),
-            )
-        }
-        C::Cut => edit_out(edit::cut(&ctx, &st()), Origin::Input(InputKind::Other)),
         C::DeleteLeft => edit_out(
             edit::delete_left(&ctx, &st()),
             Origin::Input(InputKind::DeletingLeft),
         ),
-        C::DeleteRight => edit_out(
-            edit::delete_right(&st()),
-            Origin::Input(InputKind::DeletingRight),
-        ),
         C::DeleteWordLeft | C::DeleteWordStartLeft | C::DeleteWordEndLeft => {
-            let (nav, ws) = match cmd {
-                C::DeleteWordLeft => (words::WordNav::WordStart, true),
-                C::DeleteWordStartLeft => (words::WordNav::WordStart, false),
-                _ => (words::WordNav::WordEnd, false),
-            };
-            edit_out(
-                edit::delete_word(&ctx, &st(), true, nav, ws),
-                cmd_origin(cmd),
-            )
-        }
-        C::DeleteWordRight | C::DeleteWordStartRight | C::DeleteWordEndRight => {
-            let (nav, ws) = match cmd {
-                C::DeleteWordRight => (words::WordNav::WordEnd, true),
-                C::DeleteWordStartRight => (words::WordNav::WordStart, false),
-                _ => (words::WordNav::WordEnd, false),
-            };
-            edit_out(
-                edit::delete_word(&ctx, &st(), false, nav, ws),
-                cmd_origin(cmd),
-            )
+            // Only an auto-closed pair delete reaches here (`needs_editor_delete`).
+            edit_out(edit::pair_delete(&st()), cmd_origin(cmd))
         }
         C::Tab => edit_out(edit::tab(&ctx, &st()), cmd_origin(cmd)),
         C::Outdent | C::OutdentLines => edit_out(edit::shift(&ctx, &st(), true), cmd_origin(cmd)),
@@ -391,8 +437,6 @@ pub(crate) fn run(
             lines::copy_lines(&st(), matches!(cmd, C::CopyLinesDown)),
             cmd_origin(cmd),
         )),
-        C::DeleteAllLeft => isolated(edit_out(lines::delete_all_left(&st()), cmd_origin(cmd))),
-        C::DeleteAllRight => isolated(edit_out(lines::delete_all_right(&st()), cmd_origin(cmd))),
         C::Fold | C::Unfold | C::ToggleFold | C::FoldAll | C::UnfoldAll => {
             let op = match cmd {
                 C::Fold => fold::Op::Fold,
@@ -421,35 +465,20 @@ pub(crate) fn run(
             );
             isolated(edit_out(o, Origin::Input(InputKind::Typing)))
         }
-        C::Undo | C::Redo => {
-            let undo = matches!(cmd, C::Undo);
-            if doc.undo_mode() == UndoMode::Host {
-                return Ok(CommandOutput::Request(if undo {
-                    HostRequest::Undo
-                } else {
-                    HostRequest::Redo
-                }));
-            }
-            let (top, author) = if undo {
-                (doc.history().peek_undo(), doc.history().undo_author())
-            } else {
-                (doc.history().peek_redo(), doc.history().redo_author())
-            };
-            Ok(match top {
-                None => CommandOutput::Nothing,
-                Some((changes, s)) => CommandOutput::Transaction(
-                    Transaction::new(doc.version(), changes.clone())
-                        .with_selection(
-                            s.clamped(&changes.apply(text).unwrap_or_else(|_| text.clone())),
-                        )
-                        .with_origin(if undo { Origin::Undo } else { Origin::Redo })
-                        .with_author(author.unwrap_or_default())
-                        .with_group(GroupHint::Isolated),
-                )
-                .with_reveal_primary(),
-            })
-        }
         C::Save => Ok(CommandOutput::Request(HostRequest::Save)),
+        C::CursorMove { .. }
+        | C::SetSelection { .. }
+        | C::SelectAll
+        | C::Paste { .. }
+        | C::Cut
+        | C::DeleteRight
+        | C::DeleteWordRight
+        | C::DeleteWordStartRight
+        | C::DeleteWordEndRight
+        | C::DeleteAllLeft
+        | C::DeleteAllRight
+        | C::Undo
+        | C::Redo => unreachable!("lowered to quire-text"),
         C::Find { query } => find::find(doc, view, query.clone()),
         C::FindNext => find::find_step(doc, view, true),
         C::FindPrevious => find::find_step(doc, view, false),

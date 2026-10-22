@@ -25,14 +25,28 @@ pub enum InputKind {
     Paste,
     /// An IME commit; always its own undo group.
     Ime,
-    /// Any other input edit (drop, cut, a11y `SetValue`); its own undo group.
+    /// Any other input edit (drop, a11y `SetValue`); its own undo group.
     Other,
+    /// A word deletion backwards (Ctrl+BackSpace); its own undo group.
+    DeletingWordLeft,
+    /// A word deletion forwards (Ctrl+Delete); its own undo group.
+    DeletingWordRight,
+    /// A cut; its own undo group.
+    Cut,
 }
 
 impl InputKind {
     /// Whether consecutive edits of this kind may share an undo group.
     pub fn coalesces(self) -> bool {
-        !matches!(self, InputKind::Paste | InputKind::Ime | InputKind::Other)
+        !matches!(
+            self,
+            InputKind::Paste
+                | InputKind::Ime
+                | InputKind::Other
+                | InputKind::DeletingWordLeft
+                | InputKind::DeletingWordRight
+                | InputKind::Cut
+        )
     }
 
     /// Monaco's `shouldPushStackElementBetween`: whether an undo stop goes between an edit of
@@ -222,6 +236,23 @@ impl<E> Transaction<E> {
     pub fn with_effect(mut self, e: E) -> Self {
         self.effects.push(e);
         self
+    }
+
+    /// The same transaction typed for another effect type (it carries no effects).
+    pub fn with_effect_type<F>(self) -> Transaction<F>
+    where
+        E: Into<F>,
+    {
+        Transaction {
+            base: self.base,
+            changes: self.changes,
+            selection: self.selection,
+            effects: self.effects.into_iter().map(Into::into).collect(),
+            origin: self.origin,
+            author: self.author,
+            group: self.group,
+            time_ms: self.time_ms,
+        }
     }
 
     /// Whether the transaction changes text.
