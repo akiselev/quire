@@ -27,6 +27,7 @@ egui_kittest = "=0.37.0"
 eframe = { version = "=0.37.0", default-features = false, features = ["default_fonts", "glow", "accesskit", "clipboard", "wayland", "x11"] }
 serde_json = "1"
 proptest = "1"
+criterion = { version = "0.7", default-features = false }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"
