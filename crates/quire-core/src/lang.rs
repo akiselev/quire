@@ -10,30 +10,79 @@
 //! Differences: quire has no tokens, so the "processed" lines VS Code gets by blanking brackets in
 //! strings, comments and regexes are the raw lines, and there are no embedded languages. Lines are
 //! 0-based here.
+//!
+//! # Untrusted regexes
+//!
+//! Rule regexes can come from extensions, so they must not hang the editor (user, 2026-10-22:
+//! fancy-regex is accepted with a low backtrack limit).
+//! - **Backtrack limit 20,000** per match call (fancy-regex's default is 1,000,000). Patterns
+//!   without lookaround or backreferences run on regex-automata and never backtrack; the limit
+//!   bounds the rest. Measured 2026-10-22 over the 99 distinct rule regexes in our fixtures,
+//!   every VS Code built-in `language-configuration.json` (1.105 on macOS), svelte-vscode's
+//!   and rust-analyzer's rules, against 26,148 lines of Rust, TS/JS, Svelte, Python, C headers,
+//!   CSS and HTML, their halves (text before a caret) and 40 joined lines of 1,000 to 1,545 bytes:
+//!   on lines up to 400 bytes the JS/TS, CSS, HTML, Svelte, Rust, Python and C-like rules need at
+//!   most 6,100 steps (Ruby 12,000), on the long lines at most 23,300 (one C-like test rule; JS,
+//!   HTML and Svelte under 8,000). Julia's `increaseIndentPattern` is the outlier (40,000 on a
+//!   200-byte line). 20,000 keeps a 3x margin over the common languages on ordinary lines and costs
+//!   about 1 ms per limit hit in a release build (11 ms in debug). With it every case answers as
+//!   JavaScript does, except long Julia, Ruby and C-like-test lines, which become "no match".
+//! - A match that hits the limit is **no match**, per call. After `DISABLE_AFTER_HITS` (8) hits a
+//!   pattern is no longer run, which bounds a command that tests many lines (re-indent); a text that
+//!   just hit the limit is not retried with the same pattern.
+//! - Compile size: each delegated regex-automata program and its lazy DFA cache are capped at 1 MiB
+//!   (`delegate_size_limit`, `delegate_dfa_size_limit`); a larger pattern does not compile and
+//!   never matches.
 
 use crate::commands::model::{next_indent_tab_stop, prev_indent_tab_stop, visible_col};
 use crate::config::{EditorConfig, EnterAction, IndentAction};
 use std::collections::HashMap;
+use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 // ---------------------------------------------------------------------------------------------
 // regexes
 
-type Re = Arc<fancy_regex::Regex>;
+type Re = Arc<Rule>;
 
-/// Rewrites a JavaScript regex source into fancy-regex syntax: a lone `{` or `}` that is not part
-/// of a quantifier is a literal in JavaScript, and inside a class `[` and doubled `&`, `-`, `~` are
-/// literals.
+const BACKTRACK_LIMIT: usize = 20_000;
+const DELEGATE_SIZE_LIMIT: usize = 1 << 20;
+const DISABLE_AFTER_HITS: u32 = 8;
+
+/// Rewrites a JavaScript regex source into fancy-regex syntax:
+/// - a lone `{` or `}` that is not part of a quantifier is a literal in JavaScript;
+/// - inside a class, `[`, doubled `&`, `-`, `~`, and a `-` next to a class escape (`[\w-.]`) are
+///   literals;
+/// - `[]` never matches and `[^]` matches any character;
+/// - a backreference to a group that has not matched matches the empty string (`\1` becomes
+///   `(?(1)\1|)`).
 fn js_to_rust(src: &str) -> String {
     let c: Vec<char> = src.chars().collect();
     let mut out = String::with_capacity(src.len() + 8);
     let mut i = 0;
     let mut in_class = false;
+    // Inside a class: the previous item was a class escape such as `\w`.
+    let mut after_class_escape = false;
+    let is_class_escape =
+        |j: usize| c.get(j) == Some(&'\\') && c.get(j + 1).is_some_and(|n| "wWdDsS".contains(*n));
     while i < c.len() {
         let ch = c[i];
         if ch == '\\' {
+            let n = c.get(i + 1).copied();
+            if !in_class && n.is_some_and(|n| ('1'..='9').contains(&n)) {
+                let mut j = i + 1;
+                while j < c.len() && c[j].is_ascii_digit() {
+                    j += 1;
+                }
+                let num: String = c[i + 1..j].iter().collect();
+                out.push_str(&format!("(?({num})\\{num}|)"));
+                i = j;
+                continue;
+            }
+            after_class_escape = in_class && is_class_escape(i);
             out.push(ch);
-            if let Some(&n) = c.get(i + 1) {
+            if let Some(n) = n {
                 // `\/` is a JavaScript-only escape.
                 if n == '/' {
                     out.pop();
@@ -44,10 +93,16 @@ fn js_to_rust(src: &str) -> String {
             continue;
         }
         if in_class {
+            let prev_escape = std::mem::take(&mut after_class_escape);
             match ch {
                 ']' => in_class = false,
                 '[' => {
                     out.push_str("\\[");
+                    i += 1;
+                    continue;
+                }
+                '-' if prev_escape || is_class_escape(i + 1) => {
+                    out.push_str("\\-");
                     i += 1;
                     continue;
                 }
@@ -65,15 +120,21 @@ fn js_to_rust(src: &str) -> String {
         }
         match ch {
             '[' => {
+                // `[]` matches nothing and `[^]` anything in JavaScript.
+                if c.get(i + 1) == Some(&']') {
+                    out.push_str("[^\\s\\S]");
+                    i += 2;
+                    continue;
+                }
+                if c.get(i + 1) == Some(&'^') && c.get(i + 2) == Some(&']') {
+                    out.push_str("[\\s\\S]");
+                    i += 3;
+                    continue;
+                }
                 in_class = true;
                 out.push(ch);
-                // `[]` / `[^]` at the start: `]` is not a literal in JavaScript, but keep it simple.
                 if c.get(i + 1) == Some(&'^') {
                     out.push('^');
-                    i += 1;
-                }
-                if c.get(i + 1) == Some(&']') {
-                    out.push_str("\\]");
                     i += 1;
                 }
             }
@@ -108,6 +169,23 @@ fn js_to_rust(src: &str) -> String {
     out
 }
 
+fn build(src: &str, backtrack_limit: usize) -> Option<fancy_regex::Regex> {
+    fancy_regex::RegexBuilder::new(&js_to_rust(src))
+        .backtrack_limit(backtrack_limit)
+        .delegate_size_limit(DELEGATE_SIZE_LIMIT)
+        .delegate_dfa_size_limit(DELEGATE_SIZE_LIMIT)
+        .build()
+        .ok()
+}
+
+/// A compiled rule regex and how many matches ran out of backtracking.
+pub(crate) struct Rule {
+    re: fancy_regex::Regex,
+    hits: AtomicU32,
+    /// Hash of the last text that hit the limit (one command often tests a line several times).
+    last_hit: AtomicU64,
+}
+
 /// Compiles a language-rule regex (cached; `None` if it does not compile).
 pub(crate) fn regex(src: &str) -> Option<Re> {
     static CACHE: OnceLock<Mutex<HashMap<String, Option<Re>>>> = OnceLock::new();
@@ -119,19 +197,39 @@ pub(crate) fn regex(src: &str) -> Option<Re> {
     if map.len() > 512 {
         map.clear();
     }
-    let re = fancy_regex::RegexBuilder::new(&js_to_rust(src))
-        .backtrack_limit(100_000)
-        .build()
-        .ok()
-        .map(Arc::new);
+    let re = build(src, BACKTRACK_LIMIT).map(|re| {
+        Arc::new(Rule {
+            re,
+            hits: AtomicU32::new(0),
+            last_hit: AtomicU64::new(0),
+        })
+    });
     map.insert(src.to_string(), re.clone());
     re
 }
 
-/// JavaScript `RegExp.test`; a pattern that does not compile or runs out of backtracking never
-/// matches.
+/// JavaScript `RegExp.test`. A pattern that does not compile never matches; a match that runs out
+/// of backtracking is no match, and after `DISABLE_AFTER_HITS` such matches the pattern is not run
+/// again (until the cache drops it).
 pub(crate) fn test(src: &str, text: &str) -> bool {
-    regex(src).is_some_and(|r| r.is_match(text).unwrap_or(false))
+    let Some(r) = regex(src) else {
+        return false;
+    };
+    let hash = |t: &str| {
+        let mut h = std::collections::hash_map::DefaultHasher::new();
+        t.hash(&mut h);
+        h.finish() | 1
+    };
+    if r.hits.load(Ordering::Relaxed) >= DISABLE_AFTER_HITS
+        || (r.hits.load(Ordering::Relaxed) > 0 && r.last_hit.load(Ordering::Relaxed) == hash(text))
+    {
+        return false;
+    }
+    r.re.is_match(text).unwrap_or_else(|_| {
+        r.hits.fetch_add(1, Ordering::Relaxed);
+        r.last_hit.store(hash(text), Ordering::Relaxed);
+        false
+    })
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -665,6 +763,18 @@ mod tests {
         ));
         assert!(test("(?i)^END", "end"));
         assert!(!test("(", "("));
+        // JavaScript-only class syntax (HTML's onEnter rules) and empty classes.
+        assert!(test(r"^<\/([_:\w][_:\w-.\d]*)\s*>", "</my-el.x>"));
+        assert!(test(r"^\s*(}|\)[]?)$", "  )"));
+        assert!(!test(r"a[]", "a"));
+        assert!(test(r"a[^]b", "a\nb"));
+        // A backreference to a group that did not take part matches the empty string (Ruby's
+        // increaseIndentPattern relies on it).
+        assert!(test(r"^(?:(x)|y)\1z$", "yz"));
+        assert!(test(r"^(a)\1$", "aa"));
+        assert!(!test(r"^(a)\1$", "ab"));
+        // Compile size is bounded: a huge repetition does not compile (and never matches).
+        assert!(regex(r"\w{1000}{1000}").is_none());
     }
 
     #[test]
@@ -688,5 +798,85 @@ mod tests {
         };
         assert_eq!(shift_indent(&tabs, "\t"), "\t\t");
         assert_eq!(unshift_indent(&tabs, "\t"), "");
+    }
+
+    /// Backtrack-limit survey (see the module doc): `QUIRE_BT_CASES=<ndjson> cargo test -p
+    /// quire-core --release --lib backtrack_survey -- --ignored --nocapture`. Each line of the
+    /// file is `{"p": pattern, "cases": [[line, javascript_verdict], ...]}`. Prints the smallest
+    /// limit each case needs, by line length, and every disagreement with JavaScript.
+    #[test]
+    #[ignore]
+    fn backtrack_survey() {
+        let Ok(path) = std::env::var("QUIRE_BT_CASES") else {
+            return;
+        };
+        // Smallest limit for which `re` answers (binary search over 1..=2^27).
+        fn needed(p: &str, line: &str, fast: &fancy_regex::Regex) -> Option<(usize, bool)> {
+            if let Ok(m) = fast.is_match(line) {
+                return Some((1_000, m));
+            }
+            let (mut lo, mut hi) = (1_000usize, 1usize << 27);
+            build(p, hi)?.is_match(line).ok()?;
+            while hi - lo > lo / 100 + 1 {
+                let mid = lo + (hi - lo) / 2;
+                if build(p, mid)?.is_match(line).is_ok() {
+                    hi = mid;
+                } else {
+                    lo = mid;
+                }
+            }
+            Some((hi, build(p, hi)?.is_match(line).ok()?))
+        }
+        let classes = [80usize, 200, 400, 1000, usize::MAX];
+        let mut max_by_class: [(usize, String, String); 5] = Default::default();
+        let mut over_1000 = [0usize; 5];
+        let mut wrong: HashMap<String, usize> = HashMap::new();
+        let (mut n, mut uncompiled) = (0usize, 0usize);
+        let mut per_pattern = Vec::new();
+        for row in std::fs::read_to_string(path).unwrap().lines() {
+            let v: serde_json::Value = serde_json::from_str(row).unwrap();
+            let p = v["p"].as_str().unwrap();
+            let origin = v["origin"].as_str().unwrap_or("");
+            let mut pmax = [0usize; 2];
+            let Some(fast) = build(p, 1_000) else {
+                uncompiled += 1;
+                println!("does not compile: {p}");
+                continue;
+            };
+            for c in v["cases"].as_array().unwrap() {
+                let line = c[0].as_str().unwrap();
+                let js = c[1].as_bool().unwrap();
+                n += 1;
+                let k = classes.iter().position(|&c| line.len() <= c).unwrap();
+                let got = needed(p, line, &fast);
+                let (need, m) = got.unwrap_or((usize::MAX, !js));
+                pmax[usize::from(line.len() > 400)] = pmax[usize::from(line.len() > 400)].max(need);
+                if need > 1_000 {
+                    over_1000[k] += 1;
+                }
+                if need > max_by_class[k].0 {
+                    max_by_class[k] = (need, p.to_string(), line.to_string());
+                }
+                if m != js {
+                    *wrong.entry(p.to_string()).or_default() += 1;
+                }
+            }
+            per_pattern.push((origin.to_string(), p.to_string(), pmax));
+        }
+        println!("cases {n}, uncompiled patterns {uncompiled}");
+        for (o, p, m) in &per_pattern {
+            println!("pattern {o} <=400: {} >400: {} {p}", m[0], m[1]);
+        }
+        for (p, k) in &wrong {
+            println!("disagrees with JavaScript on {k} lines: {p}");
+        }
+        for (i, (need, p, line)) in max_by_class.iter().enumerate() {
+            println!(
+                "lines <= {:>5} bytes: max needed {need}, {} cases need > 1000; {p:?} on {:?}",
+                classes[i].min(99_999),
+                over_1000[i],
+                &line[..line.len().min(100)]
+            );
+        }
     }
 }

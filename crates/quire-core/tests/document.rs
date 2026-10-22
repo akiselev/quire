@@ -343,3 +343,47 @@ fn language_rules_from_vscode_json() {
     typ(&mut d, &mut v, "}", 10_000);
     assert_eq!(d.text().line(d.text().len_lines() - 1).to_string(), "}");
 }
+
+/// Language rules may come from extensions, so a catastrophic rule regex must not hang the editor:
+/// a match that runs out of backtracking is no match (`lang` module doc).
+#[test]
+fn catastrophic_rule_regex_is_no_match() {
+    let line = format!("{}b", "a".repeat(30));
+    for pat in [
+        r"^(a+)+$",
+        r"^(a+)+(?=$)",
+        r"^(?=a)(a+)+\1?$",
+        r"^(a|a)+(?!x)$",
+        r"^(a|aa)+\1?$",
+    ] {
+        let cfg: EditorConfig = serde_json::from_value(serde_json::json!({
+            "brackets": [["{", "}"]],
+            "onEnterRules": [{
+                "beforeText": pat,
+                "action": { "indentAction": "indent", "appendText": "X" }
+            }],
+            "indentationRules": { "increaseIndentPattern": pat, "decreaseIndentPattern": pat }
+        }))
+        .expect("config");
+        let mut d = Document::new(&line, cfg);
+        let mut v = EditorView::new(&d);
+        let end = d.text().len_bytes();
+        v.set_selection(&d, Selection::point(end));
+        let t = std::time::Instant::now();
+        typ(&mut d, &mut v, "\n", 0);
+        let enter = t.elapsed();
+        // No rule matched: the new line has no indentation and no appended text.
+        assert_eq!(d.text().line(1).to_string(), "", "{pat}");
+        // An electric character re-tests the decrease pattern on the line.
+        v.set_selection(&d, Selection::point(end));
+        let t = std::time::Instant::now();
+        typ(&mut d, &mut v, "}", 10_000);
+        let electric = t.elapsed();
+        assert_eq!(d.text().line(0).to_string(), format!("{line}}}"), "{pat}");
+        eprintln!("{pat}: enter {enter:?}, electric {electric:?}");
+        assert!(
+            enter.as_millis() < 50 && electric.as_millis() < 50,
+            "{pat}: {enter:?} {electric:?}"
+        );
+    }
+}

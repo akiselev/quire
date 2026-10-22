@@ -41,3 +41,7 @@ disagrees, this file wins.
    - Svelte grammar `tree-sitter-htmlx-svelte` 0.1.16 and `tree-sitter` 0.26.13 (§3.6 named
      svelte-ng 1.0.2 and 0.27).
    - E5 and E2 targets revised in §3.9.
+   - fancy-regex accepted with a low backtrack limit; a limit hit is no match (user, 2026-10-22).
+     The limit is 20,000 (fancy-regex's default is 1,000,000), measured against VS Code's rule sets.
+     After 8 hits a rule pattern is not run again. Delegated programs are capped at 1 MiB. The
+     reasons are in the `quire-core` `lang` module doc.
