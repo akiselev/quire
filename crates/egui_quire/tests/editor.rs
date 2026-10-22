@@ -1623,6 +1623,74 @@ fn move_and_copy_lines_through_keys() {
     assert_eq!(h.state().text(), "a\na\nb\na\nc");
 }
 
+fn select(h: &mut Harness<'_, St>, anchor: usize, head: usize) {
+    let St { doc, views, .. } = h.state_mut();
+    let tr = quire_core::Transaction::select(
+        doc.version(),
+        doc.text().len_bytes(),
+        quire_core::Selection::single(anchor, head),
+    );
+    doc.apply(tr, &mut views[0]).unwrap();
+    h.run();
+}
+
+/// Press `keys` (VS Code notation) with this harness's platform modifiers.
+fn press_keys(h: &mut Harness<'_, St>, keys: &str) {
+    let mac = is_mac(h);
+    let seq = egui_quire::KeySeq::parse(keys).unwrap();
+    for c in std::iter::once(seq.first).chain(seq.second) {
+        h.key_press_modifiers(c.modifiers(mac), c.key);
+        h.run();
+    }
+}
+
+#[test]
+fn add_and_remove_line_comment_chords() {
+    let mut h = harness(St::new("a\nb"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 0);
+    assert!(press_command(&mut h, "editor.action.addCommentLine"));
+    assert_eq!(h.state().text(), "// a\nb");
+    // Adding again nests (addCommentLine always adds).
+    assert!(press_command(&mut h, "editor.action.addCommentLine"));
+    assert_eq!(h.state().text(), "// // a\nb");
+    assert!(press_command(&mut h, "editor.action.removeCommentLine"));
+    assert_eq!(h.state().text(), "// a\nb");
+    assert!(press_command(&mut h, "editor.action.removeCommentLine"));
+    assert_eq!(h.state().text(), "a\nb");
+}
+
+#[test]
+fn block_comment_binding() {
+    let mut h = harness(St::new("abcd"));
+    h.run();
+    focus(&mut h);
+    select(&mut h, 1, 3);
+    // shift+alt+a (ctrl+shift+a on Linux).
+    assert!(press_command(&mut h, "editor.action.blockComment"));
+    assert_eq!(h.state().text(), "a/* bc */d");
+    assert!(press_command(&mut h, "editor.action.blockComment"));
+    assert_eq!(h.state().text(), "abcd");
+}
+
+#[test]
+fn delete_all_right_where_bound() {
+    let mut h = harness(St::new("hello world\nnext"));
+    h.run();
+    focus(&mut h);
+    caret_to(&mut h, 5);
+    // VS Code binds deleteAllRight on macOS only: ctrl+k, and cmd+delete as the secondary.
+    if !press_command(&mut h, "deleteAllRight") {
+        assert!(!is_mac(&h));
+        return;
+    }
+    assert_eq!(h.state().text(), "hello\nnext");
+    caret_to(&mut h, 2);
+    press_keys(&mut h, "cmd+delete");
+    assert_eq!(h.state().text(), "he\nnext");
+}
+
 #[test]
 fn delete_all_left_where_bound() {
     let mut h = harness(St::new("hello world"));
