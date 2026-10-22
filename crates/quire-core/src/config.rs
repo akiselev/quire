@@ -36,6 +36,109 @@ pub enum OvertypeStrategy {
     Never,
 }
 
+/// What Enter does to the indentation of the new line (VS Code `IndentAction`).
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub enum IndentAction {
+    /// Keep the current line's indentation.
+    #[default]
+    None,
+    /// One level more than the current line.
+    Indent,
+    /// Two new lines: the first indented one level, the second (with the text after the
+    /// cursor) at the current line's level.
+    IndentOutdent,
+    /// One level less than the current line.
+    Outdent,
+}
+
+/// The action of an [`OnEnterRule`] (VS Code `EnterAction`).
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct EnterAction {
+    /// The indentation change (`indentAction` in VS Code's JSON).
+    #[cfg_attr(feature = "serde", serde(rename = "indentAction", alias = "indent"))]
+    pub indent: IndentAction,
+    /// Text appended on the new line after the indentation (e.g. `" * "` in a doc comment).
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub append_text: Option<String>,
+    /// Number of characters removed from the new line's indentation.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub remove_text: Option<usize>,
+}
+
+/// A language rule for Enter (VS Code `OnEnterRule`). The patterns are regexes in JavaScript
+/// syntax, as in a VS Code `language-configuration.json` (lookaround and backreferences work;
+/// flags go inline, e.g. `(?i)`). A rule applies when every given pattern matches; the first rule
+/// that applies wins.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct OnEnterRule {
+    /// Matched against the line's text before the cursor.
+    pub before_text: String,
+    /// Matched against the line's text after the cursor.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub after_text: Option<String>,
+    /// Matched against the text of the line above.
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Option::is_none")
+    )]
+    pub previous_line_text: Option<String>,
+    /// What to do.
+    pub action: EnterAction,
+}
+
+/// A language's indentation rules (VS Code `IndentationRule`), regexes in JavaScript syntax
+/// tested against whole lines. They drive Enter, Tab on a blank line and re-indentation while
+/// typing: a line that comes to match `decrease` (e.g. a typed `}` or `end`) is outdented.
+#[derive(Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub struct IndentationRules {
+    /// The lines after a matching line are indented one level (`increaseIndentPattern`).
+    #[cfg_attr(feature = "serde", serde(rename = "increaseIndentPattern"))]
+    pub increase: String,
+    /// A matching line is outdented one level (`decreaseIndentPattern`).
+    #[cfg_attr(feature = "serde", serde(rename = "decreaseIndentPattern"))]
+    pub decrease: String,
+    /// Only the next line after a matching line is indented (`indentNextLinePattern`).
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            rename = "indentNextLinePattern",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )
+    )]
+    pub indent_next_line: Option<String>,
+    /// Matching lines are ignored when computing indentation (`unIndentedLinePattern`).
+    #[cfg_attr(
+        feature = "serde",
+        serde(
+            rename = "unIndentedLinePattern",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )
+    )]
+    pub unindented_line: Option<String>,
+}
+
 /// Editing options of one document.
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -73,8 +176,13 @@ pub struct EditorConfig {
     pub auto_closing_delete: bool,
     /// Wrap a selection in a typed bracket or quote.
     pub auto_surround: bool,
-    /// Keep the current line's indentation on Enter (and indent after an opening bracket).
+    /// Keep the current line's indentation on Enter (and indent after an opening bracket), and
+    /// apply `on_enter_rules` and `indentation_rules` (VS Code `editor.autoIndent: "full"`).
     pub auto_indent: bool,
+    /// Language rules for Enter, tried before the bracket rules (VS Code `onEnterRules`).
+    pub on_enter_rules: Vec<OnEnterRule>,
+    /// Language indentation rules (VS Code `indentationRules`).
+    pub indentation_rules: Option<IndentationRules>,
     /// The language's line comment token, e.g. `"//"`.
     pub line_comment: Option<String>,
     /// The language's block comment tokens, e.g. `("/*", "*/")`.
@@ -135,6 +243,8 @@ impl Default for EditorConfig {
             auto_closing_delete: true,
             auto_surround: true,
             auto_indent: true,
+            on_enter_rules: Vec::new(),
+            indentation_rules: None,
             line_comment: Some("//".to_string()),
             block_comment: Some(("/*".to_string(), "*/".to_string())),
             smart_home: true,

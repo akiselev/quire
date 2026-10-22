@@ -374,6 +374,7 @@ STUBS.set('Handler', { Type: 'type', Paste: 'paste', Cut: 'cut', Undo: 'undo', R
 // ICommand classes used through testCommand(): constructing one names the action it belongs to.
 STUBS.set('CopyLinesCommand', class { constructor(_sel, down) { this.__cmd = down ? 'editor.action.copyLinesDownAction' : 'editor.action.copyLinesUpAction'; } });
 STUBS.set('MoveLinesCommand', class { constructor(_sel, down, autoIndent) { this.__cmd = down ? 'editor.action.moveLinesDownAction' : 'editor.action.moveLinesUpAction'; this.__autoIndent = autoIndent; } });
+STUBS.set('IndentAction', { None: 0, Indent: 1, IndentOutdent: 2, Outdent: 3 });
 STUBS.set('EditorAutoIndentStrategy', { None: 0, Keep: 1, Brackets: 2, Advanced: 3, Full: 4 });
 STUBS.set('TestLanguageConfigurationService', class { register() { return { dispose() {} }; } dispose() {} });
 STUBS.set('ServiceCollection', class { constructor() {} set() {} });
@@ -504,8 +505,22 @@ globalThis.DisposableStore = DisposableStore;
 const disposable = { dispose() {} };
 globalThis.ILanguageConfigurationService = Symbol('ILanguageConfigurationService');
 globalThis.ILanguageService = Symbol('ILanguageService');
+// RegExps do not survive JSON: language rules keep their source with the flags inline.
+function reToString(re) {
+  let f = '';
+  if (re.flags.includes('i')) f += 'i';
+  if (re.flags.includes('m')) f += 'm';
+  if (re.flags.includes('s')) f += 's';
+  return (f ? `(?${f})` : '') + re.source;
+}
+function plainRegexps(v) {
+  if (v instanceof RegExp) return reToString(v);
+  if (Array.isArray(v)) return v.map(plainRegexps);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, plainRegexps(x)]));
+  return v;
+}
 const languageConfigurationService = {
-  register(id, conf) { langConfigs.set(id, conf); return disposable; },
+  register(id, conf) { langConfigs.set(id, plainRegexps(conf)); return disposable; },
 };
 const languageService = { registerLanguage() { return disposable; } };
 globalThis.createCodeEditorServices = () => ({

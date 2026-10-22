@@ -50,6 +50,8 @@ try {
 const results = JSON.parse(readFileSync(join(tmp, 'out.json'), 'utf8'));
 
 // ---- config mapping ----
+const INDENT_ACTIONS = ['none', 'indent', 'indentOutdent', 'outdent'];
+const NEVER = '[^\\s\\S]';
 const PLAIN = { autoClosingPairs: [], surroundingPairs: [], brackets: [], lineComment: null, blockComment: null };
 function mapConfig(t) {
   const cfg = { ...PLAIN };
@@ -71,11 +73,35 @@ function mapConfig(t) {
         cfg.blockComment = v.blockComment ? [v.blockComment[0], v.blockComment[1]] : null;
       } else if (k === 'autoCloseBefore') {
         cfg.autoCloseBefore = v;
+      } else if (k === 'onEnterRules') {
+        cfg.onEnterRules = v.map((r) => {
+          const action = { indentAction: INDENT_ACTIONS[r.action.indentAction] };
+          if (r.action.appendText !== undefined) action.appendText = r.action.appendText;
+          if (r.action.removeText !== undefined) action.removeText = r.action.removeText;
+          const rule = { beforeText: r.beforeText, action };
+          if (r.afterText !== undefined) rule.afterText = r.afterText;
+          if (r.previousLineText !== undefined) rule.previousLineText = r.previousLineText;
+          return rule;
+        });
+      } else if (k === 'indentationRules') {
+        const rules = { increaseIndentPattern: v.increaseIndentPattern ?? NEVER, decreaseIndentPattern: v.decreaseIndentPattern ?? NEVER };
+        if (v.indentNextLinePattern !== undefined) rules.indentNextLinePattern = v.indentNextLinePattern;
+        if (v.unIndentedLinePattern !== undefined) rules.unIndentedLinePattern = v.unIndentedLinePattern;
+        cfg.indentationRules = rules;
+      } else if (k === '__electricCharacterSupport') {
+        for (const ek of Object.keys(v)) if (ek !== 'docComment') features.push(`language __electricCharacterSupport.${ek}`);
       } else {
         features.push(`language ${k}`);
       }
     }
+    // CharacterPairSupport: auto-closing pairs default to the brackets; a doc comment adds a pair.
+    if (!lc.autoClosingPairs && lc.brackets) cfg.autoClosingPairs = cfg.brackets.map((b) => [...b]);
+    const doc = lc.__electricCharacterSupport && lc.__electricCharacterSupport.docComment;
+    if (doc) cfg.autoClosingPairs.push([doc.open, doc.close || '']);
     if (!lc.surroundingPairs) cfg.surroundingPairs = cfg.autoClosingPairs;
+    // OnEnterSupport: the bracket rules default to (), {}, [] when a language has rules but no
+    // brackets.
+    if (!lc.brackets && (lc.onEnterRules || lc.indentationRules)) cfg.brackets = [['(', ')'], ['{', '}'], ['[', ']']];
   }
   const mo = t.modelOpts || {};
   for (const [k, v] of Object.entries(mo)) {
@@ -99,7 +125,13 @@ function mapConfig(t) {
       case 'autoClosingOvertype': cfg.autoClosingOvertype = v; break;
       case 'autoClosingDelete': if (v === 'never') cfg.autoClosingDelete = false; else if (v === 'always') features.push('autoClosingDelete always'); break;
       case 'autoSurround': if (v === 'never') cfg.autoSurround = false; else if (v !== 'languageDefined') features.push(`autoSurround ${v}`); break;
-      case 'autoIndent': if (v === 'none') cfg.autoIndent = false; else if (v === 'keep') { cfg.brackets = []; } break;
+      // quire's autoIndent is on (VS Code `full`) or off; the levels in between drop rules.
+      case 'autoIndent':
+        if (v === 'none') cfg.autoIndent = false;
+        if (v === 'keep' || v === 'brackets' || v === 'advanced') delete cfg.indentationRules;
+        if (v === 'keep' || v === 'brackets') delete cfg.onEnterRules;
+        if (v === 'keep') cfg.brackets = [];
+        break;
       case 'useTabStops': cfg.useTabStops = v; break;
       case 'emptySelectionClipboard': cfg.emptySelectionClipboard = v; break;
       case 'trimAutoWhitespace': if (v) features.push('trimAutoWhitespace'); break;

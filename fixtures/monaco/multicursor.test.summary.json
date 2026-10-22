@@ -31,7 +31,7 @@
  },
  {
   "name": "Multicursor selection > issue #23541: Multiline Ctrl+D does not work in CRLF files",
-  "na": "model.setEOL"
+  "na": "selection.startLineNumber"
  },
  {
   "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with single collapsed selection",
@@ -229,11 +229,11 @@
  },
  {
   "name": "Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case false",
-  "na": "model.setEOL"
+  "na": "find controller state"
  },
  {
   "name": "Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case true",
-  "na": "model.setEOL"
+  "na": "find controller state"
  },
  {
   "name": "Multicursor selection > Selected text occurrence matching > undefined: Find-focused commands retain Find matching rules",

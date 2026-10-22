@@ -309,3 +309,37 @@ fn undo_restores_selection_and_skips_remote() {
     d.execute(&mut v, &EditorCommand::Redo, None).unwrap();
     assert_eq!(d.text().to_string(), "Rabcd");
 }
+
+#[test]
+fn language_rules_from_vscode_json() {
+    // The shape of a VS Code language-configuration.json (regex strings, JavaScript syntax).
+    let cfg: EditorConfig = serde_json::from_str(
+        r#"{
+            "onEnterRules": [{
+                "beforeText": "^\\s*\\/\\*\\*(?!\\/)([^\\*]|\\*(?!\\/))*$",
+                "afterText": "^\\s*\\*\\/$",
+                "action": { "indentAction": "indentOutdent", "appendText": " * " }
+            }],
+            "indentationRules": {
+                "increaseIndentPattern": "^.*\\{[^}\"']*$",
+                "decreaseIndentPattern": "^\\s*\\}"
+            }
+        }"#,
+    )
+    .expect("config");
+    assert_eq!(
+        cfg.on_enter_rules[0].action.indent,
+        IndentAction::IndentOutdent
+    );
+    let mut d = Document::new("/** */\nfn a() {\n    x;\n    ", cfg);
+    let mut v = EditorView::new(&d);
+    // Enter between `/**` and ` */`.
+    v.set_selection(&d, Selection::point(3));
+    typ(&mut d, &mut v, "\n", 0);
+    assert_eq!(d.text().line(1).to_string(), " * ");
+    // `}` on the last line outdents it (decreaseIndentPattern).
+    let end = d.text().len_bytes();
+    v.set_selection(&d, Selection::point(end));
+    typ(&mut d, &mut v, "}", 10_000);
+    assert_eq!(d.text().line(d.text().len_lines() - 1).to_string(), "}");
+}

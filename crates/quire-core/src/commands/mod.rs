@@ -4,9 +4,10 @@
 //! `cursorWordOperations.ts`, `cursorTypeEditOperations.ts`, `cursorDeleteOperations.ts`,
 //! `shiftCommand.ts`, `lineCommentCommand.ts`); the word operations are a literal translation in
 //! [`words`] (MIT notice there). Differences, chosen to fit quire's design:
-//! - no language service: Enter indents after an opening bracket from `EditorConfig::brackets`
-//!   and splits `{|}` onto three lines (VS Code's default bracket `onEnter` behaviour); Tab on a
-//!   blank line uses the previous non-blank line's indentation the same way;
+//! - the language service is `EditorConfig` itself: `brackets`, `on_enter_rules` and
+//!   `indentation_rules` drive Enter, Tab on a blank line, re-indentation while typing and the
+//!   bracket electric characters ([`crate::lang`], VS Code's `onEnter.ts` / `autoIndent.ts`);
+//!   with no tokens, brackets inside strings and comments count;
 //! - multi-char `type` text runs through the typing interceptors char by char (VS Code's
 //!   keyboard path), composed into one transaction;
 //! - auto-closing has no tokenizer: quotes never auto-close after a word character, brackets

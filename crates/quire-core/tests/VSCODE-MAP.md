@@ -101,7 +101,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > issue #23539: Setting model EOL isn't undoable | N/A: model.pushEOL | — |
 | Editor Controller > issue #47733: Undo mangles unicode characters | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #46208: Allow empty selections in the undo/redo stack | N/A: model.pushEditOperations | — |
-| Editor Controller > bug #16815:Shift+Tab doesn't go back to tabstop | N/A: IndentAction.IndentOutdent | — |
+| Editor Controller > bug #16815:Shift+Tab doesn't go back to tabstop | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Bug #18293:[regression][editor] Can't outdent whitespace line | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #95591: Unindenting moves cursor to beginning of line | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Bug #16657: [editor] Tab on empty line of zero indentation moves cursor to position (1,1) | `fixtures/monaco/cursor.test.fixture` | pass |
@@ -152,15 +152,15 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > issue #123178: sticky tab in consecutive wrapped lines | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Cursor honors insertSpaces configuration on new line | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Cursor honors insertSpaces configuration on tab | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > Enter auto-indents with insertSpaces setting 1 | N/A: IndentAction.Indent | — |
-| Editor Controller > Enter auto-indents with insertSpaces setting 2 | N/A: IndentAction.None | — |
-| Editor Controller > Enter auto-indents with insertSpaces setting 3 | N/A: IndentAction.IndentOutdent | — |
+| Editor Controller > Enter auto-indents with insertSpaces setting 1 | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > Enter auto-indents with insertSpaces setting 2 | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > Enter auto-indents with insertSpaces setting 3 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #148256: Pressing Enter creates line with bad indent with insertSpaces: true | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #148256: Pressing Enter creates line with bad indent with insertSpaces: false | N/A: model.updateOptions | — |
 | Editor Controller > removeAutoWhitespace off | N/A: line.length | — |
 | Editor Controller > removeAutoWhitespace on: removes only whitespace the cursor added 1 | N/A: line.length | — |
-| Editor Controller > issue #115033: indent and appendText | N/A: IndentAction.Indent | — |
-| Editor Controller > issue #6862: Editor removes auto inserted indentation when formatting on type | N/A: IndentAction.IndentOutdent | — |
+| Editor Controller > issue #115033: indent and appendText | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > issue #6862: Editor removes auto inserted indentation when formatting on type | N/A: viewModel.executeCommand | — |
 | Editor Controller > removeAutoWhitespace on: removes only whitespace the cursor added 2 | N/A: maxColumn used as a string | — |
 | Editor Controller > removeAutoWhitespace on: test 1 | N/A: line.length | — |
 | Editor Controller > issue #15118: remove auto whitespace when pasting entire line | N/A: maxColumn used as a string | — |
@@ -170,12 +170,12 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > PR #5423: Auto indent + undo + redo is funky | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #90973: Undo brings back model alternative version | N/A: model.getVersionId | — |
 | Editor Controller > Enter honors increaseIndentPattern | N/A: model.tokenization | — |
-| Editor Controller > Type honors decreaseIndentPattern | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
-| Editor Controller > Enter honors unIndentedLinePattern | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > Type honors decreaseIndentPattern | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > Enter honors unIndentedLinePattern | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter honors indentNextLinePattern | N/A: model.tokenization | — |
 | Editor Controller > Enter honors indentNextLinePattern 2 | N/A: model.tokenization | — |
 | Editor Controller > Enter honors intential indent | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > Enter supports selection 1 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > Enter supports selection 1 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter supports selection 2 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter honors tabSize and insertSpaces 1 | N/A: model.tokenization | — |
 | Editor Controller > Enter honors tabSize and insertSpaces 2 | N/A: model.tokenization | — |
@@ -185,42 +185,42 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > Enter should not adjust cursor position when press enter in the middle of a line 2 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter should not adjust cursor position when press enter in the middle of a line 3 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 1 | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 2 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 2 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 3 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 4 | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 5 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > Enter should adjust cursor position when press enter in the middle of leading whitespaces 5 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue microsoft/monaco-editor#108 part 1/2: Auto indentation on Enter with selection is half broken | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue microsoft/monaco-editor#108 part 2/2: Auto indentation on Enter with selection is half broken | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > onEnter works if there are no indentation rules | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > onEnter works if there are no indentation rules 2 | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > bug #16543: Tab should indent to correct indentation spot immediately | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
-| Editor Controller > bug #2938 (1): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
-| Editor Controller > bug #2938 (2): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > bug #16543: Tab should indent to correct indentation spot immediately | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > bug #2938 (1): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > bug #2938 (2): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > bug #2938 (3): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > bug #2938 (4): When pressing Tab on white-space only lines, indent straight to the right spot (similar to empty lines) | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > bug #31015: When pressing Tab on lines and Enter rules are avail, indent straight to the right spotTab | N/A: IndentAction.Indent | — |
-| Editor Controller > type honors indentation rules: ruby keywords | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > bug #31015: When pressing Tab on lines and Enter rules are avail, indent straight to the right spotTab | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > type honors indentation rules: ruby keywords | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > Auto indent on type: increaseIndentPattern has higher priority than decreaseIndent when inheriting | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > type honors users indentation adjustment | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > bug 29972: if a line is line comment, open bracket should not indent next line | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > bug 29972: if a line is line comment, open bracket should not indent next line | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #38261: TAB key results in bizarre indentation in C++ mode  | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #57197: indent rules regex should be stateless | N/A: model.tokenization | — |
 | Editor Controller > typing in json | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #111128: Multicursor `Enter` issue with indentation | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > issue #122714: tabSize=1 prevent typing a string matching decreaseIndentPattern in an empty file | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language indentationRules) |
+| Editor Controller > issue #122714: tabSize=1 prevent typing a string matching decreaseIndentPattern in an empty file | `fixtures/monaco/cursor.test.fixture` | fail (bug: line 1513 `expectLine 1 "\\end{}"`: line 1: expected "\\end{}", got "\\end{") |
 | Editor Controller > ElectricCharacter - does nothing if no electric char | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > ElectricCharacter - indents in order to match bracket | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
-| Editor Controller > ElectricCharacter - unindents in order to match bracket | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
-| Editor Controller > ElectricCharacter - matches with correct bracket | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
+| Editor Controller > ElectricCharacter - indents in order to match bracket | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > ElectricCharacter - unindents in order to match bracket | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > ElectricCharacter - matches with correct bracket | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - does nothing if bracket does not match | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > ElectricCharacter - matches bracket even in line with content | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
+| Editor Controller > ElectricCharacter - matches bracket even in line with content | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - is no-op if bracket is lined up | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - is no-op if there is non-whitespace text before | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - is no-op if pairs are all matched before | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - is no-op if matching bracket is on the same line | N/A: model.onDidChangeContent | — |
 | Editor Controller > ElectricCharacter - is no-op if the line has other content | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > ElectricCharacter - appends text | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
-| Editor Controller > ElectricCharacter - appends text 2 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs language __electricCharacterSupport) |
+| Editor Controller > ElectricCharacter - appends text | `fixtures/monaco/cursor.test.fixture` | pass |
+| Editor Controller > ElectricCharacter - appends text 2 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > ElectricCharacter - issue #23711: Replacing selected text with )]} fails to delete old text with backwards-dragged selection | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #61070: backtick (`) should auto-close after a word character | N/A: model.tokenization | — |
 | Editor Controller > issue #132912: quotes should not auto-close if they are closing a string | N/A: error: Cannot read properties of undefined (reading 'encodeLanguageId') | — |
@@ -231,8 +231,8 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > autoClosingPairs - auto-pairing can be disabled | N/A: maxColumn.valueOf | — |
 | Editor Controller > autoClosingPairs - auto wrapping is configurable #1 | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > autoClosingPairs - auto wrapping is configurable #2 | `fixtures/monaco/cursor.test.fixture` | pass |
-| Editor Controller > autoClosingPairs - auto wrapping is configurable #3 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, autoSurround quotes) |
-| Editor Controller > autoClosingPairs - auto wrapping is configurable #4 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, autoSurround brackets) |
+| Editor Controller > autoClosingPairs - auto wrapping is configurable #3 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), autoSurround quotes) |
+| Editor Controller > autoClosingPairs - auto wrapping is configurable #4 | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), autoSurround brackets) |
 | Editor Controller > autoClosingPairs - quote | N/A: maxColumn.valueOf | — |
 | Editor Controller > autoClosingPairs - multi-character autoclose | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #338693: undo after multi-character autoclose first removes only the auto-closed characters | N/A: selections.map(?) | — |
@@ -242,7 +242,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor Controller > autoClosingPairs - beforeText | N/A: array of markers | — |
 | Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.beforeText) |
 | Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair after composition | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.beforeText) |
-| Editor Controller > autoClosingPairs - doc comments can be turned off | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, editor option autoClosingComments) |
+| Editor Controller > autoClosingPairs - doc comments can be turned off | `fixtures/monaco/cursor.test.fixture` | fail (ours: needs autoClosingPairs.notIn (needs tokens), editor option autoClosingComments) |
 | Editor Controller > issue #72177: multi-character autoclose with conflicting patterns | `fixtures/monaco/cursor.test.fixture` | pass |
 | Editor Controller > issue #55314: Do not auto-close when ending with open | N/A: model.tokenization | — |
 | Editor Controller > issue #27937: Trying to add an item to the front of a list is cumbersome | N/A: line.substr | — |
@@ -581,7 +581,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Multicursor selection > issue #5400: "Select All Occurrences of Find Match" does not select all if find uses regex | N/A: new SelectHighlightsAction | — |
 | Multicursor selection > AddSelectionToNextFindMatchAction can work with multiline | N/A: selection.startLineNumber | — |
 | Multicursor selection > issue #6661: AddSelectionToNextFindMatchAction can work with touching ranges | `fixtures/monaco/multicursor.test.fixture` | pass |
-| Multicursor selection > issue #23541: Multiline Ctrl+D does not work in CRLF files | N/A: model.setEOL | — |
+| Multicursor selection > issue #23541: Multiline Ctrl+D does not work in CRLF files | N/A: selection.startLineNumber | — |
 | Multicursor selection > AddSelectionToNextFindMatchAction starting with single collapsed selection | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 1) | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 2) | `fixtures/monaco/multicursor.test.fixture` | pass |
@@ -629,8 +629,8 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Multicursor selection > Selected text occurrence matching > switching focus transfers matching rules between selection and Find sessions | N/A: new MoveSelectionToNextFindMatchAction | — |
 | Multicursor selection > Selected text occurrence matching > the default Find session survives returning focus to the editor | N/A: TestCodeEditor.Symbol(Symbol.hasInstance) | — |
 | Multicursor selection > Selected text occurrence matching > a selection session does not survive replacing the editor model | N/A: editor.setModel | — |
-| Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case false | N/A: model.setEOL | — |
-| Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case true | N/A: model.setEOL | — |
+| Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case false | N/A: find controller state | — |
+| Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case true | N/A: find controller state | — |
 | Multicursor selection > Selected text occurrence matching > undefined: Find-focused commands retain Find matching rules | N/A: find controller state | — |
 | Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: Find-focused commands retain Find matching rules | N/A: find controller state | — |
 | Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: Find-focused commands retain Find matching rules | N/A: find controller state | — |
@@ -860,7 +860,7 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | suite | tests | pass | ours | bug | N/A |
 |---|---|---|---|---|---|
 | copyLinesCommand.test.ts | 10 | 8 | 0 | 0 | 2 |
-| cursor.test.ts | 267 | 163 | 26 | 0 | 78 |
+| cursor.test.ts | 267 | 185 | 9 | 1 | 72 |
 | cursorColumns.test.ts | 7 | 0 | 0 | 0 | 7 |
 | editStack.test.ts | 1 | 0 | 0 | 0 | 1 |
 | editableTextModel.test.ts | 62 | 43 | 0 | 0 | 19 |
@@ -878,5 +878,5 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 ## Totals
 
 - VS Code tests listed: 775
-- translated: 395 (pass 354, fail ours 41, fail bug 0)
-- N/A: 380
+- translated: 401 (pass 376, fail ours 24, fail bug 1)
+- N/A: 374

@@ -8,7 +8,8 @@ use super::model::{
 use super::words::{self, WordNav};
 use super::{Ctx, Out, RangeEdit, St, build, track};
 use crate::change::{Bias, ChangeSet};
-use crate::config::{AutoClosingStrategy, EditorConfig, OvertypeStrategy};
+use crate::config::{AutoClosingStrategy, EditorConfig, IndentAction, OvertypeStrategy};
+use crate::lang;
 use crate::selection::{SelRange, Selection};
 use crate::text::Text;
 use crate::transaction::InputKind;
@@ -186,6 +187,9 @@ fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
     if ch == "\n" {
         return Some(enter(ctx, st));
     }
+    if let Some(o) = auto_indent_type(ctx, st, ch) {
+        return Some(o);
+    }
     if let Some(o) = surround(ctx, st, ch) {
         return Some(o);
     }
@@ -195,8 +199,16 @@ fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
     if let Some(o) = auto_close(ctx, st, ch) {
         return Some(o);
     }
+    if let Some(o) = electric(ctx, st, ch) {
+        return Some(o);
+    }
+    Some(simple_type(st, ch, st.last_kind))
+}
+
+/// `SimpleCharacterTypeOperation`.
+fn simple_type(st: &St, ch: &str, last_kind: Option<InputKind>) -> Out {
     let kind = if ch == " " {
-        match st.last_kind {
+        match last_kind {
             Some(InputKind::TypingFirstSpace) | Some(InputKind::TypingConsecutiveSpace) => {
                 InputKind::TypingConsecutiveSpace
             }
@@ -212,13 +224,13 @@ fn type_char(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         .map(|r| Some(RangeEdit::replace(r.range(), ch)))
         .collect();
     let (changes, sel) = build(&st.text, &st.sel, edits);
-    Some(Out {
+    Out {
         changes,
         sel,
         kind,
         auto_closed: Vec::new(),
         close_before: false,
-    })
+    }
 }
 
 fn indentation_at(m: &Model, b: usize) -> String {
@@ -226,56 +238,232 @@ fn indentation_at(m: &Model, b: usize) -> String {
     m.indentation(p.line).chars().take(p.col).collect()
 }
 
-/// `EnterOperation._enter` with bracket-based indent rules.
+/// `EnterOperation._enter` (keepPosition false): language onEnter rules, the bracket rules and
+/// the indentation rules.
 fn enter_edit(ctx: &Ctx, text: &Text, range: std::ops::Range<usize>) -> RangeEdit {
     let cfg = ctx.cfg;
     if !cfg.auto_indent {
         return RangeEdit::replace(range, "\n");
     }
     let m = Model::new(text);
-    let indentation = indentation_at(&m, range.start);
-    let start_line = text.byte_to_line(range.start);
-    let end_line = text.byte_to_line(range.end);
-    let before = text
-        .slice(text.line_to_byte(start_line)..range.start)
-        .to_string();
-    let after = text
-        .slice(range.end..text.line_range(end_line).end)
-        .to_string();
-    let before_t = before.trim_end();
-    let after_t = after.trim_start();
-    let unit = if cfg.insert_spaces {
-        " ".repeat(cfg.indent_size.max(1) as usize)
-    } else {
-        "\t".to_string()
-    };
-    for (open, close) in &cfg.brackets {
-        if !before_t.is_empty()
-            && before_t.ends_with(open.as_str())
-            && after_t.starts_with(close.as_str())
-        {
-            let normal = normalize_indentation(cfg, &indentation);
-            let increased = normalize_indentation(cfg, &format!("{indentation}{unit}"));
-            let insert = format!("\n{increased}\n{normal}");
-            let head = 1 + increased.len();
-            return RangeEdit {
+    let sp = m.pos(range.start);
+    let ep = m.pos(range.end);
+    let lines = lang::Lines::new(text);
+    if let Some(r) = lang::enter_action(cfg, &lines, (sp.line, sp.col), (ep.line, ep.col)) {
+        return match r.indent {
+            IndentAction::None | IndentAction::Indent => RangeEdit::replace(
                 range,
-                insert,
-                anchor: head,
-                head,
-            };
-        }
+                format!(
+                    "\n{}",
+                    normalize_indentation(cfg, &format!("{}{}", r.indentation, r.append_text))
+                ),
+            ),
+            IndentAction::IndentOutdent => {
+                let normal = normalize_indentation(cfg, &r.indentation);
+                let increased =
+                    normalize_indentation(cfg, &format!("{}{}", r.indentation, r.append_text));
+                let insert = format!("\n{increased}\n{normal}");
+                let head = 1 + increased.len();
+                RangeEdit {
+                    range,
+                    insert,
+                    anchor: head,
+                    head,
+                }
+            }
+            IndentAction::Outdent => {
+                let actual = lang::unshift_indent(cfg, &r.indentation);
+                RangeEdit::replace(
+                    range,
+                    format!(
+                        "\n{}",
+                        normalize_indentation(cfg, &format!("{actual}{}", r.append_text))
+                    ),
+                )
+            }
+        };
     }
-    for (open, _) in &cfg.brackets {
-        if !before_t.is_empty() && before_t.ends_with(open.as_str()) {
-            let increased = normalize_indentation(cfg, &format!("{indentation}{unit}"));
-            return RangeEdit::replace(range, format!("\n{increased}"));
+    let indentation = indentation_at(&m, range.start);
+    if let Some((_, after)) =
+        lang::indent_for_enter(cfg, text, (sp.line, sp.col), (ep.line, ep.col))
+    {
+        let chars = m.line_chars(ep.line);
+        let first = m.first_non_ws(ep.line);
+        let end_col = match first {
+            Some(f) => ep.col.max(f),
+            None => chars.len(),
+        };
+        let norm = normalize_indentation(cfg, &after);
+        let insert = format!("\n{norm}");
+        let mut offset: isize = 0;
+        if let Some(f) = first
+            && ep.col <= f
+        {
+            let mut old_vis = visible_col(&chars, ep.col, cfg.tab_size);
+            if !cfg.insert_spaces {
+                old_vis = old_vis.div_ceil(cfg.indent_size.max(1));
+            }
+            offset = (old_vis as isize - norm.len() as isize).min(0);
         }
+        let head = (insert.len() as isize + offset) as usize;
+        return RangeEdit {
+            range: range.start..m.off(Pos::new(ep.line, end_col)),
+            insert,
+            anchor: head,
+            head,
+        };
     }
     RangeEdit::replace(
         range,
         format!("\n{}", normalize_indentation(cfg, &indentation)),
     )
+}
+
+/// `AutoIndentOperation`: typing a character that makes the line match the decrease pattern (or
+/// an indent-next-line case) re-indents the line first.
+fn auto_indent_type(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
+    let cfg = ctx.cfg;
+    if !lang::has_indent_rules(cfg) {
+        return None;
+    }
+    let text = &st.text;
+    let m = Model::new(text);
+    let opens_end = cfg.auto_closing_pairs.iter().any(|(o, _)| o.ends_with(ch));
+    let mut edits = Vec::new();
+    for r in st.sel.ranges() {
+        let sp = m.pos(r.from());
+        let ep = m.pos(r.to());
+        let indentation = lang::indent_action_for_type(
+            cfg,
+            text,
+            (sp.line, sp.col),
+            (ep.line, ep.col),
+            ch,
+            opens_end,
+        )?;
+        let current = indentation_at(&m, r.from());
+        if indentation == normalize_indentation(cfg, &current) {
+            return None;
+        }
+        let chars = m.line_chars(sp.line);
+        let mut insert = normalize_indentation(cfg, &indentation);
+        if let Some(f) = m.first_non_ws(sp.line)
+            && f < sp.col
+        {
+            insert.extend(&chars[f..sp.col]);
+        }
+        let ls = text.line_to_byte(sp.line);
+        edits.push(Some(RangeEdit::replace(ls..r.to(), insert)));
+    }
+    let (changes, sel) = build(text, &st.sel, edits);
+    let mut st2 = st.clone();
+    st2.text = changes.apply(text).ok()?;
+    st2.sel = sel;
+    map_auto_closed(&mut st2.auto_closed, &changes);
+    let second = auto_close(ctx, &st2, ch).unwrap_or_else(|| simple_type(&st2, ch, None));
+    Some(Out {
+        changes: changes.compose(&second.changes).ok()?,
+        sel: second.sel,
+        kind: InputKind::Typing,
+        auto_closed: second.auto_closed,
+        close_before: true,
+    })
+}
+
+/// The electric characters: the last character of every closing bracket.
+fn is_electric(cfg: &EditorConfig, ch: &str) -> bool {
+    cfg.brackets.iter().any(|(_, c)| {
+        c.chars()
+            .next_back()
+            .is_some_and(|l| ch.chars().eq(std::iter::once(l)))
+    })
+}
+
+/// `InterceptorElectricCharOperation` with `BracketElectricCharacterSupport`: a closing bracket
+/// typed as the first thing on a line takes the indentation of the line with its opening bracket.
+fn electric(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
+    let cfg = ctx.cfg;
+    if st.sel.len() != 1 || !st.sel.primary().is_empty() || !is_electric(cfg, ch) {
+        return None;
+    }
+    let text = &st.text;
+    let m = Model::new(text);
+    let head = st.sel.primary().head;
+    let p = m.pos(head);
+    let ls = text.line_to_byte(p.line);
+    let typed = format!("{}{ch}", text.slice(ls..head));
+    // The rightmost bracket in the text before the cursor plus `ch`.
+    let mut found: Option<(usize, &str, Option<&str>)> = None; // (start, text, open if close)
+    for (open, close) in &cfg.brackets {
+        for (b, is_close) in [(open.as_str(), false), (close.as_str(), true)] {
+            if b.is_empty() {
+                continue;
+            }
+            if let Some(i) = typed.rfind(b) {
+                let end = i + b.len();
+                let better = match found {
+                    None => true,
+                    Some((s, t, _)) => {
+                        end > s + t.len() || (end == s + t.len() && b.len() > t.len())
+                    }
+                };
+                if better {
+                    found = Some((i, b, is_close.then_some(open.as_str())));
+                }
+            }
+        }
+    }
+    let (start, close, open) = found?;
+    let open = open?;
+    if !typed[..start].chars().all(char::is_whitespace) {
+        return None;
+    }
+    // findMatchingBracketUp: scan back from before the closing bracket, counting nesting.
+    let close_at = ls + start;
+    let before = text.slice(0..close_at).to_string();
+    let mut depth = 1usize;
+    let mut i = before.len();
+    let mut matched: Option<usize> = None;
+    while i > 0 {
+        let s = &before[..i];
+        if s.ends_with(close) {
+            depth += 1;
+            i -= close.len();
+        } else if s.ends_with(open) {
+            depth -= 1;
+            i -= open.len();
+            if depth == 0 {
+                matched = Some(i);
+                break;
+            }
+        } else {
+            i = text.prev_char_boundary(i);
+        }
+    }
+    let match_line = text.byte_to_line(matched?);
+    if match_line == p.line {
+        return None;
+    }
+    let new_indent = normalize_indentation(cfg, &m.indentation(match_line));
+    let chars = m.line_chars(p.line);
+    let first = m.first_non_ws(p.line).unwrap_or(p.col).min(p.col);
+    let prefix: String = chars[first..p.col].iter().collect();
+    let insert = format!("{new_indent}{prefix}{ch}");
+    if text.slice(ls..head).to_string() + ch == insert {
+        return None;
+    }
+    let (changes, sel) = build(
+        text,
+        &st.sel,
+        vec![Some(RangeEdit::replace(ls..head, insert))],
+    );
+    Some(Out {
+        changes,
+        sel,
+        kind: InputKind::Typing,
+        auto_closed: Vec::new(),
+        close_before: false,
+    })
 }
 
 fn enter(ctx: &Ctx, st: &St) -> Out {
@@ -764,7 +952,11 @@ fn shift_range(
         use_last = true;
     }
     let mut out = Vec::new();
+    let lines = lang::Lines::new(text);
+    let indent_size = cfg.indent_size.max(1);
+    let mut extra = 0usize;
     for line in start_line..=end_line {
+        let prev_extra = std::mem::take(&mut extra);
         let chars = m.line_chars(line);
         let first = m.first_non_ws(line);
         if unshift && (chars.is_empty() || first == Some(0)) {
@@ -773,7 +965,28 @@ fn shift_range(
         if !indent_empty && !unshift && chars.is_empty() {
             continue;
         }
-        let ind_end = first.unwrap_or(chars.len());
+        let mut ind_end = first.unwrap_or(chars.len());
+        // A "miss-aligned" line may be expected: the previous line's enter action appends
+        // spaces (e.g. ` * ` in a doc comment); those spaces are not indentation.
+        if line > 0 && !visible_col(&chars, ind_end, cfg.tab_size).is_multiple_of(indent_size) {
+            let pm = m.max_col(line - 1);
+            if let Some(ea) = lang::enter_action(cfg, &lines, (line - 1, pm), (line - 1, pm)) {
+                extra = prev_extra;
+                for c in ea.append_text.chars() {
+                    if c != ' ' || extra >= indent_size as usize {
+                        break;
+                    }
+                    extra += 1;
+                }
+                extra = extra.saturating_sub(ea.remove_text);
+                for _ in 0..extra {
+                    if ind_end == 0 || chars[ind_end - 1] != ' ' {
+                        break;
+                    }
+                    ind_end -= 1;
+                }
+            }
+        }
         if unshift && ind_end == 0 {
             continue;
         }
@@ -880,30 +1093,27 @@ pub(crate) fn shift(ctx: &Ctx, st: &St, unshift: bool) -> Option<Out> {
     apply_line_edits(text, &st.sel, per, InputKind::Other)
 }
 
-/// The indentation a blank line should get from the previous non-blank line.
+/// `TabOperation._goodIndentForLine`.
 fn good_indent_for_line(ctx: &Ctx, text: &Text, line: usize) -> Option<String> {
+    let cfg = ctx.cfg;
     let m = Model::new(text);
-    let mut l = line;
-    while l > 0 {
-        l -= 1;
-        if m.first_non_ws(l).is_some() {
-            let ind = m.indentation(l);
-            let content = text.line(l).to_string();
-            let t = content.trim_end();
-            let opens = ctx
-                .cfg
-                .brackets
-                .iter()
-                .any(|(o, _)| t.ends_with(o.as_str()));
-            let ind = if opens {
-                format!("{ind}{}", ctx.cfg.indent_unit())
-            } else {
-                ind
-            };
-            return (!ind.is_empty()).then_some(ind);
+    let lines = lang::Lines::new(text);
+    let mut indent_action = false;
+    let mut indentation = String::new();
+    if let Some(e) = lang::inherit_indent_for_line(cfg, &lines, line, false) {
+        indent_action = e.indent;
+        indentation = e.indentation;
+    } else if line > 0 {
+        let last = (0..line).rev().find(|&l| m.first_non_ws(l).is_some())?;
+        let max = m.max_col(last);
+        if let Some(ea) = lang::enter_action(cfg, &lines, (last, max), (last, max)) {
+            indentation = format!("{}{}", ea.indentation, ea.append_text);
         }
     }
-    None
+    if indent_action {
+        indentation = normalize_indentation(cfg, &lang::shift_indent(cfg, &indentation));
+    }
+    (!indentation.is_empty()).then_some(indentation)
 }
 
 pub(crate) fn tab(ctx: &Ctx, st: &St) -> Option<Out> {
