@@ -35,4 +35,3 @@ pub use glue::FindOptions;
 pub use height::HeightIndex;
 pub use keymap::{KeyLookup, Keymap};
 pub use theme::{EditorText, EditorTheme};
-pub use wrap::VisualLine;
