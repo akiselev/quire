@@ -214,16 +214,6 @@ impl VisualLine {
         v
     }
 
-    /// One unwrapped row covering the whole line.
-    pub fn single(layout: LineLayout) -> Self {
-        let n = layout.text().len();
-        Self {
-            rows: Rows::One(layout),
-            full_len: n,
-            marker: None,
-        }
-    }
-
     pub fn n_rows(&self) -> usize {
         match &self.rows {
             Rows::One(_) => 1,
