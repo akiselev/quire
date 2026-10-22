@@ -51,7 +51,8 @@ clock, threads, I/O, egui, regex, find or diff library in quire-text (T5).
   map, map_pos). `ChangeSet::diff` (imara-diff) is behind quire-text's off-by-default `diff`
   feature, which only quire-core enables (T5: field builds contain no diff; quire-core's tests
   call `ChangeSet::diff` as an inherent method, so a quire-core extension trait would change test
-  files). `replace_all` without the feature uses a common-prefix/suffix trim, not a diff.
+  files; decided by main-cadatomic). `replace_all` without the feature uses a common-prefix/suffix
+  trim (one edit replacing the differing middle), not a diff.
 - `Selection`, `SelRange`: as today; multi-range with primary stays in the type. The goal column
   (sticky x) stays per range in `SelRange::goal_column`, in units the `VisualLines` implementor
   defines (§2.6).
@@ -168,8 +169,7 @@ pub struct EditRules {         // how commands behave; passed by reference per c
 classifier) instead of rebuilding it per command (T3). quire-core today rebuilds one per command
 (`commands::run`: `WordClassifier::new(&cfg.word_separators)`) and per double-click (egui_quire
 `glue::word_range_at`); step 2 fixes both: `Document` caches its `EditRules`, rebuilt only in
-`set_config`, with a new accessor `Document::edit_rules()` (a small public helper: listed for the
-coordinator before it lands).
+`set_config`, with a new accessor `Document::edit_rules()` (approved by main-cadatomic).
 
 `max_chars`: an insertion is truncated at a code point boundary to fit (GTK); nothing left to
 insert is `Rejected::MaxChars`. `NoWrap` and `EditRules::default()` make a single-line field need
