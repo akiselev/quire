@@ -486,7 +486,7 @@ quire/                          (own repo; cadatomic sessions own it)
   crates/quire-syntax/          Highlighter impls on tree-sitter 0.27; grammars and queries behind features   (C build)
   crates/egui_quire/            widget, galley cache, input, IME, clipboard, a11y, find bar                   (egui)
   fixtures/monaco/              translated test fixtures (MIT notice)
-  queries/<lang>/*.scm          highlight/injection/fold queries (licence per file, see §3.13)
+  crates/quire-syntax/queries/<lang>/*.scm   highlight/injection/fold queries, compiled in (licence per file, see §3.13; Q2, 2026-10-22)
   benches/  examples/playground (eframe dev-dep)
   LICENSE-MIT LICENSE-APACHE THIRD_PARTY_NOTICES.md
 ```
