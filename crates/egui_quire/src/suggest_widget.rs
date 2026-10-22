@@ -6,8 +6,7 @@
 use egui::accesskit::Role;
 use egui::text::{LayoutJob, TextFormat};
 use egui::{
-    Align2, Area, Color32, FontId, Frame, Id, Order, Rect, Sense, Stroke, Ui, UiBuilder,
-    pos2, vec2,
+    Align2, Area, Color32, FontId, Frame, Id, Order, Rect, Sense, Stroke, Ui, UiBuilder, pos2, vec2,
 };
 use quire_core::EditorCommand;
 use quire_core::completion::{
@@ -179,7 +178,9 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<egui::Rect>, 
     if pos.y + height > bounds.bottom() && caret.top() - height >= bounds.top() {
         pos.y = caret.top() - height;
     }
-    pos.x = pos.x.clamp(bounds.left(), (bounds.right() - width).max(bounds.left()));
+    pos.x = pos
+        .x
+        .clamp(bounds.left(), (bounds.right() - width).max(bounds.left()));
 
     let mut clicked: Option<usize> = None;
     let mut wheel: Option<isize> = None;
@@ -189,124 +190,128 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<egui::Rect>, 
         .constrain(false);
     let list_rect = area
         .show(f.ctx, |ui| {
-            Frame::popup(ui.style())
-                .inner_margin(2.0)
-                .show(ui, |ui| {
-                    ui.set_width(width);
-                    let mut list = ui.new_child(
-                        UiBuilder::new()
-                            .id_salt("quire.suggest.list")
-                            .accessibility_role(Role::ListBox)
-                            .max_rect(Rect::from_min_size(ui.cursor().min, vec2(width, rows as f32 * row_h))),
-                    );
-                    let lid = list.unique_id();
-                    f.ctx.accesskit_node_builder(lid, |n| {
-                        n.set_role(Role::ListBox);
-                        n.set_label(text.suggest_label.clone());
-                    });
-                    match state {
-                        WidgetState::Loading | WidgetState::Empty => {
-                            let msg = if state == WidgetState::Loading {
-                                &text.suggest_loading
-                            } else {
-                                &text.suggest_empty
-                            };
-                            let (r, _) = list.allocate_exact_size(vec2(width, row_h), Sense::hover());
+            Frame::popup(ui.style()).inner_margin(2.0).show(ui, |ui| {
+                ui.set_width(width);
+                let mut list = ui.new_child(
+                    UiBuilder::new()
+                        .id_salt("quire.suggest.list")
+                        .accessibility_role(Role::ListBox)
+                        .max_rect(Rect::from_min_size(
+                            ui.cursor().min,
+                            vec2(width, rows as f32 * row_h),
+                        )),
+                );
+                let lid = list.unique_id();
+                f.ctx.accesskit_node_builder(lid, |n| {
+                    n.set_role(Role::ListBox);
+                    n.set_label(text.suggest_label.clone());
+                });
+                match state {
+                    WidgetState::Loading | WidgetState::Empty => {
+                        let msg = if state == WidgetState::Loading {
+                            &text.suggest_loading
+                        } else {
+                            &text.suggest_empty
+                        };
+                        let (r, _) = list.allocate_exact_size(vec2(width, row_h), Sense::hover());
+                        list.painter().text(
+                            pos2(r.left() + 6.0, r.center().y),
+                            Align2::LEFT_CENTER,
+                            msg,
+                            font.clone(),
+                            dim,
+                        );
+                    }
+                    _ => {
+                        for (row, it) in items.iter().enumerate().skip(top).take(VISIBLE_ROWS) {
+                            let (r, resp) =
+                                list.allocate_exact_size(vec2(width, row_h), Sense::click());
+                            let is_focus = Some(row) == focused;
+                            if is_focus {
+                                list.painter()
+                                    .rect_filled(r, 3.0, visuals.selection.bg_fill);
+                            }
+                            let c = &it.item.completion;
+                            let (g, col) = kind_glyph(c.kind);
                             list.painter().text(
-                                pos2(r.left() + 6.0, r.center().y),
-                                Align2::LEFT_CENTER,
-                                msg,
+                                pos2(r.left() + icon_w * 0.5, r.center().y),
+                                Align2::CENTER_CENTER,
+                                g,
                                 font.clone(),
-                                dim,
+                                col,
                             );
-                        }
-                        _ => {
-                            for (row, it) in items.iter().enumerate().skip(top).take(VISIBLE_ROWS) {
-                                let (r, resp) =
-                                    list.allocate_exact_size(vec2(width, row_h), Sense::click());
-                                let is_focus = Some(row) == focused;
-                                if is_focus {
-                                    list.painter().rect_filled(r, 3.0, visuals.selection.bg_fill);
-                                }
-                                let c = &it.item.completion;
-                                let (g, col) = kind_glyph(c.kind);
-                                list.painter().text(
-                                    pos2(r.left() + icon_w * 0.5, r.center().y),
-                                    Align2::CENTER_CENTER,
-                                    g,
-                                    font.clone(),
-                                    col,
-                                );
-                                let job = label_job(it, &font, fg, hl, dim);
-                                let galley = list.fonts_mut(|fo| fo.layout_job(job));
-                                let label_x = r.left() + icon_w + 4.0;
-                                list.painter().galley(
-                                    pos2(label_x, r.center().y - galley.size().y * 0.5),
-                                    galley.clone(),
-                                    fg,
-                                );
-                                // Right side: the label description, or the focused row's detail
-                                // while the details panel is closed (showInlineDetails).
-                                let right = if is_focus && inline_details && c.detail.is_some() {
-                                    c.detail.clone()
-                                } else {
-                                    c.label_description.clone()
-                                };
-                                if let Some(rt) = right {
-                                    let max = (r.right() - 6.0) - (label_x + galley.size().x + 12.0);
-                                    if max > adv * 3.0 {
-                                        let n = (max / adv) as usize;
-                                        let shown: String = if rt.chars().count() > n {
-                                            rt.chars().take(n.saturating_sub(1)).chain(['…']).collect()
-                                        } else {
-                                            rt
-                                        };
-                                        list.painter().text(
-                                            pos2(r.right() - 6.0, r.center().y),
-                                            Align2::RIGHT_CENTER,
-                                            shown,
-                                            font.clone(),
-                                            dim,
-                                        );
-                                    }
-                                }
-                                let label = c.label.clone();
-                                f.ctx.accesskit_node_builder(resp.id, |n| {
-                                    n.set_bounds(egui::accesskit::Rect {
-                                        x0: r.min.x.into(),
-                                        y0: r.min.y.into(),
-                                        x1: r.max.x.into(),
-                                        y1: r.max.y.into(),
-                                    });
-                                    n.set_role(Role::ListBoxOption);
-                                    n.set_label(label);
-                                    n.set_selected(is_focus);
-                                });
-                                // On press: a click elsewhere would take focus from the
-                                // editor (and close the list) before the release.
-                                if resp.hovered()
-                                    && list.input(|i| i.pointer.primary_pressed())
-                                {
-                                    clicked = Some(row);
+                            let job = label_job(it, &font, fg, hl, dim);
+                            let galley = list.fonts_mut(|fo| fo.layout_job(job));
+                            let label_x = r.left() + icon_w + 4.0;
+                            list.painter().galley(
+                                pos2(label_x, r.center().y - galley.size().y * 0.5),
+                                galley.clone(),
+                                fg,
+                            );
+                            // Right side: the label description, or the focused row's detail
+                            // while the details panel is closed (showInlineDetails).
+                            let right = if is_focus && inline_details && c.detail.is_some() {
+                                c.detail.clone()
+                            } else {
+                                c.label_description.clone()
+                            };
+                            if let Some(rt) = right {
+                                let max = (r.right() - 6.0) - (label_x + galley.size().x + 12.0);
+                                if max > adv * 3.0 {
+                                    let n = (max / adv) as usize;
+                                    let shown: String = if rt.chars().count() > n {
+                                        rt.chars().take(n.saturating_sub(1)).chain(['…']).collect()
+                                    } else {
+                                        rt
+                                    };
+                                    list.painter().text(
+                                        pos2(r.right() - 6.0, r.center().y),
+                                        Align2::RIGHT_CENTER,
+                                        shown,
+                                        font.clone(),
+                                        dim,
+                                    );
                                 }
                             }
-                            let resp = list.interact(list.min_rect(), lid.with("wheel"), Sense::hover());
-                            if resp.hovered() {
-                                let dy = list.input(|i| i.smooth_scroll_delta.y);
-                                if dy.abs() > 0.5 {
-                                    wheel = Some(if dy > 0.0 { -1 } else { 1 });
-                                }
+                            let label = c.label.clone();
+                            f.ctx.accesskit_node_builder(resp.id, |n| {
+                                n.set_bounds(egui::accesskit::Rect {
+                                    x0: r.min.x.into(),
+                                    y0: r.min.y.into(),
+                                    x1: r.max.x.into(),
+                                    y1: r.max.y.into(),
+                                });
+                                n.set_role(Role::ListBoxOption);
+                                n.set_label(label);
+                                n.set_selected(is_focus);
+                            });
+                            // On press: a click elsewhere would take focus from the
+                            // editor (and close the list) before the release.
+                            if resp.hovered() && list.input(|i| i.pointer.primary_pressed()) {
+                                clicked = Some(row);
+                            }
+                        }
+                        let resp =
+                            list.interact(list.min_rect(), lid.with("wheel"), Sense::hover());
+                        if resp.hovered() {
+                            let dy = list.input(|i| i.smooth_scroll_delta.y);
+                            if dy.abs() > 0.5 {
+                                wheel = Some(if dy > 0.0 { -1 } else { 1 });
                             }
                         }
                     }
-                    ui.allocate_space(vec2(width, rows as f32 * row_h));
-                });
+                }
+                ui.allocate_space(vec2(width, rows as f32 * row_h));
+            });
         })
         .response
         .rect;
 
     // The details panel at the side (VS Code: right of the list, left if it does not fit).
-    if details && let Some(row) = focused && let Some(it) = items.get(row) {
+    if details
+        && let Some(row) = focused
+        && let Some(it) = items.get(row)
+    {
         let c = &it.item.completion;
         if c.detail.is_some() || c.documentation.is_some() {
             let dw = 320.0f32;
@@ -325,7 +330,12 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<egui::Rect>, 
                         ui.set_width(dw - 12.0);
                         ui.set_max_height((list_rect.height() * 1.5).max(120.0));
                         if let Some(d) = &c.detail {
-                            ui.add(egui::Label::new(egui::RichText::new(d).font(font.clone()).color(dim)).wrap());
+                            ui.add(
+                                egui::Label::new(
+                                    egui::RichText::new(d).font(font.clone()).color(dim),
+                                )
+                                .wrap(),
+                            );
                         }
                         if let Some(doc) = &c.documentation {
                             ui.add(egui::Label::new(doc.as_str()).wrap());

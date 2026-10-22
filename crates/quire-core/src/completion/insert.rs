@@ -85,7 +85,10 @@ impl SnippetSession {
         for (i, g) in self.groups.iter_mut().enumerate() {
             for r in &mut g.ranges {
                 let (s, e) = if i == cur {
-                    (c.map_pos(r.start, Bias::Before), c.map_pos(r.end, Bias::After))
+                    (
+                        c.map_pos(r.start, Bias::Before),
+                        c.map_pos(r.end, Bias::After),
+                    )
                 } else if r.start == r.end {
                     let bias = if active_ends.contains(&r.start) {
                         Bias::After
@@ -95,7 +98,10 @@ impl SnippetSession {
                     let p = c.map_pos(r.start, bias);
                     (p, p)
                 } else {
-                    (c.map_pos(r.start, Bias::After), c.map_pos(r.end, Bias::Before))
+                    (
+                        c.map_pos(r.start, Bias::After),
+                        c.map_pos(r.end, Bias::Before),
+                    )
                 };
                 *r = s..e.max(s);
             }
@@ -159,7 +165,11 @@ pub(crate) fn normalize_indentation(s: &str, config: &EditorConfig) -> String {
     let indent = config.indent_size.max(1) as usize;
     let mut col = 0usize;
     for c in s[..ws_len].chars() {
-        col = if c == '\t' { (col / tab + 1) * tab } else { col + 1 };
+        col = if c == '\t' {
+            (col / tab + 1) * tab
+        } else {
+            col + 1
+        };
     }
     let mut out = String::new();
     if !config.insert_spaces {
@@ -183,7 +193,12 @@ fn first_non_ws(text: &Text, line: usize) -> usize {
 
 /// VS Code `SnippetSession.adjustWhitespace`: indent the snippet's lines like the insert line
 /// (and normalise their indentation).
-fn adjust_whitespace(snippet: &mut Snippet, line_leading_ws: &str, adjust: bool, cfg: &EditorConfig) {
+fn adjust_whitespace(
+    snippet: &mut Snippet,
+    line_leading_ws: &str,
+    adjust: bool,
+    cfg: &EditorConfig,
+) {
     if !adjust {
         return;
     }
@@ -235,12 +250,7 @@ pub fn adjust_snippet_whitespace(doc: &Document, pos: usize, snippet: &mut Snipp
 }
 
 /// The selection-, line- and comment-based snippet variables of one cursor.
-fn resolve_variable(
-    doc: &Document,
-    sel: SelRange,
-    idx: usize,
-    name: &str,
-) -> Option<String> {
+fn resolve_variable(doc: &Document, sel: SelRange, idx: usize, name: &str) -> Option<String> {
     let text = doc.text();
     let (line, col) = text.byte_to_line_col(sel.head);
     let cfg = doc.config();
@@ -300,9 +310,7 @@ pub(crate) fn insert_snippet(
         s..e
     };
     let primary = sel.primary();
-    let first_before = text
-        .slice(extend(primary, overwrite_before, 0))
-        .to_string();
+    let first_before = text.slice(extend(primary, overwrite_before, 0)).to_string();
     let first_after = text.slice(extend(primary, 0, overwrite_after)).to_string();
     let first_nonws = first_non_ws(text, text.byte_to_line(primary.head));
 

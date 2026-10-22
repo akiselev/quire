@@ -13,8 +13,8 @@ use quire_core::completion::{
     CompletionTriggerKind as T, InsertMode, SuggestOutput, WidgetState,
 };
 use quire_core::{
-    ChangeSet, Document, EditorCommand as C, EditorConfig, EditorView, Origin, SelRange,
-    Selection, SourceId, Transaction,
+    ChangeSet, Document, EditorCommand as C, EditorConfig, EditorView, Origin, SelRange, Selection,
+    SourceId, Transaction,
 };
 use std::cell::Cell;
 use std::ops::Range;
@@ -126,7 +126,9 @@ impl Host {
                 return;
             }
             for o in outs {
-                let SuggestOutput::Request(r) = o else { continue };
+                let SuggestOutput::Request(r) = o else {
+                    continue;
+                };
                 self.requests.push(r.clone());
                 let mut lists = Vec::new();
                 for p in &self.providers {
@@ -154,7 +156,9 @@ impl Host {
 
     fn type_text(&mut self, s: &str) {
         for ch in s.chars() {
-            self.exec(C::Type { text: ch.to_string() });
+            self.exec(C::Type {
+                text: ch.to_string(),
+            });
         }
     }
 
@@ -209,7 +213,10 @@ impl Host {
 
 fn always_something(doc: &Document, pos: usize, _t: &T) -> Option<(Vec<CompletionItem>, bool)> {
     let (w, _) = word_until(doc, pos);
-    Some((vec![ci(&w, K::Property, "foofoo", word_range(doc, pos))], false))
+    Some((
+        vec![ci(&w, K::Property, "foofoo", word_range(doc, pos))],
+        false,
+    ))
 }
 
 fn always_empty(_: &Document, _: usize, _: &T) -> Option<(Vec<CompletionItem>, bool)> {
@@ -227,7 +234,11 @@ fn context_should_auto_trigger() {
     let check = |off: usize, expected: bool, msg: &str| {
         let mut v = EditorView::new(&doc);
         v.set_selection(&doc, Selection::point(off));
-        assert_eq!(quire_core::completion::should_auto_trigger(&doc, v.selection()), expected, "{msg}");
+        assert_eq!(
+            quire_core::completion::should_auto_trigger(&doc, v.selection()),
+            expected,
+            "{msg}"
+        );
     };
     check(3, true, "end of word, Das|");
     check(4, false, "no word Das |");
@@ -277,7 +288,15 @@ fn trigger_on_type() {
 fn keep_filtering_after_space_17400() {
     let mut h = Host::new("");
     h.register(&[], |doc, pos, _| {
-        Some((vec![ci("My Table", K::Property, "My Table", word_range(doc, pos))], false))
+        Some((
+            vec![ci(
+                "My Table",
+                K::Property,
+                "My Table",
+                word_range(doc, pos),
+            )],
+            false,
+        ))
     });
     h.trigger(true);
     h.set_pos(1, 1);
@@ -293,7 +312,15 @@ fn keep_filtering_after_space_17400() {
 fn trigger_character_forces_new_session_21484() {
     let mut h = Host::new("");
     h.register(&[], |doc, pos, _| {
-        Some((vec![ci("foo.bar", K::Property, "foo.bar", line_start_range(doc, pos))], false))
+        Some((
+            vec![ci(
+                "foo.bar",
+                K::Property,
+                "foo.bar",
+                line_start_range(doc, pos),
+            )],
+            false,
+        ))
     });
     h.register(&["."], |doc, pos, _| {
         let dot = doc.text().char_before(pos) == Some('.');
@@ -337,7 +364,10 @@ fn space_after_equal_sign_29353_2() {
 fn incomplete_results_retrigger_28400_1() {
     let mut h = Host::new("foo");
     h.register(&[], |doc, pos, _| {
-        Some((vec![ci("foo", K::Property, "foo", line_start_range(doc, pos))], true))
+        Some((
+            vec![ci("foo", K::Property, "foo", line_start_range(doc, pos))],
+            true,
+        ))
     });
     h.set_pos(1, 4);
     h.trigger(false);
@@ -351,7 +381,10 @@ fn incomplete_results_retrigger_28400_1() {
 fn incomplete_results_retrigger_28400_2() {
     let mut h = Host::new("foo");
     h.register(&[], |doc, pos, _| {
-        Some((vec![ci("foo;", K::Property, "foo", line_start_range(doc, pos))], true))
+        Some((
+            vec![ci("foo;", K::Property, "foo", line_start_range(doc, pos))],
+            true,
+        ))
     });
     h.set_pos(1, 4);
     h.trigger(false);
@@ -370,7 +403,15 @@ fn trigger_character_in_suggest_context() {
         if *t == T::TriggerCharacter(".".into()) {
             s2.set(true);
         }
-        Some((vec![ci("foo.bar", K::Property, "foo.bar", line_start_range(doc, pos))], false))
+        Some((
+            vec![ci(
+                "foo.bar",
+                K::Property,
+                "foo.bar",
+                line_start_range(doc, pos),
+            )],
+            false,
+        ))
     });
     h.set_pos(1, 1);
     h.type_text("foo.");
@@ -420,14 +461,25 @@ fn second_keypress_in_snippet_43523() {
 fn trigger_full_when_incomplete_active_99504() {
     let mut h = Host::new("");
     let a = h.register(&[], |doc, pos, _| {
-        Some((vec![ci("Z aaa", K::Class, "Z aaa", 0..pos.max(doc.text().line_to_byte(0)))], false))
+        Some((
+            vec![ci(
+                "Z aaa",
+                K::Class,
+                "Z aaa",
+                0..pos.max(doc.text().line_to_byte(0)),
+            )],
+            false,
+        ))
     });
     let b = h.register(&[], |doc, pos, _| {
         let (w, _) = word_until(doc, pos);
         if !w.starts_with('a') {
             return None;
         }
-        Some((vec![ci("aaa", K::Folder, "aaa", word_range(doc, pos))], false))
+        Some((
+            vec![ci("aaa", K::Folder, "aaa", word_range(doc, pos))],
+            false,
+        ))
     });
     h.set_value("");
     h.set_pos(1, 1);
@@ -444,7 +496,9 @@ fn trigger_full_when_incomplete_active_99504() {
 #[test]
 fn letters_as_trigger_characters_127815() {
     let mut h = Host::new("");
-    h.register(&[], |_, pos, _| Some((vec![ci("AAAA", K::Class, "WordTriggerA", pos..pos)], false)));
+    h.register(&[], |_, pos, _| {
+        Some((vec![ci("AAAA", K::Class, "WordTriggerA", pos..pos)], false))
+    });
     h.register(&["a", "."], |_, pos, _| {
         Some((vec![ci("AAAA", K::Class, "AutoTriggerA", pos..pos)], false))
     });
@@ -464,9 +518,22 @@ fn letters_as_trigger_characters_127815() {
 #[test]
 fn unexpected_suggest_scoring_167242() {
     let mut h = Host::new("");
-    h.register(&[], |doc, pos, _| Some((vec![ci("pull", K::Text, "pull", word_range(doc, pos))], false)));
     h.register(&[], |doc, pos, _| {
-        Some((vec![ci("git.pull", K::Class, "git.pull", line_start_range(doc, pos))], false))
+        Some((
+            vec![ci("pull", K::Text, "pull", word_range(doc, pos))],
+            false,
+        ))
+    });
+    h.register(&[], |doc, pos, _| {
+        Some((
+            vec![ci(
+                "git.pull",
+                K::Class,
+                "git.pull",
+                line_start_range(doc, pos),
+            )],
+            false,
+        ))
     });
     h.set_value("gi");
     h.set_pos(1, 3);
@@ -484,13 +551,27 @@ fn digit_after_word_separator_169390() {
     let mut h = Host::new("");
     let a = h.register(&[], |doc, pos, _| {
         let r = line_start_range(doc, pos);
-        Some((vec![ci("foo-20", K::Text, "foo-20", r.clone()), ci("foo-hello", K::Text, "foo-hello", r)], false))
+        Some((
+            vec![
+                ci("foo-20", K::Text, "foo-20", r.clone()),
+                ci("foo-hello", K::Text, "foo-hello", r),
+            ],
+            false,
+        ))
     });
     let b = h.register(&["2"], |doc, pos, t| {
         if !matches!(t, T::TriggerCharacter(_)) {
             return None;
         }
-        Some((vec![ci("foo-210", K::Class, "foo-210", line_start_range(doc, pos))], false))
+        Some((
+            vec![ci(
+                "foo-210",
+                K::Class,
+                "foo-210",
+                line_start_range(doc, pos),
+            )],
+            false,
+        ))
     });
     h.set_value("foo");
     h.set_pos(1, 4);
@@ -510,7 +591,10 @@ fn set_refilter_flag_keep_trigger_kind() {
     h.register(&["."], |doc, pos, _| {
         let (w, _) = word_until(doc, pos);
         let w = if w.is_empty() { "hello".to_string() } else { w };
-        Some((vec![ci(&w, K::Property, "foofoo", word_range(doc, pos))], false))
+        Some((
+            vec![ci(&w, K::Property, "foofoo", word_range(doc, pos))],
+            false,
+        ))
     });
     h.set_value("foo");
     h.set_pos(1, 4);
@@ -520,10 +604,16 @@ fn set_refilter_flag_keep_trigger_kind() {
     assert_eq!(s.trigger, T::Invoke);
     assert_eq!(h.labels().len(), 1);
     h.type_text(".");
-    assert_eq!(h.view.suggest().session().unwrap().trigger, T::TriggerCharacter(".".into()));
+    assert_eq!(
+        h.view.suggest().session().unwrap().trigger,
+        T::TriggerCharacter(".".into())
+    );
     assert_eq!(h.labels().len(), 1);
     h.type_text("h");
-    assert_eq!(h.view.suggest().session().unwrap().trigger, T::TriggerCharacter(".".into()));
+    assert_eq!(
+        h.view.suggest().session().unwrap().trigger,
+        T::TriggerCharacter(".".into())
+    );
     assert_eq!(h.labels().len(), 1);
 }
 
@@ -548,7 +638,8 @@ fn stale_and_superseded_answers_are_refused() {
         incomplete: false,
     };
     assert_eq!(
-        h.view.set_completions(&h.doc, r1.id, r1.version, vec![list(&h.doc)]),
+        h.view
+            .set_completions(&h.doc, r1.id, r1.version, vec![list(&h.doc)]),
         Err(CompletionRefusal::Superseded)
     );
     assert_eq!(h.state(), WidgetState::Loading);
@@ -617,18 +708,29 @@ fn filter_as_you_type_and_wrap_and_page() {
     assert_eq!(h.view.suggest().focused(), Some(22));
     assert_eq!(h.view.suggest().scroll_top(), 11);
     h.exec(C::SelectPrevPageSuggestion);
-    assert_eq!(h.view.suggest().focused(), Some(11), "the first visible row");
+    assert_eq!(
+        h.view.suggest().focused(),
+        Some(11),
+        "the first visible row"
+    );
     h.type_text("tem1");
     // item01, item10..item19, item21
     assert_eq!(h.labels().len(), 12);
-    assert_eq!(h.view.suggest().focused(), Some(0), "refiltering focuses the first item");
+    assert_eq!(
+        h.view.suggest().focused(),
+        Some(0),
+        "refiltering focuses the first item"
+    );
     h.exec(C::HideSuggestWidget);
     assert!(!h.active());
 }
 
 #[test]
 fn replace_mode_and_insert_mode() {
-    for (mode, want) in [(InsertMode::Insert, "fooBarbar"), (InsertMode::Replace, "fooBar")] {
+    for (mode, want) in [
+        (InsertMode::Insert, "fooBarbar"),
+        (InsertMode::Replace, "fooBar"),
+    ] {
         let mut h = Host::new("foobar");
         let mut cfg = h.doc.config().clone();
         cfg.suggest.insert_mode = mode;
@@ -653,8 +755,10 @@ fn snippet_completion_selects_first_placeholder_and_tabs() {
     let mut h = Host::new("");
     h.register(&[], |doc, pos, _| {
         Some((
-            vec![CompletionItem::new("fn", K::Snippet, word_range(doc, pos))
-                .with_snippet("fn ${1:name}(${2}) {\n\t$0\n}")],
+            vec![
+                CompletionItem::new("fn", K::Snippet, word_range(doc, pos))
+                    .with_snippet("fn ${1:name}(${2}) {\n\t$0\n}"),
+            ],
             false,
         ))
     });
@@ -670,7 +774,11 @@ fn snippet_completion_selects_first_placeholder_and_tabs() {
     assert_eq!(h.view.selection().primary(), SelRange::new(3, 7));
     h.exec(C::JumpToNextSnippetPlaceholder);
     h.exec(C::JumpToNextSnippetPlaceholder);
-    assert_eq!(h.view.selection().primary(), SelRange::point(16), "the final tabstop");
+    assert_eq!(
+        h.view.selection().primary(),
+        SelRange::point(16),
+        "the final tabstop"
+    );
     assert!(h.view.snippet().is_none(), "the session ends at $0");
 }
 

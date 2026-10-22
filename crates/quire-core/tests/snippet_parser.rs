@@ -72,20 +72,45 @@ fn scanner() {
     };
     use Tk::*;
     check("abc", &[VariableName, Eof]);
-    check("{{abc}}", &[CurlyOpen, CurlyOpen, VariableName, CurlyClose, CurlyClose, Eof]);
+    check(
+        "{{abc}}",
+        &[
+            CurlyOpen,
+            CurlyOpen,
+            VariableName,
+            CurlyClose,
+            CurlyClose,
+            Eof,
+        ],
+    );
     check("abc() ", &[VariableName, Format, Eof]);
     check("abc 123", &[VariableName, Format, Int, Eof]);
     check("$foo", &[Dollar, VariableName, Eof]);
     check("$foo_bar", &[Dollar, VariableName, Eof]);
     check("$foo-bar", &[Dollar, VariableName, Dash, VariableName, Eof]);
-    check("${foo}", &[Dollar, CurlyOpen, VariableName, CurlyClose, Eof]);
-    check("${1223:foo}", &[Dollar, CurlyOpen, Int, Colon, VariableName, CurlyClose, Eof]);
+    check(
+        "${foo}",
+        &[Dollar, CurlyOpen, VariableName, CurlyClose, Eof],
+    );
+    check(
+        "${1223:foo}",
+        &[Dollar, CurlyOpen, Int, Colon, VariableName, CurlyClose, Eof],
+    );
     check("\\${}", &[Backslash, Dollar, CurlyOpen, CurlyClose]);
     check(
         "${foo/regex/format/option}",
         &[
-            Dollar, CurlyOpen, VariableName, Forwardslash, VariableName, Forwardslash,
-            VariableName, Forwardslash, VariableName, CurlyClose, Eof,
+            Dollar,
+            CurlyOpen,
+            VariableName,
+            Forwardslash,
+            VariableName,
+            Forwardslash,
+            VariableName,
+            Forwardslash,
+            VariableName,
+            CurlyClose,
+            Eof,
         ],
     );
 }
@@ -122,8 +147,14 @@ fn parser_text() {
         ("far\\{{123}}boo", "far\\{{123}}boo"),
         ("far{{id:bern}}boo", "far{{id:bern}}boo"),
         ("far{{id:bern {{basel}}}}boo", "far{{id:bern {{basel}}}}boo"),
-        ("far{{id:bern {{id:basel}}}}boo", "far{{id:bern {{id:basel}}}}boo"),
-        ("far{{id:bern {{id2:basel}}}}boo", "far{{id:bern {{id2:basel}}}}boo"),
+        (
+            "far{{id:bern {{id:basel}}}}boo",
+            "far{{id:bern {{id:basel}}}}boo",
+        ),
+        (
+            "far{{id:bern {{id2:basel}}}}boo",
+            "far{{id:bern {{id2:basel}}}}boo",
+        ),
     ] {
         assert_text(v, e);
     }
@@ -132,7 +163,11 @@ fn parser_text() {
 #[test]
 fn parser_tm_text() {
     assert_text_and_marker("foo${1:bar}}", "foobar}", &[Text, Placeholder, Text]);
-    assert_text_and_marker("foo${1:bar}${2:foo}}", "foobarfoo}", &[Text, Placeholder, Placeholder, Text]);
+    assert_text_and_marker(
+        "foo${1:bar}${2:foo}}",
+        "foobarfoo}",
+        &[Text, Placeholder, Placeholder, Text],
+    );
     assert_text_and_marker("foo${1:bar\\}${2:foo}}", "foobar}foo", &[Text, Placeholder]);
     let s = parse("foo${1:bar\\}${2:foo}}");
     let p = top(&s)[1];
@@ -168,7 +203,11 @@ fn parser_variables_tabstop() {
     assert_text_and_marker("$farboo", "", &[Variable]);
     assert_text_and_marker("$far12boo", "", &[Variable]);
     assert_text_and_marker("000_${far}_000", "000__000", &[Text, Variable, Text]);
-    assert_text_and_marker("FFF_${TM_SELECTED_TEXT}_FFF$0", "FFF__FFF", &[Text, Variable, Text, Placeholder]);
+    assert_text_and_marker(
+        "FFF_${TM_SELECTED_TEXT}_FFF$0",
+        "FFF__FFF",
+        &[Text, Variable, Text, Placeholder],
+    );
 }
 
 #[test]
@@ -186,15 +225,31 @@ fn parser_variable_transforms() {
     assert_text_and_marker("${foo/regex/format/gmi}", "", &[Variable]);
     assert_text_and_marker("${foo/([A-Z][a-z])/format/}", "", &[Variable]);
     // invalid regex
-    assert_text_and_marker("${foo/([A-Z][a-z])/format/GMI}", "${foo/([A-Z][a-z])/format/GMI}", &[Text]);
-    assert_text_and_marker("${foo/([A-Z][a-z])/format/funky}", "${foo/([A-Z][a-z])/format/funky}", &[Text]);
-    assert_text_and_marker("${foo/([A-Z][a-z]/format/}", "${foo/([A-Z][a-z]/format/}", &[Text]);
+    assert_text_and_marker(
+        "${foo/([A-Z][a-z])/format/GMI}",
+        "${foo/([A-Z][a-z])/format/GMI}",
+        &[Text],
+    );
+    assert_text_and_marker(
+        "${foo/([A-Z][a-z])/format/funky}",
+        "${foo/([A-Z][a-z])/format/funky}",
+        &[Text],
+    );
+    assert_text_and_marker(
+        "${foo/([A-Z][a-z]/format/}",
+        "${foo/([A-Z][a-z]/format/}",
+        &[Text],
+    );
     // tricky regex
     assert_text_and_marker("${foo/m\\/atch/$1/i}", "", &[Variable]);
     assert_marker("${foo/regex/format/options}", &[Text]);
     // incomplete
     assert_text_and_marker("${foo///", "${foo///", &[Text]);
-    assert_text_and_marker("${foo/regex/format/options", "${foo/regex/format/options", &[Text]);
+    assert_text_and_marker(
+        "${foo/regex/format/options",
+        "${foo/regex/format/options",
+        &[Text],
+    );
     // format string
     for v in [
         "${foo/.*/${0:fooo}/i}",
@@ -219,7 +274,11 @@ fn parser_placeholder_transforms() {
     assert_text_and_marker("${1/m\\/atch/$1/i}", "", &[Placeholder]);
     assert_marker("${1/regex/format/options}", &[Text]);
     assert_text_and_marker("${1///", "${1///", &[Text]);
-    assert_text_and_marker("${1/regex/format/options", "${1/regex/format/options", &[Text]);
+    assert_text_and_marker(
+        "${1/regex/format/options",
+        "${1/regex/format/options",
+        &[Text],
+    );
 }
 
 #[test]
@@ -269,19 +328,37 @@ fn marker_to_textmate_string() {
     for (i, e) in [
         ("$1", "$1"),
         ("\\$1", "\\$1"),
-        ("console.log(${1|not\\, not, five, 5, 1   23|});", "console.log(${1|not\\, not, five, 5, 1   23|});"),
-        ("console.log(${1|not\\, not, \\| five, 5, 1   23|});", "console.log(${1|not\\, not, \\| five, 5, 1   23|});"),
-        ("${1|cho\\,ices,wi\\|th,esc\\\\aping,chall\\\\\\,enges|}", "${1|cho\\,ices,wi\\|th,esc\\\\aping,chall\\\\\\,enges|}"),
+        (
+            "console.log(${1|not\\, not, five, 5, 1   23|});",
+            "console.log(${1|not\\, not, five, 5, 1   23|});",
+        ),
+        (
+            "console.log(${1|not\\, not, \\| five, 5, 1   23|});",
+            "console.log(${1|not\\, not, \\| five, 5, 1   23|});",
+        ),
+        (
+            "${1|cho\\,ices,wi\\|th,esc\\\\aping,chall\\\\\\,enges|}",
+            "${1|cho\\,ices,wi\\|th,esc\\\\aping,chall\\\\\\,enges|}",
+        ),
         ("this is text", "this is text"),
-        ("this ${1:is ${2:nested with $var}}", "this ${1:is ${2:nested with ${var}}}"),
-        ("this ${1:is ${2:nested with $var}}}", "this ${1:is ${2:nested with ${var}}}\\}"),
+        (
+            "this ${1:is ${2:nested with $var}}",
+            "this ${1:is ${2:nested with ${var}}}",
+        ),
+        (
+            "this ${1:is ${2:nested with $var}}}",
+            "this ${1:is ${2:nested with ${var}}}\\}",
+        ),
     ] {
         assert_eq!(parse(i).to_textmate_string(), e, "{i}");
     }
 }
 
 fn same_tree(a: &Snippet, x: NodeId, b: &Snippet, y: NodeId) {
-    assert_eq!(std::mem::discriminant(a.marker(x)), std::mem::discriminant(b.marker(y)));
+    assert_eq!(
+        std::mem::discriminant(a.marker(x)),
+        std::mem::discriminant(b.marker(y))
+    );
     assert_eq!(a.children(x).len(), b.children(y).len());
     assert_eq!(a.node_string(x), b.node_string(y));
     for (cx, cy) in a.children(x).iter().zip(b.children(y)) {
@@ -347,7 +424,10 @@ fn parser_real_world() {
     let p = m[1];
     assert_eq!(index(&s, p), 1);
     let ch = s.children(p);
-    assert_eq!(ch.iter().map(|&c| kind(&s, c)).collect::<Vec<_>>(), [Text, Variable, Text]);
+    assert_eq!(
+        ch.iter().map(|&c| kind(&s, c)).collect::<Vec<_>>(),
+        [Text, Variable, Text]
+    );
     assert_eq!(s.node_string(ch[0]), " ");
     assert_eq!(s.node_string(ch[1]), "");
     assert_eq!(s.node_string(ch[2]), " ");
@@ -363,7 +443,13 @@ fn parser_transform_example() {
     let c = top(&s);
     assert_eq!(kind(&s, c[0]), Placeholder);
     assert_eq!(s.node_string(c[0]), "name");
-    assert!(matches!(s.marker(c[0]), Marker::Placeholder { transform: None, .. }));
+    assert!(matches!(
+        s.marker(c[0]),
+        Marker::Placeholder {
+            transform: None,
+            ..
+        }
+    ));
     assert_eq!(s.node_string(c[1]), " : ");
     assert_eq!(s.node_string(c[2]), "type");
     assert_eq!(s.children(c[3]).len(), 0);
@@ -375,14 +461,19 @@ fn parser_transform_example() {
     };
     assert_eq!(t.source, "\\s:=(.*)");
     assert_eq!(t.items.len(), 2);
-    assert!(matches!(&t.items[0], FormatItem::Format(f) if f.index == 1 && f.if_value.as_deref() == Some(" :=")));
+    assert!(
+        matches!(&t.items[0], FormatItem::Format(f) if f.index == 1 && f.if_value.as_deref() == Some(" :="))
+    );
     assert!(matches!(&t.items[1], FormatItem::Format(f) if f.index == 1));
     assert_eq!(s.node_string(c[4]), ";\n");
 }
 
 #[test]
 fn parser_default_placeholder_values() {
-    assert_marker("errorContext: `${1:err}`, error: $1", &[Text, Placeholder, Text, Placeholder]);
+    assert_marker(
+        "errorContext: `${1:err}`, error: $1",
+        &[Text, Placeholder, Text, Placeholder],
+    );
     let s = parse("errorContext: `${1:err}`, error:$1");
     let c = top(&s);
     for p in [c[1], c[3]] {
@@ -394,14 +485,29 @@ fn parser_default_placeholder_values() {
 
 #[test]
 fn parser_default_placeholder_values_and_one_transform() {
-    assert_marker("errorContext: `${1:err}`, error: ${1/err/ok/}", &[Text, Placeholder, Text, Placeholder]);
+    assert_marker(
+        "errorContext: `${1:err}`, error: ${1/err/ok/}",
+        &[Text, Placeholder, Text, Placeholder],
+    );
     let s = parse("errorContext: `${1:err}`, error:${1/err/ok/}");
     let c = top(&s);
     assert_eq!(s.node_string(c[1]), "err");
-    assert!(matches!(s.marker(c[1]), Marker::Placeholder { transform: None, .. }));
+    assert!(matches!(
+        s.marker(c[1]),
+        Marker::Placeholder {
+            transform: None,
+            ..
+        }
+    ));
     assert_eq!(s.children(c[3]).len(), 1);
     assert_eq!(s.node_string(s.children(c[3])[0]), "err");
-    assert!(matches!(s.marker(c[3]), Marker::Placeholder { transform: Some(_), .. }));
+    assert!(matches!(
+        s.marker(c[3]),
+        Marker::Placeholder {
+            transform: Some(_),
+            ..
+        }
+    ));
 }
 
 #[test]
@@ -419,7 +525,10 @@ fn backspace_escape_in_tm_only_16212() {
 
 #[test]
 fn colon_as_variable_placeholder_value_16717() {
-    assert_eq!(Snippet::as_insert_text("${TM_SELECTED_TEXT:foo:bar}"), "foo:bar");
+    assert_eq!(
+        Snippet::as_insert_text("${TM_SELECTED_TEXT:foo:bar}"),
+        "foo:bar"
+    );
     assert_eq!(Snippet::as_insert_text("${1:foo:bar}"), "foo:bar");
 }
 
@@ -443,7 +552,10 @@ fn marker_len() {
     check("$1text$0", &[0, 4, 0]);
     check("te$1xt$0", &[2, 0, 2, 0]);
     check("errorContext: `${1:err}`, error: $0", &[15, 0, 3, 10, 0]);
-    check("errorContext: `${1:err}`, error: $1$0", &[15, 0, 3, 10, 0, 3, 0]);
+    check(
+        "errorContext: `${1:err}`, error: $1$0",
+        &[15, 0, 3, 10, 0, 3, 0],
+    );
     check("$TM_SELECTED_TEXT$0", &[0, 0]);
     check("${TM_SELECTED_TEXT:def}$0", &[0, 3, 0]);
 }
@@ -492,8 +604,17 @@ fn snippet_offset() {
 
 #[test]
 fn snippet_placeholder() {
-    for (t, n) in [("te$1xt$0", 2), ("te$1xt$1$0", 3), ("te$1xt$2$0", 3), ("${1:bar${2:foo}bar}$0", 3)] {
-        assert_eq!(Snippet::parse(t, true, false).placeholders().len(), n, "{t}");
+    for (t, n) in [
+        ("te$1xt$0", 2),
+        ("te$1xt$1$0", 3),
+        ("te$1xt$2$0", 3),
+        ("${1:bar${2:foo}bar}$0", 3),
+    ] {
+        assert_eq!(
+            Snippet::parse(t, true, false).placeholders().len(),
+            n,
+            "{t}"
+        );
     }
 }
 
@@ -512,7 +633,10 @@ fn snippet_replace_1() {
     assert_eq!(s.to_string(), "aaabbbdddeee");
     let ps = s.placeholders();
     assert_eq!(ps.len(), 4);
-    assert_eq!(ps.iter().map(|&p| index(&s, p)).collect::<Vec<_>>(), [1, 1, 0, 0]);
+    assert_eq!(
+        ps.iter().map(|&p| index(&s, p)).collect::<Vec<_>>(),
+        [1, 1, 0, 0]
+    );
     let enc = s.enclosing_placeholders(ps[1]);
     assert_eq!(enc, [ps[0]]);
 }
@@ -579,8 +703,14 @@ fn transform_format_string_resolve() {
     assert_eq!(sh("capitalize", "bar no repeat"), "Bar no repeat");
     assert_eq!(sh("pascalcase", "bar-foo"), "BarFoo");
     assert_eq!(sh("pascalcase", "bar-42-foo"), "Bar42Foo");
-    assert_eq!(sh("pascalcase", "snake_AndPascalCase"), "SnakeAndPascalCase");
-    assert_eq!(sh("pascalcase", "kebab-AndPascalCase"), "KebabAndPascalCase");
+    assert_eq!(
+        sh("pascalcase", "snake_AndPascalCase"),
+        "SnakeAndPascalCase"
+    );
+    assert_eq!(
+        sh("pascalcase", "kebab-AndPascalCase"),
+        "KebabAndPascalCase"
+    );
     assert_eq!(sh("pascalcase", "_justPascalCase"), "JustPascalCase");
     assert_eq!(sh("camelcase", "bar-foo"), "barFoo");
     assert_eq!(sh("camelcase", "bar-42-foo"), "bar42Foo");
@@ -591,15 +721,27 @@ fn transform_format_string_resolve() {
     assert_eq!(sh("kebabcase", "BarFoo"), "bar-foo");
     assert_eq!(sh("kebabcase", "ABarFoo"), "a-bar-foo");
     assert_eq!(sh("kebabcase", "bar42Foo"), "bar42-foo");
-    assert_eq!(sh("kebabcase", "snake_AndPascalCase"), "snake-and-pascal-case");
-    assert_eq!(sh("kebabcase", "kebab-AndCamelCase"), "kebab-and-camel-case");
+    assert_eq!(
+        sh("kebabcase", "snake_AndPascalCase"),
+        "snake-and-pascal-case"
+    );
+    assert_eq!(
+        sh("kebabcase", "kebab-AndCamelCase"),
+        "kebab-and-camel-case"
+    );
     assert_eq!(sh("kebabcase", "_justPascalCase"), "just-pascal-case");
     assert_eq!(sh("kebabcase", "__UPCASE__"), "upcase");
     assert_eq!(sh("kebabcase", "__BAR_FOO__"), "bar-foo");
     assert_eq!(sh("snakecase", "bar-foo"), "bar_foo");
     assert_eq!(sh("snakecase", "bar-42-foo"), "bar_42_foo");
-    assert_eq!(sh("snakecase", "snake_AndPascalCase"), "snake_and_pascal_case");
-    assert_eq!(sh("snakecase", "kebab-AndPascalCase"), "kebab_and_pascal_case");
+    assert_eq!(
+        sh("snakecase", "snake_AndPascalCase"),
+        "snake_and_pascal_case"
+    );
+    assert_eq!(
+        sh("snakecase", "kebab-AndPascalCase"),
+        "kebab_and_pascal_case"
+    );
     assert_eq!(sh("snakecase", "_justPascalCase"), "_just_pascal_case");
     assert_eq!(sh("notKnown", "input"), "input");
     // if
@@ -613,7 +755,10 @@ fn transform_format_string_resolve() {
     // if-else
     assert_eq!(fs(None, Some("bar"), Some("foo")).resolve(None), "foo");
     assert_eq!(fs(None, Some("bar"), Some("foo")).resolve(Some("")), "foo");
-    assert_eq!(fs(None, Some("bar"), Some("foo")).resolve(Some("baz")), "bar");
+    assert_eq!(
+        fs(None, Some("bar"), Some("foo")).resolve(Some("baz")),
+        "bar"
+    );
 }
 
 #[test]
@@ -654,7 +799,10 @@ fn unicode_variable_transformations() {
 #[test]
 fn transform_with_complicated_regex_and_dollars_55627() {
     let s = parse("const fileName = \"${TM_FILENAME/(.*)\\..+$/$1/}\"");
-    assert_eq!(s.to_textmate_string(), "const fileName = \"${TM_FILENAME/(.*)\\..+$/${1}/}\"");
+    assert_eq!(
+        s.to_textmate_string(),
+        "const fileName = \"${TM_FILENAME/(.*)\\..+$/${1}/}\""
+    );
 }
 
 #[test]
@@ -700,7 +848,10 @@ fn transform_serialization_joins_children_without_comma() {
     let t = Transform::new(
         "foo",
         "g",
-        vec![FormatItem::Format(fs(Some("upcase"), None, None)), FormatItem::Text("_".into())],
+        vec![
+            FormatItem::Format(fs(Some("upcase"), None, None)),
+            FormatItem::Text("_".into()),
+        ],
     )
     .unwrap();
     let ser = t.to_textmate_string();
@@ -723,7 +874,10 @@ fn variable_not_resolved_in_json_proposal_52931() {
 fn mirroring_nested_placeholders_backjumping_58736() {
     let s = parse("${3:nest1 ${1:nest2 ${2:nest3}}} $3");
     let c = top(&s);
-    assert_eq!(c.iter().map(|&m| kind(&s, m)).collect::<Vec<_>>(), [Placeholder, Text, Placeholder]);
+    assert_eq!(
+        c.iter().map(|&m| kind(&s, m)).collect::<Vec<_>>(),
+        [Placeholder, Text, Placeholder]
+    );
     fn reaches_root(s: &Snippet, m: NodeId) {
         for &k in s.children(m) {
             reaches_root(s, k);
@@ -747,7 +901,10 @@ fn mirroring_nested_placeholders_backjumping_58736() {
 
 #[test]
 fn backspace_escaped_in_variable_transforms_65412() {
-    assert_marker("namespace ${TM_DIRECTORY/[\\/]/\\\\/g};", &[Text, Variable, Text]);
+    assert_marker(
+        "namespace ${TM_DIRECTORY/[\\/]/\\\\/g};",
+        &[Text, Variable, Text],
+    );
 }
 
 fn only_format(s: &Snippet) -> FormatString {
@@ -768,7 +925,9 @@ fn only_format(s: &Snippet) -> FormatString {
 
 #[test]
 fn escape_closing_bracket_in_conditional_78883() {
-    let f = only_format(&parse("${TM_DIRECTORY/(.+)/${1:+import { hello \\} from world}/}"));
+    let f = only_format(&parse(
+        "${TM_DIRECTORY/(.+)/${1:+import { hello \\} from world}/}",
+    ));
     assert_eq!(f.if_value.as_deref(), Some("import { hello } from world"));
     assert_eq!(f.else_value, None);
 }
@@ -782,17 +941,27 @@ fn escape_backslashes_in_conditional_80394() {
 
 #[test]
 fn placeholder_empty_right_after_expansion_152553() {
-    assert_eq!(parse("${1:prog}: ${2:$1.cc} - $2").to_string(), "prog: prog.cc - prog.cc");
+    assert_eq!(
+        parse("${1:prog}: ${2:$1.cc} - $2").to_string(),
+        "prog: prog.cc - prog.cc"
+    );
     assert_eq!(
         parse("${1:prog}: ${3:${2:$1.cc}.33} - $2 $3").to_string(),
         "prog: prog.cc.33 - prog.cc prog.cc.33"
     );
-    assert_eq!(parse("${1:$2.one} <> ${2:$1.two}").to_string(), ".two.one.two.one <> .one.two.one.two");
+    assert_eq!(
+        parse("${1:$2.one} <> ${2:$1.two}").to_string(),
+        ".two.one.two.one <> .one.two.one.two"
+    );
 }
 
 #[test]
 fn choices_incorrectly_escaped_180132() {
-    assert_text_and_marker("${1|aaa$aaa|}bbb\\$bbb", "aaa$aaabbb$bbb", &[Placeholder, Text]);
+    assert_text_and_marker(
+        "${1|aaa$aaa|}bbb\\$bbb",
+        "aaa$aaabbb$bbb",
+        &[Placeholder, Text],
+    );
 }
 
 #[test]

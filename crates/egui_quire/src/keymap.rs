@@ -162,13 +162,17 @@ impl When {
 impl std::fmt::Display for When {
     /// The clause as keybindings.json writes it.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let lit = |(k, v): &(ContextKey, bool)| format!("{}{}", if *v { "" } else { "!" }, k.name());
+        let lit =
+            |(k, v): &(ContextKey, bool)| format!("{}{}", if *v { "" } else { "!" }, k.name());
         let terms: Vec<String> = self
             .all
             .iter()
             .map(|any| match &any[..] {
                 [one] => lit(one),
-                many => format!("({})", many.iter().map(lit).collect::<Vec<_>>().join(" || ")),
+                many => format!(
+                    "({})",
+                    many.iter().map(lit).collect::<Vec<_>>().join(" || ")
+                ),
             })
             .collect();
         f.write_str(&terms.join(" && "))
@@ -200,7 +204,9 @@ impl WhenContext {
             ContextKey::SuggestWidgetHasFocusedSuggestion => {
                 self.suggest_widget_has_focused_suggestion
             }
-            ContextKey::SuggestWidgetMultipleSuggestions => self.suggest_widget_multiple_suggestions,
+            ContextKey::SuggestWidgetMultipleSuggestions => {
+                self.suggest_widget_multiple_suggestions
+            }
             ContextKey::AcceptSuggestionOnEnter => self.accept_suggestion_on_enter,
             ContextKey::SuggestionMakesTextEdit => self.suggestion_makes_text_edit,
             ContextKey::InSnippetMode => self.in_snippet_mode,

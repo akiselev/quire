@@ -6,7 +6,9 @@ use egui::{Event, Key, Modifiers, PointerButton, Vec2, pos2};
 use egui_kittest::Harness;
 use egui_kittest::kittest::{NodeT as _, Queryable as _};
 use egui_quire::{CodeEditor, EditorEvent};
-use quire_core::completion::{CompletionItem, CompletionItemKind as K, CompletionList, CompletionSource};
+use quire_core::completion::{
+    CompletionItem, CompletionItemKind as K, CompletionList, CompletionSource,
+};
 use quire_core::{Document, EditorView, SourceId};
 
 struct St {
@@ -55,7 +57,10 @@ fn app(ui: &mut egui::Ui, st: &mut St) {
     st.caret = out.caret_rect;
     // A synchronous host: answer every request at once.
     for e in out.events {
-        if let EditorEvent::CompletionRequested { id, pos, version, .. } = e {
+        if let EditorEvent::CompletionRequested {
+            id, pos, version, ..
+        } = e
+        {
             st.requests += 1;
             let start = word_start(&st.doc, pos);
             let items = st
@@ -149,9 +154,16 @@ fn typing_triggers_and_filters_as_you_type() {
     assert_eq!(options(&h), ["console", "const"]);
     type_text(&mut h, "o");
     assert_eq!(options(&h), ["console"]);
-    assert_eq!(h.state().requests, 1, "typing in a session filters, it does not ask again");
+    assert_eq!(
+        h.state().requests,
+        1,
+        "typing in a session filters, it does not ask again"
+    );
     type_text(&mut h, "z");
-    assert!(!list_visible(&h), "nothing matches: the automatic list closes");
+    assert!(
+        !list_visible(&h),
+        "nothing matches: the automatic list closes"
+    );
 }
 
 #[test]
@@ -191,7 +203,11 @@ fn escape_hides_and_keeps_the_text() {
     // Escape went to the list, not to the host.
     h.key_press(Key::Enter);
     h.run();
-    assert_eq!(h.state().text(), "con\n", "Enter without the list types a line break");
+    assert_eq!(
+        h.state().text(),
+        "con\n",
+        "Enter without the list types a line break"
+    );
 }
 
 #[test]

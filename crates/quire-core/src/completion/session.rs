@@ -11,7 +11,9 @@
 //! Translated from Visual Studio Code. Copyright (c) Microsoft Corporation. All rights reserved.
 //! Licensed under the MIT License (see `THIRD_PARTY_NOTICES.md`).
 
-use super::model::{CompletionModel, FilteredItem, LineContext, ModelOptions, SuggestItem, compare_items};
+use super::model::{
+    CompletionModel, FilteredItem, LineContext, ModelOptions, SuggestItem, compare_items,
+};
 use super::{
     CompletionItem, CompletionItemKind, CompletionList, CompletionRefusal, CompletionRequest,
     CompletionRequestId, CompletionTriggerKind, FuzzyScoreOptions, SnippetSuggestions,
@@ -166,8 +168,7 @@ fn is_number(s: &str) -> bool {
     let s = s.trim();
     !s.is_empty()
         && (s.parse::<f64>().is_ok()
-            || s
-                .strip_prefix("0x")
+            || s.strip_prefix("0x")
                 .or_else(|| s.strip_prefix("0X"))
                 .is_some_and(|h| !h.is_empty() && h.chars().all(|c| c.is_ascii_hexdigit())))
 }
@@ -263,7 +264,11 @@ impl SuggestState {
         if s.model.is_none()
             && let Some(st) = &s.stale
         {
-            return if st.3 { WidgetState::Frozen } else { WidgetState::Open };
+            return if st.3 {
+                WidgetState::Frozen
+            } else {
+                WidgetState::Open
+            };
         }
         match &s.model {
             None if s.auto => WidgetState::Hidden,
@@ -327,10 +332,12 @@ impl SuggestState {
 
     /// The first visible row.
     pub fn scroll_top(&self) -> usize {
-        self.session.as_ref().map_or(0, |s| match (&s.model, &s.stale) {
-            (None, Some(st)) => st.2,
-            _ => s.scroll_top,
-        })
+        self.session
+            .as_ref()
+            .map_or(0, |s| match (&s.model, &s.stale) {
+                (None, Some(st)) => st.2,
+                _ => s.scroll_top,
+            })
     }
 
     /// Scrolls the list (mouse wheel), clamped.
@@ -379,8 +386,7 @@ impl SuggestState {
             return true;
         };
         let c = &f.item.completion;
-        if doc.config().suggest.accept_suggestion_on_enter
-            != super::AcceptSuggestionOnEnter::Smart
+        if doc.config().suggest.accept_suggestion_on_enter != super::AcceptSuggestionOnEnter::Smart
             || !s.auto
             || !c.additional_text_edits.is_empty()
             || c.insert_text_rules.insert_as_snippet
@@ -450,7 +456,11 @@ impl SuggestState {
         // Providers whose items are reused are not asked again (VS Code
         // `provideSuggestionItems` with `providerItemsToReuse`).
         let sources = match o.sources {
-            Some(s) => Some(s.into_iter().filter(|s| !reused.contains(s)).collect::<Vec<_>>()),
+            Some(s) => Some(
+                s.into_iter()
+                    .filter(|s| !reused.contains(s))
+                    .collect::<Vec<_>>(),
+            ),
             None if !reused.is_empty() && !doc.completion_sources().is_empty() => Some(
                 doc.completion_sources()
                     .iter()
@@ -653,8 +663,7 @@ impl SuggestState {
             // not computed yet
             return;
         };
-        if !ctx.leading_word.word.is_empty() && ctx.leading_word.start > s.ctx.leading_word.start
-        {
+        if !ctx.leading_word.word.is_empty() && ctx.leading_word.start > s.ctx.leading_word.start {
             // started a new word while the list shows: retrigger, reusing all items
             if should_auto_trigger(doc, sel) {
                 let reuse = model.items_by_source();
@@ -778,7 +787,9 @@ impl SuggestState {
         let Some(s) = &mut self.session else {
             return;
         };
-        if s.resolve_requested.insert((f.item.source.clone(), f.item.index)) {
+        if s.resolve_requested
+            .insert((f.item.source.clone(), f.item.index))
+        {
             self.outbox.push(SuggestOutput::Resolve {
                 id: s.id,
                 source: f.item.source.clone(),
@@ -895,7 +906,7 @@ impl SuggestState {
         let supports: Vec<SourceId> = doc
             .completion_sources()
             .iter()
-            .filter(|s| s.trigger_characters.iter().any(|t| *t == ch))
+            .filter(|s| s.trigger_characters.contains(&ch))
             .map(|s| s.id.clone())
             .collect();
         if supports.is_empty() {
@@ -1000,7 +1011,10 @@ impl SuggestState {
         }
         match s.suffix {
             Some(p) => p.saturating_sub(pos),
-            None => text.line_range(text.byte_to_line(pos)).end.saturating_sub(pos),
+            None => text
+                .line_range(text.byte_to_line(pos))
+                .end
+                .saturating_sub(pos),
         }
     }
 

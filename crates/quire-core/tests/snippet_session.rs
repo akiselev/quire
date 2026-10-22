@@ -105,7 +105,10 @@ impl Ed {
 
 #[test]
 fn normalize_whitespace() {
-    let doc = Document::new("function foo() {\n    console.log(a);\n}", EditorConfig::default());
+    let doc = Document::new(
+        "function foo() {\n    console.log(a);\n}",
+        EditorConfig::default(),
+    );
     let check = |line: usize, col: usize, input: &str, expected: &str| {
         let pos = doc.text().line_to_byte(line - 1) + col - 1;
         let mut s = quire_core::completion::snippet::Snippet::parse(input, false, false);
@@ -125,7 +128,10 @@ fn normalize_whitespace() {
 fn text_edits_and_selection() {
     let mut e = Ed::session_fixture();
     e.insert("foo${1:bar}foo$0");
-    assert_eq!(e.value(), "foobarfoofunction foo() {\n    foobarfooconsole.log(a);\n}");
+    assert_eq!(
+        e.value(),
+        "foobarfoofunction foo() {\n    foobarfooconsole.log(a);\n}"
+    );
     e.assert_selections(&[(1, 4, 1, 7), (2, 8, 2, 11)]);
     e.next();
     e.assert_selections(&[(1, 10, 1, 10), (2, 14, 2, 14)]);
@@ -138,7 +144,11 @@ fn text_edit_with_reversed_selection() {
     e.insert("${1:bar}$0");
     assert_eq!(e.value(), "barfunction foo() {\n    barconsole.log(a);\n}");
     e.assert_selections(&[(2, 5, 2, 8), (1, 1, 1, 4)]);
-    assert_eq!(e.view.selection().primary().head, e.pos(2, 8), "the primary cursor stays primary");
+    assert_eq!(
+        e.view.selection().primary().head,
+        e.pos(2, 8),
+        "the primary cursor stays primary"
+    );
 }
 
 #[test]
@@ -154,7 +164,10 @@ fn repeated_tabstops() {
 fn just_text() {
     let mut e = Ed::session_fixture();
     e.insert("foobar");
-    assert_eq!(e.value(), "foobarfunction foo() {\n    foobarconsole.log(a);\n}");
+    assert_eq!(
+        e.value(),
+        "foobarfunction foo() {\n    foobarconsole.log(a);\n}"
+    );
     e.assert_selections(&[(1, 7, 1, 7), (2, 11, 2, 11)]);
 }
 
@@ -198,7 +211,10 @@ fn selections_and_typing() {
     e.next();
     e.assert_selections(&[(1, 4, 1, 7), (2, 8, 2, 11)]);
     e.next();
-    assert_eq!(e.value(), "fX_bar_function foo() {\n    fX_bar_console.log(a);\n}");
+    assert_eq!(
+        e.value(),
+        "fX_bar_function foo() {\n    fX_bar_console.log(a);\n}"
+    );
     e.assert_selections(&[(1, 8, 1, 8), (2, 12, 2, 12)]);
 }
 

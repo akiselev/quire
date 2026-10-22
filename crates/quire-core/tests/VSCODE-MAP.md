@@ -1035,6 +1035,295 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | WordOperations > deleteInsideWord - onlyWord: does not delete whitespace before last word | N/A: new DeleteInsideWord.run | — |
 | WordOperations > deleteInsideWord - onlyWord: deletes just the word (leaves double spaces) | N/A: new DeleteInsideWord.run | — |
 
+## completionModel.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| CompletionModel > filtering - cached | `crates/quire-core/tests/suggest_model.rs` `filtering_cached` | pass |
+| CompletionModel > complete/incomplete | `crates/quire-core/tests/suggest_model.rs` `complete_incomplete` | pass |
+| CompletionModel > Fuzzy matching of snippets stopped working with inline snippet suggestions #49895 | `crates/quire-core/tests/suggest_model.rs` `fuzzy_matching_of_snippets_49895` | pass |
+| CompletionModel > proper current word when length=0, #16380 | `crates/quire-core/tests/suggest_model.rs` `proper_current_word_when_length_0_16380` | pass |
+| CompletionModel > keep snippet sorting with prefix: top, #25495 | `crates/quire-core/tests/suggest_model.rs` `keep_snippet_sorting_top_25495` | pass |
+| CompletionModel > keep snippet sorting with prefix: bottom, #25495 | `crates/quire-core/tests/suggest_model.rs` `keep_snippet_sorting_bottom_25495` | pass |
+| CompletionModel > keep snippet sorting with prefix: inline, #25495 | `crates/quire-core/tests/suggest_model.rs` `keep_snippet_sorting_inline_25495` | pass |
+| CompletionModel > filterText seems ignored in autocompletion, #26874 | `crates/quire-core/tests/suggest_model.rs` `filter_text_seems_ignored_26874` | pass |
+| CompletionModel > Vscode 1.12 no longer obeys 'sortText' in completion items (from language server), #26096 | `crates/quire-core/tests/suggest_model.rs` `sort_text_from_language_server_26096` | pass |
+| CompletionModel > Completion item sorting broken when using label details #153026 | `crates/quire-core/tests/suggest_model.rs` `sorting_with_label_details_153026` | pass |
+| CompletionModel > Score only filtered items when typing more, score all when typing less | `crates/quire-core/tests/suggest_model.rs` `score_only_filtered_items_when_typing_more` | pass |
+| CompletionModel > Have more relaxed suggest matching algorithm #15419 | `crates/quire-core/tests/suggest_model.rs` `more_relaxed_suggest_matching_15419` | pass |
+| CompletionModel > Emmet suggestion not appearing at the top of the list in jsx files, #39518 | `crates/quire-core/tests/suggest_model.rs` `emmet_suggestion_jsx_39518` | pass |
+
+## filters.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Filters > or | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > PrefixFilter - case sensitive | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > PrefixFilter - ignore case | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > CamelCaseFilter | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > CamelCaseFilter - #19256 | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > matchesContiguousSubString | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > matchesBaseContiguousSubString | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > matchesSubString | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > matchesSubString performance (#35346) | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > WordFilter | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > matchesWords performance (#309582) | N/A: not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists) | — |
+| Filters > fuzzyScore, #23215 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23215` | pass |
+| Filters > fuzzyScore, #23332 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23332` | pass |
+| Filters > fuzzyScore, #23190 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23190` | pass |
+| Filters > fuzzyScore, #23581 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23581` | pass |
+| Filters > fuzzyScore, #23458 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23458` | pass |
+| Filters > fuzzyScore, #23746 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_23746` | pass |
+| Filters > fuzzyScore | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_basic` | pass |
+| Filters > fuzzyScore (first match can be weak) | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_first_match_can_be_weak` | pass |
+| Filters > fuzzyScore, many matches | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_many_matches` | pass |
+| Filters > Freeze when fjfj -> jfjf, https://github.com/microsoft/vscode/issues/91807 | `crates/quire-core/tests/suggest_filters.rs` `freeze_when_fjfj_jfjf_91807` | pass |
+| Filters > fuzzyScore, issue #26423 | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_26423` | pass |
+| Filters > Fuzzy IntelliSense matching vs Haxe metadata completion, #26995 | `crates/quire-core/tests/suggest_filters.rs` `haxe_metadata_26995` | pass |
+| Filters > Separator only match should not be weak #79558 | `crates/quire-core/tests/suggest_filters.rs` `separator_only_match_79558` | pass |
+| Filters > Cannot set property '1' of undefined, #26511 | `crates/quire-core/tests/suggest_filters.rs` `cannot_set_property_26511` | pass |
+| Filters > Vscode 1.12 no longer obeys 'sortText' in completion items (from language server), #26096 | `crates/quire-core/tests/suggest_filters.rs` `sort_text_26096` | pass |
+| Filters > patternPos isn't working correctly #79815 | `crates/quire-core/tests/suggest_filters.rs` `pattern_pos_79815` | pass |
+| Filters > topScore - fuzzyScore | `crates/quire-core/tests/suggest_filters.rs` `top_score_fuzzy_score` | pass |
+| Filters > Unexpected suggestion scoring, #28791 | `crates/quire-core/tests/suggest_filters.rs` `unexpected_suggestion_scoring_28791` | pass |
+| Filters > Bad completion ranking changes valid variable name to class name when pressing "." #187055 | N/A: skipped upstream (test.skip) | — |
+| Filters > HTML closing tag proposal filtered out #38880 | `crates/quire-core/tests/suggest_filters.rs` `html_closing_tag_38880` | pass |
+| Filters > fuzzyScoreGraceful | `crates/quire-core/tests/suggest_filters.rs` `fuzzy_score_graceful_test` | pass |
+| Filters > List highlight filter: Not all characters from match are highlighterd #66923 | `crates/quire-core/tests/suggest_filters.rs` `list_highlight_filter_66923` | pass |
+| Filters > Autocompletion is matched against truncated filterText to 54 characters #74133 | `crates/quire-core/tests/suggest_filters.rs` `truncated_filter_text_74133` | pass |
+| Filters > "Go to Symbol" with the exact method name doesn't work as expected #84787 | `crates/quire-core/tests/suggest_filters.rs` `go_to_symbol_exact_method_name_84787` | pass |
+| Filters > Wrong highlight after emoji #113404 | `crates/quire-core/tests/suggest_filters.rs` `wrong_highlight_after_emoji_113404` | pass |
+| Filters > Suggestion is not highlighted #85826 | `crates/quire-core/tests/suggest_filters.rs` `suggestion_not_highlighted_85826` | pass |
+| Filters > IntelliSense completion not correctly highlighting text in front of cursor #115250 | `crates/quire-core/tests/suggest_filters.rs` `highlighting_text_in_front_of_cursor_115250` | pass |
+| Filters > anyScore should not require a strong first match | `crates/quire-core/tests/suggest_filters.rs` `any_score_no_strong_first_match` | pass |
+| Filters > configurable full match boost | `crates/quire-core/tests/suggest_filters.rs` `configurable_full_match_boost` | pass |
+| Filters > Unexpected suggest highlighting ignores whole word match in favor of matching first letter#147423 | `crates/quire-core/tests/suggest_filters.rs` `whole_word_match_147423` | pass |
+
+## snippetController2.old.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SnippetController > Simple accepted | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Simple canceled | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when deleting lines above | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when deleting lines below | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when inserting lines above | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when inserting lines below | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when calling model.setValue() | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when undoing | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when moving cursor outside | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Stops when disconnecting editor model | N/A: editor model lifecycle | — |
+| SnippetController > Stops when disposing editor | N/A: editor lifecycle | — |
+| SnippetController > Final tabstop with multiple selections | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Final tabstop, #11742 simple | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Final tabstop, #11742 different indents | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Final tabstop, #11890 stay at the beginning | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Final tabstop, no tabstop | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Multiple cursor and overwriteBefore/After, issue #11060 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Multiple cursor and overwriteBefore/After, #16277 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController > Insert snippet twice, #19449 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+
+## snippetController2.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SnippetController2 > creation | N/A: contribution lifecycle | — |
+| SnippetController2 > insert, insert -> abort | `crates/quire-core/tests/snippet_session.rs` | fail (ours: no soft cancel that keeps added cursors: leaveSnippet is VS Code's hard cancel (cancel(true))) |
+| SnippetController2 > insert, insert -> tab, tab, done | `crates/quire-core/tests/snippet_session.rs` `insert_tab_tab_done` | pass |
+| SnippetController2 > insert, insert -> cursor moves out (left/right) | `crates/quire-core/tests/snippet_session.rs` `insert_cursor_moves_out_left_right` | pass |
+| SnippetController2 > insert, insert -> cursor moves out (up/down) | `crates/quire-core/tests/snippet_session.rs` `insert_cursor_moves_out_up_down` | pass |
+| SnippetController2 > insert, insert -> cursors collapse | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > insert, insert plain text -> no snippet mode | `crates/quire-core/tests/snippet_session.rs` `insert_plain_text_no_snippet_mode` | pass |
+| SnippetController2 > insert, delete snippet text | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > insert, nested trivial snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > insert, nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > insert, nested plain text | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > HTML Snippets Combine, #32211 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Problems with nested snippet insertion #39594 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Problems with nested snippet insertion #39594 (part2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Placeholders order #58267 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > Must tab through deleted tab stops in snippets #31619 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (soft cancel) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (hard cancel) | `crates/quire-core/tests/snippet_session.rs` `cancelling_discards_added_cursors_68512_hard` | pass |
+| SnippetController2 > User defined snippet tab stops ignored #72862 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > Optional tabstop in snippets #72358 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > issue #90135: confusing trim whitespace edits | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (1 of 2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (2 of 2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > leading TAB by snippets won't replace by spaces #101870 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > leading TAB by snippets won't replace by spaces #101870 (part 2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetController2 > Snippet transformation does not work after inserting variable using intellisense, #112362 | N/A: skipped upstream (test.skip) | — |
+| createEditsAndSnippetsFromEdits > apply, tab, done | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > apply, tab, done with special final tabstop | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > apply, tab, tab, done | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > nested into apply works | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > nested into insert abort "outer" snippet | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > nested into "insert" abort "outer" snippet (2) | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > Bug: cursor position $0 with user snippets #163808 | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > EOL-Sequence (CRLF) shifts tab stop in isFileTemplate snippets #167386 | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > "Surround With" code action snippets use incorrect indentation levels and styles #169319 | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > $TM_SELECTED_TEXT resolves per edit, not the last selection (multi-cursor wrap snippet) #206121 | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > apply with multiple cursors threads $CURSOR_NUMBER per edit | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > undo restores original selection after apply (regression for #170041) | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+
+## snippetParser.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SnippetParser > Scanner | `crates/quire-core/tests/snippet_parser.rs` `scanner` | pass |
+| SnippetParser > Parser, escaped | `crates/quire-core/tests/snippet_parser.rs` `parser_escaped` | pass |
+| SnippetParser > Parser, text | `crates/quire-core/tests/snippet_parser.rs` `parser_text` | pass |
+| SnippetParser > Parser, TM text | `crates/quire-core/tests/snippet_parser.rs` `parser_tm_text` | pass |
+| SnippetParser > Parser, placeholder | `crates/quire-core/tests/snippet_parser.rs` `parser_placeholder` | pass |
+| SnippetParser > Parser, literal code | `crates/quire-core/tests/snippet_parser.rs` `parser_literal_code` | pass |
+| SnippetParser > Parser, variables/tabstop | `crates/quire-core/tests/snippet_parser.rs` `parser_variables_tabstop` | pass |
+| SnippetParser > Parser, variables/placeholder with defaults | `crates/quire-core/tests/snippet_parser.rs` `parser_variables_placeholder_with_defaults` | pass |
+| SnippetParser > Parser, variable transforms | `crates/quire-core/tests/snippet_parser.rs` `parser_variable_transforms` | pass |
+| SnippetParser > Parser, placeholder transforms | `crates/quire-core/tests/snippet_parser.rs` `parser_placeholder_transforms` | pass |
+| SnippetParser > No way to escape forward slash in snippet regex #36715 | `crates/quire-core/tests/snippet_parser.rs` `escape_forward_slash_in_regex_36715` | pass |
+| SnippetParser > No way to escape forward slash in snippet format section #37562 | `crates/quire-core/tests/snippet_parser.rs` `escape_forward_slash_in_format_37562` | pass |
+| SnippetParser > Parser, placeholder with choice | `crates/quire-core/tests/snippet_parser.rs` `parser_placeholder_with_choice` | pass |
+| SnippetParser > Snippet choices: unable to escape comma and pipe, #31521 | `crates/quire-core/tests/snippet_parser.rs` `choices_escape_comma_and_pipe_31521` | pass |
+| SnippetParser > Marker, toTextmateString() | `crates/quire-core/tests/snippet_parser.rs` `marker_to_textmate_string` | pass |
+| SnippetParser > Marker, toTextmateString() <-> identity | `crates/quire-core/tests/snippet_parser.rs` `marker_to_textmate_string_identity` | pass |
+| SnippetParser > Parser, choise marker | `crates/quire-core/tests/snippet_parser.rs` `parser_choice_marker` | pass |
+| SnippetParser > Backslash character escape in choice tabstop doesn't work #58494 | `crates/quire-core/tests/snippet_parser.rs` `backslash_escape_in_choice_58494` | pass |
+| SnippetParser > Parser, only textmate | `crates/quire-core/tests/snippet_parser.rs` `parser_only_textmate` | pass |
+| SnippetParser > Parser, real world | `crates/quire-core/tests/snippet_parser.rs` `parser_real_world` | pass |
+| SnippetParser > Parser, transform example | `crates/quire-core/tests/snippet_parser.rs` `parser_transform_example` | pass |
+| SnippetParser > Parser, default placeholder values | `crates/quire-core/tests/snippet_parser.rs` `parser_default_placeholder_values` | pass |
+| SnippetParser > Parser, default placeholder values and one transform | `crates/quire-core/tests/snippet_parser.rs` `parser_default_placeholder_values_and_one_transform` | pass |
+| SnippetParser > Repeated snippet placeholder should always inherit, #31040 | `crates/quire-core/tests/snippet_parser.rs` `repeated_placeholder_should_inherit_31040` | pass |
+| SnippetParser > backspace esapce in TM only, #16212 | `crates/quire-core/tests/snippet_parser.rs` `backspace_escape_in_tm_only_16212` | pass |
+| SnippetParser > colon as variable/placeholder value, #16717 | `crates/quire-core/tests/snippet_parser.rs` `colon_as_variable_placeholder_value_16717` | pass |
+| SnippetParser > incomplete placeholder | `crates/quire-core/tests/snippet_parser.rs` `incomplete_placeholder` | pass |
+| SnippetParser > marker#len | `crates/quire-core/tests/snippet_parser.rs` `marker_len` | pass |
+| SnippetParser > parser, parent node | `crates/quire-core/tests/snippet_parser.rs` `parser_parent_node` | pass |
+| SnippetParser > TextmateSnippet#enclosingPlaceholders | `crates/quire-core/tests/snippet_parser.rs` `enclosing_placeholders` | pass |
+| SnippetParser > TextmateSnippet#offset | `crates/quire-core/tests/snippet_parser.rs` `snippet_offset` | pass |
+| SnippetParser > TextmateSnippet#placeholder | `crates/quire-core/tests/snippet_parser.rs` `snippet_placeholder` | pass |
+| SnippetParser > TextmateSnippet#replace 1/2 | `crates/quire-core/tests/snippet_parser.rs` `snippet_replace_1` | pass |
+| SnippetParser > TextmateSnippet#replace 2/2 | `crates/quire-core/tests/snippet_parser.rs` `snippet_replace_2` | pass |
+| SnippetParser > Snippet order for placeholders, #28185 | `crates/quire-core/tests/snippet_parser.rs` `placeholder_order_28185` | pass |
+| SnippetParser > Maximum call stack size exceeded, #28983 | `crates/quire-core/tests/snippet_parser.rs` `maximum_call_stack_28983` | pass |
+| SnippetParser > Snippet can freeze the editor, #30407 | `crates/quire-core/tests/snippet_parser.rs` `snippet_can_freeze_the_editor_30407` | pass |
+| SnippetParser > Snippets: make parser ignore `${0\|choice\|}`, #31599 | `crates/quire-core/tests/snippet_parser.rs` `parser_ignores_choice_on_final_tabstop_31599` | pass |
+| SnippetParser > Transform -> FormatString#resolve | `crates/quire-core/tests/snippet_parser.rs` `transform_format_string_resolve` | pass |
+| SnippetParser > Unicode Variable Transformations | `crates/quire-core/tests/snippet_parser.rs` `unicode_variable_transformations` | pass |
+| SnippetParser > Snippet variable transformation doesn't work if regex is complicated and snippet body contains '$$' #55627 | `crates/quire-core/tests/snippet_parser.rs` `transform_with_complicated_regex_and_dollars_55627` | pass |
+| SnippetParser > [BUG] HTML attribute suggestions: Snippet session does not have end-position set, #33147 | `crates/quire-core/tests/snippet_parser.rs` `html_attribute_end_position_33147` | pass |
+| SnippetParser > Snippet optional transforms are not applied correctly when reusing the same variable, #37702 | `crates/quire-core/tests/snippet_parser.rs` `optional_transforms_reusing_variable_37702` | pass |
+| SnippetParser > problem with snippets regex #40570 | `crates/quire-core/tests/snippet_parser.rs` `problem_with_snippets_regex_40570` | pass |
+| SnippetParser > Variable transformation doesn't work if undefined variables are used in the same snippet #51769 | `crates/quire-core/tests/snippet_parser.rs` `undefined_variables_in_same_snippet_51769` | pass |
+| SnippetParser > transform serialization joins children without comma | `crates/quire-core/tests/snippet_parser.rs` `transform_serialization_joins_children_without_comma` | pass |
+| SnippetParser > Snippet parser freeze #53144 | `crates/quire-core/tests/snippet_parser.rs` `snippet_parser_freeze_53144` | pass |
+| SnippetParser > snippets variable not resolved in JSON proposal #52931 | `crates/quire-core/tests/snippet_parser.rs` `variable_not_resolved_in_json_proposal_52931` | pass |
+| SnippetParser > Mirroring sequence of nested placeholders not selected properly on backjumping #58736 | `crates/quire-core/tests/snippet_parser.rs` `mirroring_nested_placeholders_backjumping_58736` | pass |
+| SnippetParser > Backspace can't be escaped in snippet variable transforms #65412 | `crates/quire-core/tests/snippet_parser.rs` `backspace_escaped_in_variable_transforms_65412` | pass |
+| SnippetParser > Snippet cannot escape closing bracket inside conditional insertion variable replacement #78883 | `crates/quire-core/tests/snippet_parser.rs` `escape_closing_bracket_in_conditional_78883` | pass |
+| SnippetParser > Snippet escape backslashes inside conditional insertion variable replacement #80394 | `crates/quire-core/tests/snippet_parser.rs` `escape_backslashes_in_conditional_80394` | pass |
+| SnippetParser > Snippet placeholder empty right after expansion #152553 | `crates/quire-core/tests/snippet_parser.rs` `placeholder_empty_right_after_expansion_152553` | pass |
+| SnippetParser > Snippet choices are incorrectly escaped/applied #180132 | `crates/quire-core/tests/snippet_parser.rs` `choices_incorrectly_escaped_180132` | pass |
+
+## snippetSession.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SnippetSession > normalize whitespace | `crates/quire-core/tests/snippet_session.rs` `normalize_whitespace` | pass |
+| SnippetSession > adjust selection (overwrite[Before\|After]) | N/A: internal helper (adjustSelection); overwriteBefore/After is covered through accepting completions | — |
+| SnippetSession > text edits & selection | `crates/quire-core/tests/snippet_session.rs` `text_edits_and_selection` | pass |
+| SnippetSession > text edit with reversed selection | `crates/quire-core/tests/snippet_session.rs` `text_edit_with_reversed_selection` | pass |
+| SnippetSession > snippets, repeated tabstops | `crates/quire-core/tests/snippet_session.rs` `repeated_tabstops` | pass |
+| SnippetSession > snippets, just text | `crates/quire-core/tests/snippet_session.rs` `just_text` | pass |
+| SnippetSession > snippets, selections and new text with newlines | `crates/quire-core/tests/snippet_session.rs` `selections_and_new_text_with_newlines` | pass |
+| SnippetSession > snippets, newline NO whitespace adjust | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, selections -> next/prev | `crates/quire-core/tests/snippet_session.rs` `selections_next_prev` | pass |
+| SnippetSession > snippets, selections & typing | `crates/quire-core/tests/snippet_session.rs` `selections_and_typing` | pass |
+| SnippetSession > snippets, insert shorter snippet into non-empty selection | `crates/quire-core/tests/snippet_session.rs` `insert_shorter_snippet_into_non_empty_selection` | pass |
+| SnippetSession > snippets, insert longer snippet into non-empty selection | `crates/quire-core/tests/snippet_session.rs` `insert_longer_snippet_into_non_empty_selection` | pass |
+| SnippetSession > snippets, don't grow final tabstop | `crates/quire-core/tests/snippet_session.rs` | fail (ours: snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev) |
+| SnippetSession > snippets, don't merge touching tabstops 1/2 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev) |
+| SnippetSession > snippets, don't merge touching tabstops 2/2 | `crates/quire-core/tests/snippet_session.rs` `dont_merge_touching_tabstops_2` | pass |
+| SnippetSession > snippets, gracefully move over final tabstop | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, overwriting nested placeholder | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, selections and snippet ranges | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, nested sessions | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, typing at final tabstop | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, typing at beginning | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, typing with nested placeholder | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, snippet with variables | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, merge | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, next does not throw when placeholder decorations are missing | N/A: editor decorations | — |
+| SnippetSession > snippets, deep merge does not produce phantom cursors (#279349) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge preserves mirrors in nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position | `crates/quire-core/tests/snippet_session.rs` | fail (ours: a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, transform | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, multi placeholder same index one transform | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, transform example | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, transform with indent | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > snippets, transform example hit if | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Snippet tab stop selection issue #96545 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Snippet variable text isn't whitespace normalised, #31124 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Selecting text from left to right, and choosing item messes up code, #31199 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| SnippetSession > Tabs don't get replaced with spaces in snippet transformations #103818 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: not yet ported (model-level; listed for the next completion lane)) |
+| createEditsAndSnippetsFromEdits > empty | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > basic | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > with $SELECTION variable | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > $TM_SELECTED_TEXT resolves per edit, not the primary selection #206121 | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > $TM_LINE_NUMBER resolves per edit | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > per-edit resolution does not corrupt earlier edits when value lengths differ | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > $CURSOR_NUMBER uses caller-supplied edit order, not range-sorted order | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+| createEditsAndSnippetsFromEdits > cross-edit placeholder backfill resolves variables in earlier edit | N/A: createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered | — |
+
+## suggestModel.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SuggestModel - Context > Context - shouldAutoTrigger | `crates/quire-core/tests/suggest_session.rs` `context_should_auto_trigger` | pass |
+| SuggestModel - Context > shouldAutoTrigger at embedded language boundaries | N/A: embedded-language tokens: quire's word rules are per document, not per embedded language | — |
+| SuggestModel - TriggerAndCancelOracle > events - cancel/trigger | `crates/quire-core/tests/suggest_session.rs` `events_cancel_trigger` | pass |
+| SuggestModel - TriggerAndCancelOracle > events - suggest/empty | `crates/quire-core/tests/suggest_session.rs` `events_suggest_empty` | pass |
+| SuggestModel - TriggerAndCancelOracle > trigger - on type | `crates/quire-core/tests/suggest_session.rs` `trigger_on_type` | pass |
+| SuggestModel - TriggerAndCancelOracle > #17400: Keep filtering suggestModel.ts after space | `crates/quire-core/tests/suggest_session.rs` `keep_filtering_after_space_17400` | pass |
+| SuggestModel - TriggerAndCancelOracle > #21484: Trigger character always force a new completion session | `crates/quire-core/tests/suggest_session.rs` `trigger_character_forces_new_session_21484` | pass |
+| SuggestModel - TriggerAndCancelOracle > Intellisense Completion doesn't respect space after equal sign (.html file), #29353 [1/2] | `crates/quire-core/tests/suggest_session.rs` `space_after_equal_sign_29353_1` | pass |
+| SuggestModel - TriggerAndCancelOracle > Intellisense Completion doesn't respect space after equal sign (.html file), #29353 [2/2] | `crates/quire-core/tests/suggest_session.rs` `space_after_equal_sign_29353_2` | pass |
+| SuggestModel - TriggerAndCancelOracle > Incomplete suggestion results cause re-triggering when typing w/o further context, #28400 (1/2) | `crates/quire-core/tests/suggest_session.rs` `incomplete_results_retrigger_28400_1` | pass |
+| SuggestModel - TriggerAndCancelOracle > Incomplete suggestion results cause re-triggering when typing w/o further context, #28400 (2/2) | `crates/quire-core/tests/suggest_session.rs` `incomplete_results_retrigger_28400_2` | pass |
+| SuggestModel - TriggerAndCancelOracle > Trigger character is provided in suggest context | `crates/quire-core/tests/suggest_session.rs` `trigger_character_in_suggest_context` | pass |
+| SuggestModel - TriggerAndCancelOracle > Mac press and hold accent character insertion does not update suggestions, #35269 | N/A: an API edit (executeEdits) in the middle of a session: quire cancels on any non-typing transaction, as VS Code does after its refilter; press-and-hold input is IME composition in quire | — |
+| SuggestModel - TriggerAndCancelOracle > Backspace should not always cancel code completion, #36491 | `crates/quire-core/tests/suggest_session.rs` `backspace_should_not_always_cancel_36491` | pass |
+| SuggestModel - TriggerAndCancelOracle > Text changes for completion CodeAction are affected by the completion #39893 | `crates/quire-core/tests/suggest_session.rs` `completion_code_action_text_changes_39893` | pass |
+| SuggestModel - TriggerAndCancelOracle > Completion unexpectedly triggers on second keypress of an edit group in a snippet #43523 | `crates/quire-core/tests/suggest_session.rs` `second_keypress_in_snippet_43523` | pass |
+| SuggestModel - TriggerAndCancelOracle > Fails to render completion details #47988 | N/A: provider result disposal (CompletionList.dispose): quire holds plain data | — |
+| SuggestModel - TriggerAndCancelOracle > Trigger (full) completions when (incomplete) completions are already active #99504 | `crates/quire-core/tests/suggest_session.rs` `trigger_full_when_incomplete_active_99504` | pass |
+| SuggestModel - TriggerAndCancelOracle > registerCompletionItemProvider with letters as trigger characters block other completion items to show up #127815 | `crates/quire-core/tests/suggest_session.rs` `letters_as_trigger_characters_127815` | pass |
+| SuggestModel - TriggerAndCancelOracle > Unexpected suggest scoring #167242 | `crates/quire-core/tests/suggest_session.rs` `unexpected_suggest_scoring_167242` | pass |
+| SuggestModel - TriggerAndCancelOracle > Completion list closes unexpectedly when typing a digit after a word separator #169390 | `crates/quire-core/tests/suggest_session.rs` `digit_after_word_separator_169390` | pass |
+| SuggestModel - TriggerAndCancelOracle > Set refilter-flag, keep triggerKind | `crates/quire-core/tests/suggest_session.rs` `set_refilter_flag_keep_trigger_kind` | pass |
+| SuggestModel - TriggerAndCancelOracle > Snippets gone from IntelliSense #173244 | N/A: VS Code's global snippet provider (setSnippetSuggestSupport): quire has none; hosts supply snippets as a source | — |
+| SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when inline provider returns empty results | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when no inline provider exists | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when inlineSuggest is disabled | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - TriggerAndCancelOracle > string shorthand - "off" disables quick suggestions for all token types | `crates/quire-core/tests/suggest_session.rs` `quick_suggestions_off` | pass |
+| SuggestModel - TriggerAndCancelOracle > string shorthand - "offWhenInlineCompletions" allows quick suggest when inline provider returns empty | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - offWhenInlineCompletions with InlineCompletionsController > suppresses quick suggest when inline completions are showing ghost text | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - offWhenInlineCompletions with InlineCompletionsController > allows quick suggest when inline completions resolve with no results | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - offWhenInlineCompletions with InlineCompletionsController > allows quick suggest when inlineSuggest is disabled even with provider | N/A: inline completions (ghost text) are not part of quire | — |
+| SuggestModel - offWhenInlineCompletions with InlineCompletionsController > does not trigger after the inline model is disposed mid-wait (e.g., readonly toggled) | N/A: inline completions (ghost text) are not part of quire | — |
+
+## wordDistance.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| suggest, word distance > Suggest locality bonus can boost current word #90515 | `crates/quire-core/tests/suggest_session.rs` | fail (ours: no word-distance locality bonus (editor.suggest.localityBonus, default off, not implemented)) |
+
 ## Per suite
 
 | suite | tests | pass | ours | bug | N/A |
@@ -1057,9 +1346,22 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | textModel.test.ts | 40 | 0 | 0 | 0 | 40 |
 | textModelSearch.test.ts | 77 | 46 | 12 | 0 | 19 |
 | wordOperations.test.ts | 58 | 44 | 3 | 0 | 11 |
+| completionModel.test.ts | 13 | 13 | 0 | 0 | 0 |
+| filters.test.ts | 41 | 29 | 0 | 0 | 12 |
+| snippetController2.old.test.ts | 19 | 0 | 17 | 0 | 2 |
+| snippetController2.test.ts | 42 | 5 | 23 | 0 | 14 |
+| snippetParser.test.ts | 54 | 54 | 0 | 0 | 0 |
+| snippetSession.test.ts | 47 | 11 | 26 | 0 | 10 |
+| suggestModel.test.ts | 32 | 20 | 0 | 0 | 12 |
+| wordDistance.test.ts | 1 | 0 | 1 | 0 | 0 |
 
 ## Totals
 
-- VS Code tests listed: 940
-- translated: 526 (pass 501, fail ours 25, fail bug 0)
-- N/A: 414
+- VS Code tests listed: 1189
+- translated: 725 (pass 633, fail ours 92, fail bug 0)
+- N/A: 464
+
+## Departures without a VS Code test
+
+- `quickSuggestionsDelay`: quick suggestions are requested on the keystroke, not after VS Code's 10 ms editor.quickSuggestionsDelay (quire-core has no clock; typing inside a session only refilters)
+- `suggest.localityBonus`: no word-distance locality bonus (default off in VS Code)

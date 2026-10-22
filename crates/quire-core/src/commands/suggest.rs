@@ -32,8 +32,10 @@ pub(crate) fn run(
             }
         }
         C::HideSuggestWidget if visible => effect(doc, Effect::Suggest(SuggestEffect::Hide)),
-        C::SelectNextSuggestion | C::SelectPrevSuggestion
-        | C::SelectNextPageSuggestion | C::SelectPrevPageSuggestion
+        C::SelectNextSuggestion
+        | C::SelectPrevSuggestion
+        | C::SelectNextPageSuggestion
+        | C::SelectPrevPageSuggestion
             if matches!(st.widget_state(), WidgetState::Open | WidgetState::Frozen) =>
         {
             let (delta, page) = match cmd {
@@ -60,8 +62,7 @@ pub(crate) fn run(
                 return Ok(CommandOutput::Nothing);
             }
             let to = if next { sn.current + 1 } else { sn.current - 1 };
-            let (cs, sel, after) =
-                sn.move_to(doc.text(), to, view.selection().primary().head);
+            let (cs, sel, after) = sn.move_to(doc.text(), to, view.selection().primary().head);
             CommandOutput::Transaction(
                 Transaction::new(doc.version(), cs)
                     .with_selection(sel)
@@ -143,7 +144,10 @@ fn accept(doc: &Document, view: &EditorView, cmd: &EditorCommand) -> Option<Tran
         .with_selection(ins.selection)
         .with_origin(Origin::Command(std::borrow::Cow::Borrowed(cmd.id())))
         .with_group(GroupHint::Isolated)
-        .with_effect(Effect::Suggest(SuggestEffect::Accepted { retrigger, command }));
+        .with_effect(Effect::Suggest(SuggestEffect::Accepted {
+            retrigger,
+            command,
+        }));
     if ins.session.is_some() {
         tr = tr.with_effect(Effect::Snippet(ins.session));
     }
@@ -152,7 +156,11 @@ fn accept(doc: &Document, view: &EditorView, cmd: &EditorCommand) -> Option<Tran
 
 /// A transaction inserting `template` (a snippet) at every cursor, replacing the selections,
 /// and starting snippet mode when it has placeholders (VS Code `SnippetController2.insert`).
-pub fn snippet_transaction(doc: &Document, view: &EditorView, template: &str) -> Option<Transaction> {
+pub fn snippet_transaction(
+    doc: &Document,
+    view: &EditorView,
+    template: &str,
+) -> Option<Transaction> {
     let ins = crate::completion::insert::insert_snippet(
         doc,
         view.selection(),
@@ -165,7 +173,9 @@ pub fn snippet_transaction(doc: &Document, view: &EditorView, template: &str) ->
     Some(
         Transaction::new(doc.version(), ins.changes)
             .with_selection(ins.selection)
-            .with_origin(Origin::Command(std::borrow::Cow::Borrowed("editor.action.insertSnippet")))
+            .with_origin(Origin::Command(std::borrow::Cow::Borrowed(
+                "editor.action.insertSnippet",
+            )))
             .with_group(GroupHint::Isolated)
             .with_effect(Effect::Snippet(ins.session)),
     )

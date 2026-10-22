@@ -57,7 +57,12 @@ fn ctx(leading: &str, delta: isize) -> LineContext {
     }
 }
 
-fn model(items: Vec<Arc<SuggestItem>>, column: usize, c: LineContext, snippets: SnippetSuggestions) -> CompletionModel {
+fn model(
+    items: Vec<Arc<SuggestItem>>,
+    column: usize,
+    c: LineContext,
+    snippets: SnippetSuggestions,
+) -> CompletionModel {
     CompletionModel::new(
         items,
         column + SHIFT,
@@ -79,7 +84,10 @@ fn setup() -> CompletionModel {
 }
 
 fn labels(m: &mut CompletionModel) -> Vec<String> {
-    m.items().iter().map(|f| f.item.label().to_string()).collect()
+    m.items()
+        .iter()
+        .map(|f| f.item.label().to_string())
+        .collect()
 }
 
 #[test]
@@ -98,7 +106,10 @@ fn complete_incomplete() {
     let mut m = setup();
     assert_eq!(m.incomplete_sources().len(), 0);
     let mut inc = model(
-        vec![item("foo", 3, K::Property, true, 1, None, None), it("foo", 2)],
+        vec![
+            item("foo", 3, K::Property, true, 1, None, None),
+            it("foo", 2),
+        ],
         1,
         ctx("foo", 0),
         SnippetSuggestions::Inline,
@@ -129,7 +140,13 @@ fn fuzzy_matching_of_snippets_49895() {
 #[test]
 fn proper_current_word_when_length_0_16380() {
     let mut m = model(
-        vec![it("    </div", 4), it("a", 0), it("p", 0), it("    </tag", 4), it("    XYZ", 4)],
+        vec![
+            it("    </div", 4),
+            it("a", 0),
+            it("p", 0),
+            it("    </tag", 4),
+            it("    XYZ", 4),
+        ],
         1,
         ctx("   <", 0),
         SnippetSuggestions::Inline,
@@ -194,9 +211,22 @@ fn keep_snippet_sorting_inline_25495() {
 
 #[test]
 fn filter_text_seems_ignored_26874() {
-    let item1 = item("Map - java.util", 1, K::Property, false, 1, None, Some("Map"));
+    let item1 = item(
+        "Map - java.util",
+        1,
+        K::Property,
+        false,
+        1,
+        None,
+        Some("Map"),
+    );
     let item2 = it("Map - java.util", 1);
-    let mut m = model(vec![item1, item2], 1, ctx("M", 0), SnippetSuggestions::Inline);
+    let mut m = model(
+        vec![item1, item2],
+        1,
+        ctx("M", 0),
+        SnippetSuggestions::Inline,
+    );
     assert_eq!(m.items().len(), 2);
     m.set_line_context(ctx("Map ", 3));
     assert_eq!(m.items().len(), 1);
@@ -204,8 +234,24 @@ fn filter_text_seems_ignored_26874() {
 
 #[test]
 fn sort_text_from_language_server_26096() {
-    let item1 = item("<- groups", 2, K::Property, false, 3, Some("00002"), Some("  groups"));
-    let item2 = item("source", 0, K::Property, false, 3, Some("00001"), Some("source"));
+    let item1 = item(
+        "<- groups",
+        2,
+        K::Property,
+        false,
+        3,
+        Some("00002"),
+        Some("  groups"),
+    );
+    let item2 = item(
+        "source",
+        0,
+        K::Property,
+        false,
+        3,
+        Some("00001"),
+        Some("source"),
+    );
     let mut items = vec![item1, item2];
     items.sort_by(|a, b| compare_items(a, b, SnippetSuggestions::Inline));
     let mut m = model(items, 3, ctx("  ", 0), SnippetSuggestions::Inline);
@@ -218,7 +264,7 @@ fn sorting_with_label_details_153026() {
     let zzz = item("ZZZ", 0, K::Operator, false, 1, None, None);
     let aaa = item("AAA", 0, K::Operator, false, 1, None, None);
     let iii = item("III", 0, K::Operator, false, 1, None, None);
-    let mut actual = vec![zzz, aaa, iii];
+    let mut actual = [zzz, aaa, iii];
     actual.sort_by(|a, b| compare_items(a, b, SnippetSuggestions::Inline));
     let l: Vec<&str> = actual.iter().map(|i| i.label()).collect();
     assert_eq!(l, ["AAA", "III", "ZZZ"]);
@@ -227,7 +273,13 @@ fn sorting_with_label_details_153026() {
 #[test]
 fn score_only_filtered_items_when_typing_more() {
     let mut m = model(
-        vec![it("console", 0), it("co_new", 0), it("bar", 0), it("car", 0), it("foo", 0)],
+        vec![
+            it("console", 0),
+            it("co_new", 0),
+            it("bar", 0),
+            it("car", 0),
+            it("foo", 0),
+        ],
         1,
         ctx("", 0),
         SnippetSuggestions::Inline,
@@ -244,7 +296,13 @@ fn score_only_filtered_items_when_typing_more() {
 #[test]
 fn more_relaxed_suggest_matching_15419() {
     let mut m = model(
-        vec![it("result", 0), it("replyToUser", 0), it("randomLolut", 0), it("car", 0), it("foo", 0)],
+        vec![
+            it("result", 0),
+            it("replyToUser", 0),
+            it("randomLolut", 0),
+            it("car", 0),
+            it("foo", 0),
+        ],
         1,
         ctx("", 0),
         SnippetSuggestions::Inline,

@@ -224,8 +224,7 @@ impl CompletionModel {
     /// refilters all.
     pub fn set_line_context(&mut self, value: LineContext) {
         if self.line_context != value {
-            self.refilter = if self.line_context.character_count_delta
-                < value.character_count_delta
+            self.refilter = if self.line_context.character_count_delta < value.character_count_delta
                 && self.generation > 0
             {
                 Refilter::Incr
@@ -457,7 +456,9 @@ fn compare_ignore_case(a: &str, b: &str) -> Ordering {
             continue;
         }
         if x >= 128 || y >= 128 {
-            return a[floor(a, i)..].to_lowercase().cmp(&b[floor(b, i)..].to_lowercase());
+            return a[floor(a, i)..]
+                .to_lowercase()
+                .cmp(&b[floor(b, i)..].to_lowercase());
         }
         match x.to_ascii_uppercase().cmp(&y.to_ascii_uppercase()) {
             Ordering::Equal => continue,

@@ -92,7 +92,8 @@ impl Scanner {
         &self.value[t.pos..t.pos + t.len]
     }
 
-    /// The next token.
+    /// The next token (VS Code `Scanner.next`).
+    #[allow(clippy::should_implement_trait)]
     pub fn next(&mut self) -> Token {
         let b = self.value.as_bytes();
         if self.pos >= b.len() {
@@ -234,7 +235,13 @@ impl FormatString {
                 words
                     .iter()
                     .enumerate()
-                    .map(|(i, w)| if i == 0 { js_lower_first(w) } else { js_upper_first(w) })
+                    .map(|(i, w)| {
+                        if i == 0 {
+                            js_lower_first(w)
+                        } else {
+                            js_upper_first(w)
+                        }
+                    })
                     .collect()
             }
             Some("kebabcase") => {
@@ -287,7 +294,9 @@ fn to_kebab_case(value: &str) -> String {
     let trim_us = re(r"^_+|_+$");
     let cleaned = trim_us.replace_all(value.trim(), "").to_string();
     let words = find_all(
-        &re(r"\p{Lu}{2,}(?=\p{Lu}\p{Ll}+[0-9]*|[\s_-]|$)|\p{Lu}?\p{Ll}+[0-9]*|\p{Lu}(?=\p{Lu}\p{Ll})|\p{Lu}(?=[\s_-]|$)|[0-9]+"),
+        &re(
+            r"\p{Lu}{2,}(?=\p{Lu}\p{Ll}+[0-9]*|[\s_-]|$)|\p{Lu}?\p{Ll}+[0-9]*|\p{Lu}(?=\p{Lu}\p{Ll})|\p{Lu}(?=[\s_-]|$)|[0-9]+",
+        ),
         &cleaned,
     );
     if words.is_empty() {
@@ -372,8 +381,9 @@ impl Transform {
             let m = caps.get(0).expect("group 0");
             did_match = true;
             out.push_str(&value[last..m.start()]);
-            let groups: Vec<Option<&str>> =
-                (0..caps.len()).map(|i| caps.get(i).map(|g| g.as_str())).collect();
+            let groups: Vec<Option<&str>> = (0..caps.len())
+                .map(|i| caps.get(i).map(|g| g.as_str()))
+                .collect();
             out.push_str(&self.replace(&groups));
             last = m.end();
             if !global {
@@ -405,7 +415,11 @@ impl Transform {
         for item in &self.items {
             match item {
                 FormatItem::Format(f) => {
-                    let v = groups.get(f.index).copied().flatten().filter(|v| !v.is_empty());
+                    let v = groups
+                        .get(f.index)
+                        .copied()
+                        .flatten()
+                        .filter(|v| !v.is_empty());
                     ret.push_str(&f.resolve(v));
                 }
                 FormatItem::Text(t) => ret.push_str(t),
@@ -423,7 +437,10 @@ impl Transform {
                 FormatItem::Format(f) => fmt.push_str(&f.to_textmate_string()),
             }
         }
-        let flags: String = ['i', 'g'].iter().filter(|f| self.flags.contains(**f)).collect();
+        let flags: String = ['i', 'g']
+            .iter()
+            .filter(|f| self.flags.contains(**f))
+            .collect();
         format!("/{}/{}/{}", self.source, fmt, flags)
     }
 }
@@ -601,7 +618,9 @@ impl Snippet {
             .iter()
             .position(|&c| c == child)
             .expect("child of its parent");
-        self.nodes[parent].children.splice(idx..idx + 1, others.iter().copied());
+        self.nodes[parent]
+            .children
+            .splice(idx..idx + 1, others.iter().copied());
         for &o in others {
             self.nodes[o].parent = Some(parent);
         }
@@ -685,7 +704,9 @@ impl Snippet {
                 .collect::<Vec<_>>()
                 .join(","),
             Marker::Placeholder { index, transform } => {
-                let t = transform.as_ref().map_or(String::new(), |t| t.to_textmate_string());
+                let t = transform
+                    .as_ref()
+                    .map_or(String::new(), |t| t.to_textmate_string());
                 if self.nodes[id].children.is_empty() && transform.is_none() {
                     format!("${index}")
                 } else if self.nodes[id].children.is_empty() {
@@ -699,7 +720,9 @@ impl Snippet {
                 }
             }
             Marker::Variable { name, transform } => {
-                let t = transform.as_ref().map_or(String::new(), |t| t.to_textmate_string());
+                let t = transform
+                    .as_ref()
+                    .map_or(String::new(), |t| t.to_textmate_string());
                 if self.nodes[id].children.is_empty() {
                     format!("${{{name}{t}}}")
                 } else {
@@ -1058,12 +1081,12 @@ impl SnippetParser {
     // ${1:<children>}, ${1} -> placeholder
     fn parse_complex_placeholder(&mut self, s: &mut Snippet, parent: NodeId) -> bool {
         let token = self.token;
-        let index = if self.accept(Some(TokenType::Dollar)) && self.accept(Some(TokenType::CurlyOpen))
-        {
-            self.accept_text(Some(TokenType::Int))
-        } else {
-            None
-        };
+        let index =
+            if self.accept(Some(TokenType::Dollar)) && self.accept(Some(TokenType::CurlyOpen)) {
+                self.accept_text(Some(TokenType::Int))
+            } else {
+                None
+            };
         let Some(index) = index else {
             return self.back_to(token);
         };
@@ -1167,12 +1190,12 @@ impl SnippetParser {
     // ${foo:<children>}, ${foo} -> variable
     fn parse_complex_variable(&mut self, s: &mut Snippet, parent: NodeId) -> bool {
         let token = self.token;
-        let name = if self.accept(Some(TokenType::Dollar)) && self.accept(Some(TokenType::CurlyOpen))
-        {
-            self.accept_text(Some(TokenType::VariableName))
-        } else {
-            None
-        };
+        let name =
+            if self.accept(Some(TokenType::Dollar)) && self.accept(Some(TokenType::CurlyOpen)) {
+                self.accept_text(Some(TokenType::VariableName))
+            } else {
+                None
+            };
         let Some(name) = name else {
             return self.back_to(token);
         };
@@ -1228,7 +1251,9 @@ impl SnippetParser {
                 break;
             }
             if let Some(bs) = self.accept_text(Some(TokenType::Backslash)) {
-                let e = self.accept_text(Some(TokenType::Forwardslash)).unwrap_or(bs);
+                let e = self
+                    .accept_text(Some(TokenType::Forwardslash))
+                    .unwrap_or(bs);
                 regex_value.push_str(&e);
                 continue;
             }

@@ -29,7 +29,13 @@ fn any_scorer(
     Some(any_score(p, lp, pp, w, lw, wp))
 }
 
-fn assert_matches(pattern: &str, word: &str, decorated: Option<&str>, filter: FuzzyScorer, o: Opts) {
+fn assert_matches(
+    pattern: &str,
+    word: &str,
+    decorated: Option<&str>,
+    filter: FuzzyScorer,
+    o: Opts,
+) {
     let p = utf16(pattern);
     let w = utf16(word);
     let r = filter(
@@ -44,7 +50,11 @@ fn assert_matches(pattern: &str, word: &str, decorated: Option<&str>, filter: Fu
             boost_full_match: true,
         },
     );
-    assert_eq!(decorated.is_none(), r.is_none(), "{pattern} / {word}: {r:?}");
+    assert_eq!(
+        decorated.is_none(),
+        r.is_none(),
+        "{pattern} / {word}: {r:?}"
+    );
     if let Some(r) = r {
         let matches = create_matches(Some(&r));
         let mut actual: Vec<u16> = Vec::new();
@@ -58,7 +68,11 @@ fn assert_matches(pattern: &str, word: &str, decorated: Option<&str>, filter: Fu
             pos = m.end;
         }
         actual.extend_from_slice(&w[pos..]);
-        assert_eq!(String::from_utf16_lossy(&actual), decorated.unwrap(), "{pattern} / {word}");
+        assert_eq!(
+            String::from_utf16_lossy(&actual),
+            decorated.unwrap(),
+            "{pattern} / {word}"
+        );
     }
 }
 
@@ -97,8 +111,16 @@ fn assert_top_score(filter: FuzzyScorer, pattern: &str, expected: usize, words: 
 fn fuzzy_score_23215() {
     am("tit", "win.tit", Some("win.^t^i^t"));
     am("title", "win.title", Some("win.^t^i^t^l^e"));
-    am("WordCla", "WordCharacterClassifier", Some("^W^o^r^dCharacter^C^l^assifier"));
-    am("WordCCla", "WordCharacterClassifier", Some("^W^o^r^d^Character^C^l^assifier"));
+    am(
+        "WordCla",
+        "WordCharacterClassifier",
+        Some("^W^o^r^dCharacter^C^l^assifier"),
+    );
+    am(
+        "WordCCla",
+        "WordCharacterClassifier",
+        Some("^W^o^r^d^Character^C^l^assifier"),
+    );
 }
 
 #[test]
@@ -108,27 +130,59 @@ fn fuzzy_score_23332() {
 
 #[test]
 fn fuzzy_score_23190() {
-    am("c:\\do", "& 'C:\\Documents and Settings'", Some("& '^C^:^\\^D^ocuments and Settings'"));
-    am("c:\\do", "& 'c:\\Documents and Settings'", Some("& '^c^:^\\^D^ocuments and Settings'"));
+    am(
+        "c:\\do",
+        "& 'C:\\Documents and Settings'",
+        Some("& '^C^:^\\^D^ocuments and Settings'"),
+    );
+    am(
+        "c:\\do",
+        "& 'c:\\Documents and Settings'",
+        Some("& '^c^:^\\^D^ocuments and Settings'"),
+    );
 }
 
 #[test]
 fn fuzzy_score_23581() {
-    am("close", "css.lint.importStatement", Some("^css.^lint.imp^ort^Stat^ement"));
-    am("close", "css.colorDecorators.enable", Some("^css.co^l^orDecorator^s.^enable"));
-    am("close", "workbench.quickOpen.closeOnFocusOut", Some("workbench.quickOpen.^c^l^o^s^eOnFocusOut"));
+    am(
+        "close",
+        "css.lint.importStatement",
+        Some("^css.^lint.imp^ort^Stat^ement"),
+    );
+    am(
+        "close",
+        "css.colorDecorators.enable",
+        Some("^css.co^l^orDecorator^s.^enable"),
+    );
+    am(
+        "close",
+        "workbench.quickOpen.closeOnFocusOut",
+        Some("workbench.quickOpen.^c^l^o^s^eOnFocusOut"),
+    );
     assert_top_score(
         fuzzy_score,
         "close",
         2,
-        &["css.lint.importStatement", "css.colorDecorators.enable", "workbench.quickOpen.closeOnFocusOut"],
+        &[
+            "css.lint.importStatement",
+            "css.colorDecorators.enable",
+            "workbench.quickOpen.closeOnFocusOut",
+        ],
     );
 }
 
 #[test]
 fn fuzzy_score_23458() {
-    am("highlight", "editorHoverHighlight", Some("editorHover^H^i^g^h^l^i^g^h^t"));
-    am("hhighlight", "editorHoverHighlight", Some("editor^Hover^H^i^g^h^l^i^g^h^t"));
+    am(
+        "highlight",
+        "editorHoverHighlight",
+        Some("editorHover^H^i^g^h^l^i^g^h^t"),
+    );
+    am(
+        "hhighlight",
+        "editorHoverHighlight",
+        Some("editor^Hover^H^i^g^h^l^i^g^h^t"),
+    );
     am("dhhighlight", "editorHoverHighlight", None);
 }
 
@@ -149,15 +203,27 @@ fn fuzzy_score_basic() {
     am("cmcm", "camelCase", None);
     am("BK", "the_black_knight", Some("the_^black_^knight"));
     am("KeyboardLayout=", "KeyboardLayout", None);
-    am("LLL", "SVisualLoggerLogsList", Some("SVisual^Logger^Logs^List"));
+    am(
+        "LLL",
+        "SVisualLoggerLogsList",
+        Some("SVisual^Logger^Logs^List"),
+    );
     am("LLLL", "SVilLoLosLi", None);
     am("LLLL", "SVisualLoggerLogsList", None);
     am("TEdit", "TextEdit", Some("^Text^E^d^i^t"));
     am("TEdit", "TextEditor", Some("^Text^E^d^i^tor"));
     am("TEdit", "Textedit", Some("^Text^e^d^i^t"));
     am("TEdit", "text_edit", Some("^text_^e^d^i^t"));
-    am("TEditDit", "TextEditorDecorationType", Some("^Text^E^d^i^tor^Decorat^ion^Type"));
-    am("TEdit", "TextEditorDecorationType", Some("^Text^E^d^i^torDecorationType"));
+    am(
+        "TEditDit",
+        "TextEditorDecorationType",
+        Some("^Text^E^d^i^tor^Decorat^ion^Type"),
+    );
+    am(
+        "TEdit",
+        "TextEditorDecorationType",
+        Some("^Text^E^d^i^torDecorationType"),
+    );
     am("Tedit", "TextEdit", Some("^Text^E^d^i^t"));
     am("ba", "?AB?", None);
     am("bkn", "the_black_knight", Some("the_^black_^k^night"));
@@ -167,7 +233,11 @@ fn fuzzy_score_basic() {
     am("fob", "foobar", Some("^f^oo^bar"));
     am("fobz", "foobar", None);
     am("foobar", "foobar", Some("^f^o^o^b^a^r"));
-    am("form", "editor.formatOnSave", Some("editor.^f^o^r^matOnSave"));
+    am(
+        "form",
+        "editor.formatOnSave",
+        Some("editor.^f^o^r^matOnSave"),
+    );
     am("g p", "Git: Pull", Some("^Git:^ ^Pull"));
     am("g p", "Git: Pull", Some("^Git:^ ^Pull"));
     am("gip", "Git: Pull", Some("^G^it: ^Pull"));
@@ -181,8 +251,16 @@ fn fuzzy_score_basic() {
     am("no", "", None);
     am("no", "match", None);
     am("ob", "foobar", None);
-    am("sl", "SVisualLoggerLogsList", Some("^SVisual^LoggerLogsList"));
-    am("sllll", "SVisualLoggerLogsList", Some("^SVisua^l^Logger^Logs^List"));
+    am(
+        "sl",
+        "SVisualLoggerLogsList",
+        Some("^SVisual^LoggerLogsList"),
+    );
+    am(
+        "sllll",
+        "SVisualLoggerLogsList",
+        Some("^SVisua^l^Logger^Logs^List"),
+    );
     am("Three", "HTMLHRElement", None);
     am("Three", "Three", Some("^T^h^r^e^e"));
     am("fo", "barfoo", None);
@@ -203,9 +281,27 @@ fn weak() -> Opts {
 
 #[test]
 fn fuzzy_score_first_match_can_be_weak() {
-    assert_matches("Three", "HTMLHRElement", Some("H^TML^H^R^El^ement"), fuzzy_score, weak());
-    assert_matches("tor", "constructor", Some("construc^t^o^r"), fuzzy_score, weak());
-    assert_matches("ur", "constructor", Some("constr^ucto^r"), fuzzy_score, weak());
+    assert_matches(
+        "Three",
+        "HTMLHRElement",
+        Some("H^TML^H^R^El^ement"),
+        fuzzy_score,
+        weak(),
+    );
+    assert_matches(
+        "tor",
+        "constructor",
+        Some("construc^t^o^r"),
+        fuzzy_score,
+        weak(),
+    );
+    assert_matches(
+        "ur",
+        "constructor",
+        Some("constr^ucto^r"),
+        fuzzy_score,
+        weak(),
+    );
     assert_top_score(fuzzy_score, "tor", 2, &["constructor", "Thor", "cTor"]);
 }
 
@@ -219,7 +315,11 @@ fn fuzzy_score_many_matches() {
 #[test]
 fn freeze_when_fjfj_jfjf_91807() {
     am("jfjfj", "fjfjfjfjfjfjfjfjfjfjfj", None);
-    am("jfjfjfjfjfjfjfjfjfj", "fjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfj", None);
+    am(
+        "jfjfjfjfjfjfjfjfjfj",
+        "fjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfj",
+        None,
+    );
     am(
         "jfjfjfjfjfjfjfjfjfjjfjfjfjfjfjfjfjfjfjjfjfjfjfjfjfjfjfjfjjfjfjfjfjfjfjfjfjfjjfjfjfjfjfjfjfjfjfjjfjfjfjfjfjfjfjfjfj",
         "fjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfjfj",
@@ -266,7 +366,15 @@ fn cannot_set_property_26511() {
     let word = "a".repeat(122);
     let pattern = "a".repeat(119);
     let (p, w) = (utf16(&pattern), utf16(&word));
-    let _ = fuzzy_score(&p, &utf16_lower(&p), 0, &w, &utf16_lower(&w), 0, FuzzyScoreOptions::default());
+    let _ = fuzzy_score(
+        &p,
+        &utf16_lower(&p),
+        0,
+        &w,
+        &utf16_lower(&w),
+        0,
+        FuzzyScoreOptions::default(),
+    );
 }
 
 fn pp(n: usize) -> Opts {
@@ -283,7 +391,13 @@ fn sort_text_26096() {
     am("g", "  group", Some("  ^group"));
     am("g g", "  groupGroup", None);
     am("g g", "  group Group", Some("  ^group^ ^Group"));
-    assert_matches(" g g", "  group Group", Some("  ^group^ ^Group"), fuzzy_score, pp(1));
+    assert_matches(
+        " g g",
+        "  group Group",
+        Some("  ^group^ ^Group"),
+        fuzzy_score,
+        pp(1),
+    );
     am("zz", "zzGroup", Some("^z^zGroup"));
     am("zzg", "zzGroup", Some("^z^z^Group"));
     am("g", "zzGroup", Some("zz^Group"));
@@ -322,9 +436,19 @@ fn pattern_pos_79815() {
 #[test]
 fn top_score_fuzzy_score() {
     let f = fuzzy_score;
-    assert_top_score(f, "cons", 2, &["ArrayBufferConstructor", "Console", "console"]);
+    assert_top_score(
+        f,
+        "cons",
+        2,
+        &["ArrayBufferConstructor", "Console", "console"],
+    );
     assert_top_score(f, "Foo", 1, &["foo", "Foo", "foo"]);
-    assert_top_score(f, "onMess", 1, &["onmessage", "onMessage", "onThisMegaEscape"]);
+    assert_top_score(
+        f,
+        "onMess",
+        1,
+        &["onmessage", "onMessage", "onThisMegaEscape"],
+    );
     assert_top_score(f, "CC", 1, &["camelCase", "CamelCase"]);
     assert_top_score(f, "cC", 0, &["camelCase", "CamelCase"]);
     assert_top_score(f, "p", 4, &["parse", "posix", "pafdsa", "path", "p"]);
@@ -333,14 +457,23 @@ fn top_score_fuzzy_score() {
         f,
         "log",
         3,
-        &["HTMLOptGroupElement", "ScrollLogicalPosition", "SVGFEMorphologyElement", "log", "logger"],
+        &[
+            "HTMLOptGroupElement",
+            "ScrollLogicalPosition",
+            "SVGFEMorphologyElement",
+            "log",
+            "logger",
+        ],
     );
     assert_top_score(f, "e", 2, &["AbstractWorker", "ActiveXObject", "else"]);
     assert_top_score(
         f,
         "workbench.sideb",
         1,
-        &["workbench.editor.defaultSideBySideLayout", "workbench.sideBar.location"],
+        &[
+            "workbench.editor.defaultSideBySideLayout",
+            "workbench.sideBar.location",
+        ],
     );
     assert_top_score(
         f,
@@ -358,10 +491,18 @@ fn top_score_fuzzy_score() {
         f,
         "convertModelPosition",
         0,
-        &["convertModelPositionToViewPosition", "convertViewToModelPosition"],
+        &[
+            "convertModelPositionToViewPosition",
+            "convertViewToModelPosition",
+        ],
     );
     assert_top_score(f, "is", 0, &["isValidViewletId", "import statement"]);
-    assert_top_score(f, "title", 1, &["files.trimTrailingWhitespace", "window.title"]);
+    assert_top_score(
+        f,
+        "title",
+        1,
+        &["files.trimTrailingWhitespace", "window.title"],
+    );
     assert_top_score(f, "const", 1, &["constructor", "const", "cuOnstrul"]);
 }
 
@@ -374,8 +515,20 @@ fn unexpected_suggestion_scoring_28791() {
 
 #[test]
 fn html_closing_tag_38880() {
-    assert_matches("\t\t<", "\t\t</body>", Some("^\t^\t^</body>"), fuzzy_score, pp(0));
-    assert_matches("\t\t<", "\t\t</body>", Some("\t\t^</body>"), fuzzy_score, pp(2));
+    assert_matches(
+        "\t\t<",
+        "\t\t</body>",
+        Some("^\t^\t^</body>"),
+        fuzzy_score,
+        pp(0),
+    );
+    assert_matches(
+        "\t\t<",
+        "\t\t</body>",
+        Some("\t\t^</body>"),
+        fuzzy_score,
+        pp(2),
+    );
     assert_matches("\t<", "\t</body>", Some("\t^</body>"), fuzzy_score, pp(1));
 }
 
@@ -383,12 +536,42 @@ fn html_closing_tag_38880() {
 fn fuzzy_score_graceful_test() {
     let d = Opts::default;
     assert_matches("rlut", "result", None, fuzzy_score, d());
-    assert_matches("rlut", "result", Some("^res^u^l^t"), fuzzy_score_graceful, d());
+    assert_matches(
+        "rlut",
+        "result",
+        Some("^res^u^l^t"),
+        fuzzy_score_graceful,
+        d(),
+    );
     assert_matches("cno", "console", Some("^co^ns^ole"), fuzzy_score, d());
-    assert_matches("cno", "console", Some("^co^ns^ole"), fuzzy_score_graceful, d());
-    assert_matches("cno", "console", Some("^c^o^nsole"), fuzzy_score_graceful_aggressive, d());
-    assert_matches("cno", "co_new", Some("^c^o_^new"), fuzzy_score_graceful, d());
-    assert_matches("cno", "co_new", Some("^c^o_^new"), fuzzy_score_graceful_aggressive, d());
+    assert_matches(
+        "cno",
+        "console",
+        Some("^co^ns^ole"),
+        fuzzy_score_graceful,
+        d(),
+    );
+    assert_matches(
+        "cno",
+        "console",
+        Some("^c^o^nsole"),
+        fuzzy_score_graceful_aggressive,
+        d(),
+    );
+    assert_matches(
+        "cno",
+        "co_new",
+        Some("^c^o_^new"),
+        fuzzy_score_graceful,
+        d(),
+    );
+    assert_matches(
+        "cno",
+        "co_new",
+        Some("^c^o_^new"),
+        fuzzy_score_graceful_aggressive,
+        d(),
+    );
 }
 
 #[test]
@@ -405,12 +588,16 @@ fn truncated_filter_text_74133() {
     am(
         "foo",
         "ffffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_foo",
-        Some("ffffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_^f^o^o"),
+        Some(
+            "ffffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_^f^o^o",
+        ),
     );
     am(
         "Aoo",
         "Affffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_foo",
-        Some("^Affffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_f^o^o"),
+        Some(
+            "^Affffffffffffffffffffffffffffbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbarbar_f^o^o",
+        ),
     );
     am(
         "foo",
@@ -438,13 +625,25 @@ fn go_to_symbol_exact_method_name_84787() {
 
 #[test]
 fn wrong_highlight_after_emoji_113404() {
-    am("di", "\u{2728}div classname=\"\"></div>", Some("\u{2728}^d^iv classname=\"\"></div>"));
-    am("di", "adiv classname=\"\"></div>", Some("adiv classname=\"\"></^d^iv>"));
+    am(
+        "di",
+        "\u{2728}div classname=\"\"></div>",
+        Some("\u{2728}^d^iv classname=\"\"></div>"),
+    );
+    am(
+        "di",
+        "adiv classname=\"\"></div>",
+        Some("adiv classname=\"\"></^d^iv>"),
+    );
 }
 
 #[test]
 fn suggestion_not_highlighted_85826() {
-    am("SemanticTokens", "SemanticTokensEdits", Some("^S^e^m^a^n^t^i^c^T^o^k^e^n^sEdits"));
+    am(
+        "SemanticTokens",
+        "SemanticTokensEdits",
+        Some("^S^e^m^a^n^t^i^c^T^o^k^e^n^sEdits"),
+    );
     assert_matches(
         "SemanticTokens",
         "SemanticTokensEdits",
@@ -463,8 +662,20 @@ fn highlighting_text_in_front_of_cursor_115250() {
 
 #[test]
 fn any_score_no_strong_first_match() {
-    assert_matches("bar", "foobAr", Some("foo^b^A^r"), any_scorer, Opts::default());
-    assert_matches("bar", "foobar", Some("foo^b^a^r"), any_scorer, Opts::default());
+    assert_matches(
+        "bar",
+        "foobAr",
+        Some("foo^b^A^r"),
+        any_scorer,
+        Opts::default(),
+    );
+    assert_matches(
+        "bar",
+        "foobar",
+        Some("foo^b^a^r"),
+        any_scorer,
+        Opts::default(),
+    );
 }
 
 #[test]
@@ -492,7 +703,9 @@ fn configurable_full_match_boost() {
     assert!(score(prefix, a, 0, true) < score(prefix, b, 0, true));
     let wp = "$(symbol-function) ";
     let n = utf16(wp).len();
-    assert!(score(prefix, &format!("{wp}{a}"), n, true) < score(prefix, &format!("{wp}{b}"), n, true));
+    assert!(
+        score(prefix, &format!("{wp}{a}"), n, true) < score(prefix, &format!("{wp}{b}"), n, true)
+    );
     assert_eq!(score(prefix, a, 0, false), score(prefix, b, 0, false));
 }
 

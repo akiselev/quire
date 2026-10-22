@@ -131,8 +131,15 @@ pub fn any_score(
         boost_full_match: true,
     };
     while pattern_pos < max {
-        if let Some(r) = fuzzy_score(pattern, low_pattern, pattern_pos, word, low_word, word_pos, opts)
-        {
+        if let Some(r) = fuzzy_score(
+            pattern,
+            low_pattern,
+            pattern_pos,
+            word,
+            low_word,
+            word_pos,
+            opts,
+        ) {
             return r;
         }
         pattern_pos += 1;
@@ -235,6 +242,7 @@ fn is_upper_case_at_pos(pos: isize, word: &[u16], word_low: &[u16]) -> bool {
     word.get(pos as usize) != word_low.get(pos as usize)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn is_pattern_in_word(
     t: &mut Tables,
     pattern_low: &[u16],
@@ -311,12 +319,20 @@ fn do_score(
     let mut is_gap_location = false;
     if word_pos == pattern_pos - pattern_start {
         // common prefix: `foobar <-> foobaz`
-        score = if pattern[pattern_pos] == word[word_pos] { 7 } else { 5 };
+        score = if pattern[pattern_pos] == word[word_pos] {
+            7
+        } else {
+            5
+        };
     } else if is_upper_case_at_pos(wp, word, word_low)
         && (word_pos == 0 || !is_upper_case_at_pos(wp - 1, word, word_low))
     {
         // hitting upper-case: `foo <-> forOthers`
-        score = if pattern[pattern_pos] == word[word_pos] { 7 } else { 5 };
+        score = if pattern[pattern_pos] == word[word_pos] {
+            7
+        } else {
+            5
+        };
         is_gap_location = true;
     } else if is_separator_at_pos(word_low, wp)
         && (word_pos == 0 || !is_separator_at_pos(word_low, wp - 1))
@@ -487,7 +503,11 @@ fn fuzzy_score_in(
             let can_come_left = word_pos > min_word_match_pos;
             let left_score = if can_come_left {
                 t.table[idx(row, column - 1)]
-                    + if t.diag[idx(row, column - 1)] > 0 { -5 } else { 0 }
+                    + if t.diag[idx(row, column - 1)] > 0 {
+                        -5
+                    } else {
+                        0
+                    }
             } else {
                 0
             }; // penalty for a gap start
@@ -496,7 +516,11 @@ fn fuzzy_score_in(
                 word_pos > min_word_match_pos + 1 && t.diag[idx(row, column - 1)] > 0;
             let left_left_score = if can_come_left_left {
                 t.table[idx(row, column - 2)]
-                    + if t.diag[idx(row, column - 2)] > 0 { -5 } else { 0 }
+                    + if t.diag[idx(row, column - 2)] > 0 {
+                        -5
+                    } else {
+                        0
+                    }
             } else {
                 0
             };
@@ -616,7 +640,16 @@ pub fn fuzzy_score_graceful_aggressive(
     word_pos: usize,
     options: FuzzyScoreOptions,
 ) -> Option<FuzzyScore> {
-    with_permutations(pattern, low_pattern, pattern_pos, word, low_word, word_pos, true, options)
+    with_permutations(
+        pattern,
+        low_pattern,
+        pattern_pos,
+        word,
+        low_word,
+        word_pos,
+        true,
+        options,
+    )
 }
 
 /// `fuzzyScoreGraceful`: swaps neighbouring pattern characters only when the pattern itself
@@ -630,7 +663,16 @@ pub fn fuzzy_score_graceful(
     word_pos: usize,
     options: FuzzyScoreOptions,
 ) -> Option<FuzzyScore> {
-    with_permutations(pattern, low_pattern, pattern_pos, word, low_word, word_pos, false, options)
+    with_permutations(
+        pattern,
+        low_pattern,
+        pattern_pos,
+        word,
+        low_word,
+        word_pos,
+        false,
+        options,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -644,7 +686,15 @@ fn with_permutations(
     aggressive: bool,
     options: FuzzyScoreOptions,
 ) -> Option<FuzzyScore> {
-    let mut top = fuzzy_score(pattern, low_pattern, pattern_pos, word, low_word, word_pos, options);
+    let mut top = fuzzy_score(
+        pattern,
+        low_pattern,
+        pattern_pos,
+        word,
+        low_word,
+        word_pos,
+        options,
+    );
     if top.is_some() && !aggressive {
         return top;
     }
@@ -655,9 +705,15 @@ fn with_permutations(
         while moving < tries {
             if let Some(new_pattern) = next_typo_permutation(pattern, moving) {
                 let low = utf16_lower(&new_pattern);
-                if let Some(mut c) =
-                    fuzzy_score(&new_pattern, &low, pattern_pos, word, low_word, word_pos, options)
-                {
+                if let Some(mut c) = fuzzy_score(
+                    &new_pattern,
+                    &low,
+                    pattern_pos,
+                    word,
+                    low_word,
+                    word_pos,
+                    options,
+                ) {
                     c.score -= 3; // permutation penalty
                     if top.as_ref().is_none_or(|t| c.score > t.score) {
                         top = Some(c);

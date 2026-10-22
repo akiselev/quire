@@ -494,8 +494,11 @@ impl EditorView {
     pub fn trigger_suggest(&mut self, doc: &Document, auto: bool) {
         self.sync(doc);
         let sel = self.text.selection().clone();
-        self.suggest
-            .trigger(doc, &sel, crate::completion::session::TriggerOptions::new(auto));
+        self.suggest.trigger(
+            doc,
+            &sel,
+            crate::completion::session::TriggerOptions::new(auto),
+        );
     }
 
     /// Focuses a row of the suggest list (the mouse).

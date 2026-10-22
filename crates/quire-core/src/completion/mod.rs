@@ -26,11 +26,13 @@ mod model;
 pub(crate) mod session;
 pub mod snippet;
 
-pub use filters::{FuzzyScore, FuzzyScoreOptions};
-pub use model::{CompletionModel, FilteredItem, LineContext, ModelOptions, SuggestItem, compare_items};
 pub use crate::commands::suggest::snippet_transaction;
+pub use filters::{FuzzyScore, FuzzyScoreOptions};
 pub use insert::{SnippetSession, TabstopGroup};
-pub use session::{should_auto_trigger, SuggestSession, SuggestState, VISIBLE_ROWS, WidgetState};
+pub use model::{
+    CompletionModel, FilteredItem, LineContext, ModelOptions, SuggestItem, compare_items,
+};
+pub use session::{SuggestSession, SuggestState, VISIBLE_ROWS, WidgetState, should_auto_trigger};
 
 use crate::diagnostics::SourceId;
 use std::ops::Range;
