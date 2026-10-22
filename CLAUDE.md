@@ -33,7 +33,9 @@ quire depends on neither.
 
 - Every cargo command goes through `scripts/cargo.sh`. Builds and tests take a machine build slot;
   check, clippy and fmt run niced with 3 jobs and no slot.
-- After a branch merges, delete its worktree's `target/`.
+- After a branch merges, delete its worktree's `target/`. At most two worktrees have their own
+  target; others share one by exporting `CARGO_TARGET_DIR=<dir>` and
+  `CARGO_BUILD_BUILD_DIR=<dir>/build`. Below 20 GB free disk, stop building and tell the coordinator.
 - While writing: `scripts/cargo.sh check -p <crate>` and only the touched tests
   (`scripts/cargo.sh test -p <crate> --test <name>` or a name filter).
 - `scripts/check.sh` once per milestone, never on unchanged code.
