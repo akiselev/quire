@@ -1361,3 +1361,116 @@ fn keymap_parses_two_chord_entries() {
         "cursorEnd"
     );
 }
+
+// ---------------------------------------------------------------------------------------------
+// X11/Wayland PRIMARY selection.
+
+fn settled_selections(h: &mut Harness<'_, St>) -> Vec<String> {
+    std::mem::take(&mut h.state_mut().primary)
+}
+
+#[test]
+fn settled_selection_is_reported_once_for_primary() {
+    let mut h = harness(St::new("alpha beta\n"));
+    h.run();
+    focus(&mut h);
+    settled_selections(&mut h);
+    h.key_press_modifiers(Modifiers::SHIFT, Key::ArrowLeft);
+    h.step();
+    assert_eq!(settled_selections(&mut h), vec!["\n".to_owned()]);
+    h.step();
+    assert!(
+        settled_selections(&mut h).is_empty(),
+        "not re-sent while unchanged"
+    );
+    h.key_press_modifiers(cmd(), Key::A);
+    h.step();
+    assert_eq!(settled_selections(&mut h), vec!["alpha beta\n".to_owned()]);
+    // While a drag is in progress nothing is sent; on release the final selection is.
+    let r = h.state().rects[0];
+    let p0 = pos2(r.right() - 30.0, r.top() + 8.0);
+    h.event(Event::PointerMoved(p0));
+    h.event(Event::PointerButton {
+        pos: p0,
+        button: PointerButton::Primary,
+        pressed: true,
+        modifiers: Modifiers::NONE,
+    });
+    h.step();
+    let p1 = pos2(r.left() + 60.0, r.top() + 8.0);
+    for i in 1..=4 {
+        h.event(Event::PointerMoved(p0 + (p1 - p0) * (i as f32 / 4.0)));
+        h.step();
+    }
+    assert!(
+        settled_selections(&mut h).is_empty(),
+        "nothing while dragging"
+    );
+    h.event(Event::PointerButton {
+        pos: p1,
+        button: PointerButton::Primary,
+        pressed: false,
+        modifiers: Modifiers::NONE,
+    });
+    h.run();
+    let (a, b) = h.state().sel(0);
+    assert!(a != b);
+    let expect = h.state().text()[b.min(a)..a.max(b)].to_owned();
+    assert_eq!(settled_selections(&mut h), vec![expect]);
+}
+
+#[test]
+fn middle_click_pastes_primary_at_the_pointer() {
+    let mut h = harness(St::new("abcdefgh\nab\n"));
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 8, 2);
+    let p = pos2(left + 4.0 * adv, row0.center().y);
+    h.event(Event::PointerMoved(p));
+    h.event(Event::MiddleClickPaste {
+        pos: p,
+        text: "XY".into(),
+    });
+    h.run();
+    assert_eq!(h.state().text(), "abcdXYefgh\nab\n");
+    assert_eq!(h.state().sel(0), (6, 6));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Page-shift announcement.
+
+fn announcement(h: &Harness<'_, St>) -> Option<(String, Option<egui::accesskit::Live>)> {
+    let node = h.get_by_label("Source");
+    let n = node
+        .accesskit_node()
+        .children()
+        .find(|c| c.role() == Role::Status)?;
+    Some((n.label().unwrap_or_default(), n.data().live()))
+}
+
+#[test]
+fn page_shift_announces_the_line() {
+    let text: String = (0..200).map(|i| format!("line {i}\n")).collect();
+    let mut h = harness(St::new(&text));
+    h.run();
+    focus(&mut h);
+    assert_eq!(announcement(&h), None, "nothing to announce before a shift");
+    h.key_press_modifiers(cmd(), Key::Home);
+    h.run();
+    h.key_press(Key::ArrowDown);
+    h.run();
+    assert_eq!(
+        announcement(&h),
+        None,
+        "moving within the page announces nothing"
+    );
+    h.key_press_modifiers(cmd(), Key::End);
+    h.run();
+    assert_eq!(
+        announcement(&h),
+        Some(("Line 201".to_owned(), Some(egui::accesskit::Live::Polite)))
+    );
+    // Line 201 → 200 leaves page 200..250 for 150..200.
+    h.key_press(Key::ArrowUp);
+    h.run();
+    assert_eq!(announcement(&h).unwrap().0, "Line 200");
+}

@@ -157,6 +157,9 @@ pub struct EditorText {
     /// `{current}` and `{total}` are substituted.
     pub match_count: String,
     pub no_results: String,
+    /// Announced (AccessKit polite live region) when the accessibility page shifts to follow
+    /// the caret; `{line}` is the 1-based line number.
+    pub line_announcement: String,
 }
 
 impl Default for EditorText {
@@ -176,6 +179,7 @@ impl Default for EditorText {
             close: "Close".into(),
             match_count: "{current} of {total}".into(),
             no_results: "No results".into(),
+            line_announcement: "Line {line}".into(),
         }
     }
 }
