@@ -90,9 +90,13 @@ pub struct EditorOutput {
     pub events: Vec<EditorEvent>,
     /// Primary caret in screen coordinates (anchors, tutorials, IME placement).
     pub caret_rect: Option<Rect>,
-    /// False while the widget has work in flight (a drag, a pending hover) or the document is not
-    /// settled. Caret blink does not count (R8).
+    /// False while the widget has work in flight (a drag selection) or the document is not
+    /// settled (pending parse or debounce). Caret blink does not count (R8).
     pub settled: bool,
+    /// The document has changes since it was last marked saved.
+    pub dirty: bool,
+    /// Lines laid out and painted this frame.
+    pub visible_lines: Range<usize>,
 }
 
 /// The widget. Build with [`CodeEditor::new`], then call [`CodeEditor::show`] or
@@ -125,6 +129,11 @@ pub(crate) struct Mem {
     pub scroll_to_caret: bool,
     pub max_seen_width: f32,
     pub diag_hover: Option<Range<usize>>,
+    /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
+    pub last_text_rect: Option<Rect>,
+    pub last_caret: Option<Rect>,
+    /// `theme.galley_hash()` of this frame.
+    pub style_salt: u64,
 }
 
 #[derive(Clone, Debug)]
@@ -157,6 +166,7 @@ pub(crate) struct Geom {
     pub text: Rect,
     pub row_h: f32,
     pub adv: f32,
+    pub mono: layout::Mono,
     pub pad_left: f32,
 }
 
@@ -185,7 +195,7 @@ impl<'a> CodeEditor<'a> {
         Self {
             doc,
             view,
-            id: Id::unique(id_salt),
+            id: Self::id_for(id_salt),
             theme: None,
             text: None,
             keys: KeyHandling::default(),
@@ -225,6 +235,43 @@ impl<'a> CodeEditor<'a> {
         self.id
     }
 
+    /// The egui id an editor built with `id_salt` uses.
+    pub fn id_for(id_salt: impl std::hash::Hash + std::fmt::Debug) -> Id {
+        Id::unique(id_salt)
+    }
+
+    /// Rect of a sub-anchor of the editor `id` as of its last frame (layer coordinates):
+    /// `caret`, or `line[N]` (0-based line). None if the editor has not been shown.
+    pub fn anchor_rect(ctx: &Context, id: Id, anchor: &str) -> Option<Rect> {
+        let shared = ctx.data(|d| d.get_temp::<SharedMem>(id.with("quire.mem")))?;
+        let mem = shared.lock().unwrap_or_else(|e| e.into_inner());
+        if anchor == "caret" {
+            return mem.last_caret;
+        }
+        let n: usize = anchor
+            .strip_prefix("line[")?
+            .strip_suffix(']')?
+            .parse()
+            .ok()?;
+        if n >= mem.heights.len() {
+            return None;
+        }
+        let t = mem.last_text_rect?;
+        let top = t.top() + mem.heights.y_of(n) - mem.scroll.y;
+        Some(Rect::from_min_size(
+            pos2(t.left(), top),
+            vec2(t.width(), mem.heights.get(n)),
+        ))
+    }
+
+    /// (galleys cached, galleys laid out since creation) of the editor `id`; for tests and perf.
+    #[doc(hidden)]
+    pub fn galley_stats(ctx: &Context, id: Id) -> Option<(usize, u64)> {
+        let shared = ctx.data(|d| d.get_temp::<SharedMem>(id.with("quire.mem")))?;
+        let mem = shared.lock().unwrap_or_else(|e| e.into_inner());
+        Some((mem.galleys.len(), mem.galleys.misses))
+    }
+
     /// Size for layout without drawing: all lines × line height; width fills `available.x` when
     /// finite, else gutter plus 80 columns.
     pub fn measure(&self, ctx: &Context, available: Vec2) -> Vec2 {
@@ -233,7 +280,7 @@ impl<'a> CodeEditor<'a> {
             .cloned()
             .unwrap_or_else(|| EditorTheme::from_visuals(&ctx.global_style().visuals));
         let row_h = layout::row_height(ctx, &theme.font);
-        let adv = layout::mono_advance(ctx, &theme.font);
+        let adv = layout::mono(ctx, &theme.font).advance();
         let lines = glue::text(self.doc).len_lines().max(1);
         let w = if available.x.is_finite() {
             available.x
@@ -286,7 +333,8 @@ impl<'a> CodeEditor<'a> {
         let mut mem = shared.lock().unwrap_or_else(|e| e.into_inner());
 
         let row_h = layout::row_height(&ctx, &theme.font);
-        let adv = layout::mono_advance(&ctx, &theme.font);
+        let mono = layout::mono(&ctx, &theme.font);
+        let adv = mono.advance();
         let n_lines = glue::text(doc).len_lines().max(1);
         if mem.heights.len() != n_lines || mem.heights.get(0) != row_h {
             mem.heights = HeightIndex::uniform(n_lines, row_h);
@@ -301,10 +349,12 @@ impl<'a> CodeEditor<'a> {
             ),
             row_h,
             adv,
-            pad_left: adv * 0.5,
+            mono,
+            pad_left: (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point,
         };
 
         mem.scroll = glue::scroll_px(view, doc, &mem.heights);
+        mem.style_salt = theme.galley_hash();
         let response = ui.interact(rect, id, Sense::click_and_drag());
         let mut frame = FrameCx {
             ctx: &ctx,
@@ -395,6 +445,10 @@ impl<'a> CodeEditor<'a> {
         glue::set_scroll_px(frame.view, frame.doc, &frame.mem.heights, frame.mem.scroll);
 
         let settled = frame.mem.drag.is_none() && glue::is_settled(frame.doc);
+        let dirty = frame.doc.is_dirty();
+        let visible_lines = frame.visible_lines();
+        frame.mem.last_text_rect = Some(geom.text);
+        frame.mem.last_caret = caret_rect;
         let caret_rect = caret_rect.map(|r| {
             ctx.layer_transform_to_global(ui.layer_id())
                 .unwrap_or_default()
@@ -416,6 +470,8 @@ impl<'a> CodeEditor<'a> {
             events,
             caret_rect,
             settled,
+            dirty,
+            visible_lines,
         }
     }
 }
@@ -756,13 +812,13 @@ impl FrameCx<'_> {
         let s = glue::line_str(text, line);
         let mut runs = Vec::new();
         let style_hash =
-            glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.theme.galley_hash();
+            glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.mem.style_salt;
         let mut shaper = LineShaper {
             cache: &mut self.mem.galleys,
             ctx: self.ctx,
             font: &self.theme.font,
             pixels_per_point: self.ctx.pixels_per_point(),
-            mono_advance: self.geom.adv,
+            mono: self.geom.mono,
         };
         shaper.shape(&s, &runs, style_hash, self.theme.foreground)
     }
@@ -916,7 +972,7 @@ impl FrameCx<'_> {
                     } else if !emitted {
                         ui.ctx()
                             .request_repaint_after(std::time::Duration::from_secs_f64(
-                                0.5 - (time - since),
+                                (0.5 - (time - since)).max(0.01),
                             ));
                     }
                 }

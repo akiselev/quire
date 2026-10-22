@@ -668,3 +668,234 @@ fn keymap_resolves_against_core_commands() {
         "closeFindWidget"
     );
 }
+
+fn root_repaint_delay(h: &Harness<'_, St>) -> std::time::Duration {
+    h.output()
+        .viewport_output
+        .get(&egui::ViewportId::ROOT)
+        .map_or(std::time::Duration::MAX, |v| v.repaint_delay)
+}
+
+#[test]
+fn hover_rest_emits_hover_at() {
+    let mut h = harness(St::new("alpha beta gamma\nsecond"));
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 16, 6);
+    h.state_mut().events.clear();
+    let p = pos2(left + adv * 2.2, row0.center().y);
+    h.event(Event::PointerMoved(p));
+    h.run_steps(45);
+    let hovers: Vec<_> = h
+        .state()
+        .events
+        .iter()
+        .filter(|e| matches!(e, EditorEvent::HoverAt { .. }))
+        .collect();
+    assert_eq!(
+        hovers.len(),
+        1,
+        "one HoverAt per resting position: {hovers:?}"
+    );
+    assert!(matches!(hovers[0], EditorEvent::HoverAt { pos: 2, .. }));
+}
+
+#[test]
+fn secondary_click_emits_context_menu() {
+    let mut h = harness(St::new("alpha beta gamma\nsecond"));
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 16, 6);
+    let p = pos2(left + adv * 6.2, row0.center().y);
+    h.event(Event::PointerMoved(p));
+    h.event(Event::PointerButton {
+        pos: p,
+        button: PointerButton::Secondary,
+        pressed: true,
+        modifiers: Modifiers::NONE,
+    });
+    h.event(Event::PointerButton {
+        pos: p,
+        button: PointerButton::Secondary,
+        pressed: false,
+        modifiers: Modifiers::NONE,
+    });
+    h.run();
+    assert!(
+        h.state()
+            .events
+            .contains(&EditorEvent::ContextMenu { pos: 6 })
+    );
+}
+
+#[test]
+fn diagnostic_hover_shows_message_and_action() {
+    let mut st = St::new("let x = 1;\nlet y;");
+    let v = st.doc.version();
+    let mut d =
+        quire_core::Diagnostic::new(4..5, quire_core::Severity::Warning, "unused variable x");
+    d.actions.push(quire_core::DiagAction {
+        title: "Prefix with _".into(),
+        command_id: "fix.prefix".into(),
+        args_json: r#"{"at":4}"#.into(),
+    });
+    st.doc.set_diagnostics("test".into(), v, vec![d]).unwrap();
+    let mut h = harness(st);
+    h.run();
+    let (left, adv, row0) = measure(&mut h, 10, 6);
+    // Hover the `x` (column 4).
+    let p = pos2(left + adv * 4.5, row0.center().y);
+    h.event(Event::PointerMoved(p));
+    h.run_steps(60);
+    let btn = h.get_by_label("Prefix with _");
+    assert!(
+        h.query_by_label("unused variable x").is_some(),
+        "message in the hover"
+    );
+    btn.click();
+    h.run();
+    assert!(h.state().events.iter().any(|e| matches!(e,
+        EditorEvent::DiagnosticAction { command_id, args } if command_id == "fix.prefix" && args["at"] == 4)));
+}
+
+#[test]
+fn virtualised_lines_and_wheel_scroll() {
+    let text: String = (0..10_000).map(|i| format!("line number {i}\n")).collect();
+    let mut h = harness(St::new(&text));
+    h.run();
+    let id = CodeEditor::id_for(("ed", 0usize));
+    let (cached, misses) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    assert!(
+        misses < 120,
+        "only visible lines and the a11y page are shaped: {misses}"
+    );
+    assert!(cached as u64 <= misses);
+    let r = h.state().rects[0];
+    h.event(Event::PointerMoved(r.center()));
+    h.event(Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Point,
+        delta: vec2(0.0, -3000.0),
+        phase: egui::TouchPhase::Move,
+        source: egui::MouseWheelSource::Wheel,
+        modifiers: Modifiers::NONE,
+    });
+    // egui animates smooth scrolling over several frames.
+    h.run_steps(40);
+    let first = h.state().views[0].scroll().anchor;
+    assert!(
+        first > 0,
+        "wheel scrolls the view (scroll lives in the EditorView)"
+    );
+    let (_, misses2) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    assert!(
+        misses2 - misses < 400,
+        "scrolling shapes only lines it passes: {}",
+        misses2 - misses
+    );
+    // Idle frames reuse the cached galleys.
+    h.run_steps(3);
+    let (_, misses3) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    assert_eq!(misses3, misses2, "an idle frame shapes nothing");
+    // line[N] anchors follow the scroll.
+    let l = h.state().doc.text().byte_to_line(first);
+    let a = CodeEditor::anchor_rect(&h.ctx, id, &format!("line[{l}]")).unwrap();
+    let b = CodeEditor::anchor_rect(&h.ctx, id, &format!("line[{}]", l + 1)).unwrap();
+    assert!((b.top() - a.bottom()).abs() < 0.01);
+    assert!(a.top() <= r.top() + 4.0 && a.bottom() > r.top());
+}
+
+#[test]
+fn host_mode_leaves_command_keys() {
+    let mut st = St::new("abc");
+    st.host_mode = true;
+    let mut h = harness(st);
+    h.run();
+    focus(&mut h);
+    h.state_mut().left_keys.clear();
+    h.key_press(Key::ArrowLeft);
+    h.key_press_modifiers(cmd(), Key::F);
+    h.key_press_modifiers(cmd(), Key::S);
+    h.run();
+    let left = &h.state().left_keys;
+    assert!(
+        left.contains(&Key::ArrowLeft) && left.contains(&Key::F) && left.contains(&Key::S),
+        "{left:?}"
+    );
+    assert!(h.query_by_label("Find").is_none());
+    assert!(!h.state().events.contains(&EditorEvent::SaveRequested));
+}
+
+#[test]
+fn caret_blink_stops_after_idle() {
+    // kittest turns cursor blinking off; turn it back on for this test.
+    let mut h = Harness::builder()
+        .with_size(Vec2::new(600.0, 200.0))
+        .with_step_dt(0.25)
+        .build_ui_state(app, St::new("x"));
+    h.ctx.all_styles_mut(|s| s.visuals.text_cursor.blink = true);
+    h.run();
+    focus(&mut h);
+    h.step();
+    assert!(h.state().events.contains(&EditorEvent::FocusChanged(true)));
+    assert!(
+        root_repaint_delay(&h) < std::time::Duration::from_secs(2),
+        "blinking while recently active: {:?}",
+        root_repaint_delay(&h)
+    );
+    h.run_steps(30);
+    assert_eq!(
+        root_repaint_delay(&h),
+        std::time::Duration::MAX,
+        "no repaint requests once idle"
+    );
+    assert!(h.state().settled);
+}
+
+#[test]
+fn mono_fast_path_matches_galley_positions() {
+    for ppp in [1.0, 1.25, 1.5, 2.0] {
+        mono_fast_path_at(ppp);
+    }
+}
+
+fn mono_fast_path_at(ppp: f32) {
+    let mut checked = false;
+    let mut h = Harness::builder()
+        .with_pixels_per_point(ppp)
+        .build_ui(|ui| {
+            let font = egui::FontId::monospace(13.0);
+            let mono = egui_quire::layout::mono(ui.ctx(), &font);
+            let mut cache = egui_quire::galley_cache::GalleyCache::default();
+            let mut sh = egui_quire::layout::LineShaper {
+                cache: &mut cache,
+                ctx: ui.ctx(),
+                font: &font,
+                pixels_per_point: ui.ctx().pixels_per_point(),
+                mono,
+            };
+            let line = "fn main() { let x = 42; }";
+            let fast = sh.shape(
+                line,
+                &[(0, egui::Color32::RED), (3, egui::Color32::GREEN)],
+                1,
+                egui::Color32::WHITE,
+            );
+            assert!(fast.mono.is_some());
+            let slow = egui_quire::layout::LineLayout {
+                galley: fast.galley.clone(),
+                mono: None,
+            };
+            for col in 0..=line.len() {
+                // Within one physical pixel of egui's pixel-snapped glyph origins.
+                assert!(
+                    (fast.x_of(col) - slow.x_of(col)).abs() <= 1.0 / ppp + 1e-3,
+                    "ppp {ppp} col {col}: {} vs {}",
+                    fast.x_of(col),
+                    slow.x_of(col)
+                );
+            }
+            assert_eq!(slow.col_at(fast.x_of(7) + 1.0), 7);
+            checked = true;
+        });
+    h.run();
+    drop(h);
+    assert!(checked);
+}

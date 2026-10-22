@@ -267,11 +267,8 @@ fn preedit_layout(f: &FrameCx<'_>, line: &str, col: usize, pre: &str) -> LineLay
     job.append(&line[col..], 0.0, plain);
     let galley: Arc<egui::Galley> = f.ctx.fonts_mut(|fo| fo.layout_job(job));
     let spliced: String = [&line[..col], pre, &line[col..]].concat();
-    let mono = (spliced.is_ascii() && !spliced.contains('\t')).then_some(f.geom.adv);
-    LineLayout {
-        galley,
-        mono_advance: mono,
-    }
+    let mono = (spliced.is_ascii() && !spliced.contains('\t')).then_some(f.geom.mono);
+    LineLayout { galley, mono }
 }
 
 fn worst_severity_per_line(f: &FrameCx<'_>, vis: &[VisLine]) -> Vec<Option<Severity>> {

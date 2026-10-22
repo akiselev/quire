@@ -50,8 +50,37 @@ fn clamp_boundary(text: &str, mut b: usize) -> usize {
 #[derive(Clone, Debug)]
 pub struct LineLayout {
     pub galley: Arc<Galley>,
-    /// Advance of one character when the line is ASCII without tabs (the fast path).
-    pub mono_advance: Option<f32>,
+    /// Set when the line is ASCII without tabs: column → x is arithmetic (the fast path).
+    pub mono: Option<Mono>,
+}
+
+/// Monospace metrics for the fast path: column → x is `col × advance` (the unrounded pen
+/// position). egui 0.37 snaps each glyph's origin to a physical pixel (with subpixel bins), so
+/// glyph origins differ from this by less than one physical pixel; carets and hit tests do not
+/// need more.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Mono {
+    /// Advance of one character in physical pixels (unrounded).
+    pub advance_px: f32,
+    pub pixels_per_point: f32,
+}
+
+impl Mono {
+    pub fn x_of(&self, col: usize) -> f32 {
+        col as f32 * self.advance_px / self.pixels_per_point
+    }
+
+    /// The column whose x is nearest to `x`.
+    pub fn col_at(&self, x: f32) -> usize {
+        (x * self.pixels_per_point / self.advance_px)
+            .round()
+            .max(0.0) as usize
+    }
+
+    /// Advance in points.
+    pub fn advance(&self) -> f32 {
+        self.advance_px / self.pixels_per_point
+    }
 }
 
 impl LineLayout {
@@ -59,8 +88,8 @@ impl LineLayout {
     pub fn x_of(&self, col: usize) -> f32 {
         let text = self.galley.text();
         let col = clamp_boundary(text, col);
-        if let Some(adv) = self.mono_advance {
-            return col as f32 * adv;
+        if let Some(m) = self.mono {
+            return m.x_of(col);
         }
         let ci = text[..col].chars().count();
         self.galley
@@ -72,9 +101,8 @@ impl LineLayout {
     /// Byte column nearest to x.
     pub fn col_at(&self, x: f32) -> usize {
         let text = self.galley.text();
-        if let Some(adv) = self.mono_advance {
-            let c = (x / adv).round().max(0.0) as usize;
-            return c.min(text.len());
+        if let Some(m) = self.mono {
+            return m.col_at(x).min(text.len());
         }
         let cc = self
             .galley
@@ -99,7 +127,7 @@ pub struct LineShaper<'a> {
     pub ctx: &'a Context,
     pub font: &'a FontId,
     pub pixels_per_point: f32,
-    pub mono_advance: f32,
+    pub mono: Mono,
 }
 
 impl LineShaper<'_> {
@@ -122,17 +150,25 @@ impl LineShaper<'_> {
             let job = line_job(text, runs, self.font, default);
             self.ctx.fonts_mut(|f| f.layout_job(job))
         });
-        let mono = (text.is_ascii() && !text.contains('\t')).then_some(self.mono_advance);
-        LineLayout {
-            galley,
-            mono_advance: mono,
-        }
+        let mono = (text.is_ascii() && !text.contains('\t')).then_some(self.mono);
+        LineLayout { galley, mono }
     }
 }
 
-/// Width of one monospace character.
-pub fn mono_advance(ctx: &Context, font: &FontId) -> f32 {
-    ctx.fonts_mut(|f| f.glyph_width(font, 'M'))
+/// Monospace metrics of `font` at the context's current scale, measured from a laid-out run
+/// (the galley width is the unrounded cursor position).
+pub fn mono(ctx: &Context, font: &FontId) -> Mono {
+    const N: usize = 256;
+    let ppp = ctx.pixels_per_point();
+    let w = ctx.fonts_mut(|f| {
+        f.layout_no_wrap("M".repeat(N), font.clone(), Color32::WHITE)
+            .size()
+            .x
+    });
+    Mono {
+        advance_px: w * ppp / N as f32,
+        pixels_per_point: ppp,
+    }
 }
 
 /// Row height of the font.
