@@ -50,8 +50,9 @@ pub(crate) struct Templates {
 }
 
 /// What tells whether egui rebuilt the font atlas: egui clears it when the text options change or
-/// when it fills past 80 %, so a different option set or a lower fill ratio means every atlas
-/// coordinate laid out before is stale.
+/// when it fills past 80 %. Its fill ratio (rows used over the maximum height) only grows
+/// otherwise, so a different option set or a lower ratio means every atlas coordinate laid out
+/// before is stale.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) struct AtlasState {
     options: egui::epaint::text::TextOptions,
@@ -157,7 +158,15 @@ impl Templates {
         // A small galley to clone per line.
         let small =
             ctx.fonts_mut(|f| f.layout_job(LayoutJob::single_section("M".into(), fmt.clone())));
-        let small_row = small.rows.first()?.row.clone();
+        // Emptied, so cloning them per line copies no glyphs or vertices.
+        let mut small_row = (*small.rows.first()?.row).clone();
+        small_row.glyphs = Vec::new();
+        let texture = small_row.visuals.mesh.texture_id;
+        small_row.visuals = RowVisuals {
+            mesh: Mesh::with_texture(texture),
+            ..Default::default()
+        };
+        let small_row = Arc::new(small_row);
         Some(Self {
             key: key(font, mono, row_h),
             glyphs,

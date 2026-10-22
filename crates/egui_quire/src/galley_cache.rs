@@ -3,7 +3,7 @@
 //! Key: (line content hash, token style hash, font id, pixels per point, wrap width). The theme
 //! is not in the key: galleys are laid out with the theme's colours, so the theme's own hash is
 //! folded into the style hash by the caller. LRU-bounded: when the cache grows past its capacity
-//! the least recently used quarter is dropped.
+//! the least recently used sixteenth is dropped.
 
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
@@ -97,10 +97,11 @@ impl<V: Clone> GalleyCache<V> {
         g
     }
 
-    /// Drop the least recently used quarter.
+    /// Drop the least recently used sixteenth (small batches keep the cost of one eviction,
+    /// which frees every dropped galley, from showing up as a slow frame while flinging; E1).
     fn evict(&mut self) {
         let mut ticks: Vec<u64> = self.map.values().map(|(_, t)| *t).collect();
-        let cut = ticks.len() / 4;
+        let cut = ticks.len() / 16;
         let (_, &mut threshold, _) = ticks.select_nth_unstable(cut);
         self.map.retain(|_, (_, t)| *t > threshold);
     }

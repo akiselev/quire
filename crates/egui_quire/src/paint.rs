@@ -375,9 +375,15 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
             f32::INFINITY,
         );
         let galley = f.mem.galleys.get_or_insert(key, || {
-            f.ctx.fonts_mut(|fo| {
-                fo.layout_no_wrap((v.line + 1).to_string(), theme.font.clone(), color)
-            })
+            // Digits: the ASCII fast path (E1 P2).
+            crate::layout::layout_line_job(
+                f.ctx,
+                &(v.line + 1).to_string(),
+                &[],
+                &TextFormat::simple(theme.font.clone(), color),
+                g.mono,
+                g.mono.tab_stops(4),
+            )
         });
         let rect = Align2::RIGHT_TOP.anchor_size(pos2(num_x, v.top), galley.size());
         gutter_painter.galley(rect.min, galley, color);
