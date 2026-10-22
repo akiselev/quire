@@ -32,3 +32,12 @@ disagrees, this file wins.
    If it is older than that window, it clamps its selection and folds to valid positions and marks
    find stale. A proptest covers two views with interleaved edits, with both selections valid after
    every step.
+7. **Approved departures and targets** (user, 2026-10-22, cadatomic register `be6b40e`):
+   - `CompositionType` counts `replace_prev_chars`/`replace_next_chars` in code points, not UTF-16
+     units; a host bridging an IME converts at the boundary.
+   - One long line does not turn off syntax for the whole file (`Degraded::syntax_off()` is size or
+     line count only).
+   - `MoveLines*` merges selections whose line spans touch into one block.
+   - Svelte grammar `tree-sitter-htmlx-svelte` 0.1.16 and `tree-sitter` 0.26.13 (§3.6 named
+     svelte-ng 1.0.2 and 0.27).
+   - E5 and E2 targets revised in §3.9.

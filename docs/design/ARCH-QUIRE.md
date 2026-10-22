@@ -445,9 +445,9 @@ pub struct Applied { pub version: Version, pub changes: ChangeSet, pub selection
 | Id | Target | Where measured |
 |---|---|---|
 | E1 | 100k-line file: p99 frame ≤ 8.3 ms while scrolling and typing; editor CPU ≤ 2 ms per frame; open to first paint ≤ 300 ms | `benches/` headless with kittest plus a wgpu run on a GPU machine |
-| E2 | Rope: memory ≤ 1.5× the file size; edit p99 ≤ 50 µs at 100 MB; line fetch ≤ 1 µs | criterion in `quire-core` |
+| E2 | Rope: memory ≤ 1.5× the file size; edit p99 ≤ 50 µs at 100 MB; line fetch ≤ 2 µs (revised 2026-10-22 from 1 µs; measured 1.7 µs, register be6b40e) | criterion in `quire-core` |
 | E3 | Large-file thresholds set from measurements; 60 fps degraded, never frozen | benches |
-| E5 | Re-highlight after an edit ≤ 2 ms off-thread on a 20k-line Svelte file; injections correct | `quire-syntax` benches and fixtures |
+| E5 | Re-highlight after an edit ≤ 10 ms off-thread on a 20k-line Svelte file, ≤ 2 ms for ≤ 5k lines (revised 2026-10-22 from 2 ms at 20k; register be6b40e); injections correct | `quire-syntax` benches and fixtures |
 | E6 | Keypress to presented frame ≤ 1 frame plus the compositor | cadatomic hardware run (outside crate CI) |
 | AP6 | In-process svelters diagnostics per keystroke ≤ 20 ms | host side (svelters CX1/SV27); the editor's part is `snapshot()` in O(1) |
 | — | Idle: 0 frames after the blink stops; no allocation per frame for clean lines | kittest frame counter |
