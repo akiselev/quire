@@ -1162,3 +1162,53 @@ fn middle_click_pastes_primary_at_the_pointer() {
     assert_eq!(h.state().text(), "abcdXYefgh\nab\n");
     assert_eq!(h.state().sel(0), (6, 6));
 }
+
+// ---------------------------------------------------------------------------------------------
+// Multiple cursors and selections (drawn from the view's `Selection`).
+
+/// Filled rects of `color` in the last frame's shapes.
+fn rects_of(h: &Harness<'_, St>, color: egui::Color32) -> Vec<Rect> {
+    h.output()
+        .shapes
+        .iter()
+        .filter_map(|c| match &c.shape {
+            egui::Shape::Rect(r) if r.fill == color => Some(r.rect),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn multiple_cursors_and_selections_are_drawn_and_typed_into() {
+    let mut h = harness(St::new("one\ntwo\nthree\n"));
+    h.run();
+    focus(&mut h);
+    {
+        let St { doc, views, .. } = h.state_mut();
+        let sel = quire_core::Selection::new(
+            [
+                quire_core::SelRange::point(1),
+                quire_core::SelRange::point(5),
+                quire_core::SelRange::new(8, 13),
+            ],
+            0,
+        );
+        let tr = quire_core::Transaction::select(doc.version(), doc.text().len_bytes(), sel);
+        doc.apply(tr, &mut views[0]).unwrap();
+    }
+    h.run();
+    let theme = egui_quire::EditorTheme::from_visuals(&h.ctx.global_style().visuals);
+    let carets = rects_of(&h, theme.caret);
+    assert_eq!(carets.len(), 3, "one caret per range: {carets:?}");
+    let mut tops: Vec<f32> = carets.iter().map(|r| r.top()).collect();
+    tops.sort_by(f32::total_cmp);
+    assert!(tops[0] < tops[1] && tops[1] < tops[2], "on three lines");
+    let sels = rects_of(&h, theme.selection);
+    assert_eq!(sels.len(), 1, "one non-empty range: {sels:?}");
+    assert!(sels[0].width() > 0.0);
+    // Typing goes to every cursor and replaces the selection.
+    h.event(Event::Text("X".into()));
+    h.run();
+    assert_eq!(h.state().text(), "oXne\ntXwo\nX\n");
+    assert_eq!(rects_of(&h, theme.caret).len(), 3);
+}
