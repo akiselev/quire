@@ -1,0 +1,94 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/linesOperations/test/browser/moveLinesCommand.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Contrib - Move Lines Command > move first up / last down disabled #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 1 1 1
+cmd editor.action.moveLinesUpAction
+expectText "first\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Move Lines Command > move first up / last down disabled #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 1 5 1
+cmd editor.action.moveLinesDownAction
+expectText "first\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 5 1 5 1
+
+=== Editor Contrib - Move Lines Command > move first line down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 4 1 1
+cmd editor.action.moveLinesDownAction
+expectText "second line\nfirst\nthird line\nfourth line\nfifth"
+expectSel 2 4 2 1
+
+=== Editor Contrib - Move Lines Command > move 2nd line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 2 1
+cmd editor.action.moveLinesUpAction
+expectText "second line\nfirst\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Move Lines Command > issue #1322a: move 2nd line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 12 2 12
+cmd editor.action.moveLinesUpAction
+expectText "second line\nfirst\nthird line\nfourth line\nfifth"
+expectSel 1 12 1 12
+
+=== Editor Contrib - Move Lines Command > issue #1322b: move last line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 6 5 6
+cmd editor.action.moveLinesUpAction
+expectText "first\nsecond line\nthird line\nfifth\nfourth line"
+expectSel 4 6 4 6
+
+=== Editor Contrib - Move Lines Command > issue #1322c: move last line selected up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 6 5 1
+cmd editor.action.moveLinesUpAction
+expectText "first\nsecond line\nthird line\nfifth\nfourth line"
+expectSel 4 6 4 1
+
+=== Editor Contrib - Move Lines Command > move last line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 1 5 1
+cmd editor.action.moveLinesUpAction
+expectText "first\nsecond line\nthird line\nfifth\nfourth line"
+expectSel 4 1 4 1
+
+=== Editor Contrib - Move Lines Command > move 4th line down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 1 4 1
+cmd editor.action.moveLinesDownAction
+expectText "first\nsecond line\nthird line\nfifth\nfourth line"
+expectSel 5 1 5 1
+
+=== Editor Contrib - Move Lines Command > move multiple lines down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 4 2 2
+cmd editor.action.moveLinesDownAction
+expectText "first\nfifth\nsecond line\nthird line\nfourth line"
+expectSel 5 4 3 2
+
+=== Editor Contrib - Move Lines Command > invisible selection is ignored
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 1 1
+cmd editor.action.moveLinesDownAction
+expectText "second line\nfirst\nthird line\nfourth line\nfifth"
+expectSel 3 1 2 1
+

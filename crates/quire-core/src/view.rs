@@ -5,7 +5,7 @@ use crate::change::{Bias, ChangeSet};
 use crate::diagnostics::map_range;
 use crate::document::{Applied, Document};
 use crate::find::{FindQuery, FindState};
-use crate::selection::Selection;
+use crate::selection::{SelRange, Selection};
 use crate::text::Text;
 use crate::transaction::Effect;
 use crate::version::Version;
@@ -55,6 +55,40 @@ pub struct AutoClosed {
     pub close: Range<usize>,
 }
 
+/// View state that lives only while the selection stays what a command set (VS Code's
+/// column-select data and the add-next-match session). Carried by
+/// [`Effect::ViewSession`](crate::Effect::ViewSession); its contents are internal.
+#[derive(Clone, PartialEq, Debug)]
+pub struct ViewSession {
+    pub(crate) kind: SessionKind,
+    pub(crate) at: Selection,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub(crate) enum SessionKind {
+    Column(ColumnSelectData),
+    NextMatch(NextMatchSession),
+}
+
+/// VS Code `IColumnSelectData` (0-based lines, visual columns).
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub(crate) struct ColumnSelectData {
+    pub from_line: usize,
+    pub from_vis: u32,
+    pub to_line: usize,
+    pub to_vis: u32,
+}
+
+/// VS Code `MultiCursorSession`.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub(crate) struct NextMatchSession {
+    pub search: String,
+    pub whole_word: bool,
+    pub match_case: bool,
+    /// The range added last (VS Code's last selection in insertion order).
+    pub last_added: SelRange,
+}
+
 /// How [`EditorView::sync`] caught up.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum SyncOutcome {
@@ -79,6 +113,7 @@ pub struct EditorView {
     focused: bool,
     preedit: Option<Preedit>,
     auto_closed: Vec<AutoClosed>,
+    session: Option<ViewSession>,
 }
 
 impl EditorView {
@@ -95,6 +130,7 @@ impl EditorView {
             focused: false,
             preedit: None,
             auto_closed: Vec::new(),
+            session: None,
         }
     }
 
@@ -198,6 +234,21 @@ impl EditorView {
             self.selection_version += 1;
         }
         self.prune_auto_closed();
+        if self
+            .session
+            .as_ref()
+            .is_some_and(|s| s.at != self.selection)
+        {
+            self.session = None;
+        }
+    }
+
+    /// The session state, if the selection is still the one it was recorded with.
+    pub(crate) fn session(&self) -> Option<&SessionKind> {
+        self.session
+            .as_ref()
+            .filter(|s| s.at == self.selection)
+            .map(|s| &s.kind)
     }
 
     fn prune_auto_closed(&mut self) {
@@ -323,6 +374,7 @@ impl EditorView {
             }
             Effect::RevealLine(l) => self.reveal = Some(Reveal::Line(*l)),
             Effect::SetFind(q) => self.set_find(doc, q.clone()),
+            Effect::ViewSession(s) => self.session = Some(s.clone()),
             Effect::AutoClosed(list) => {
                 self.auto_closed.extend(list.iter().cloned());
                 self.prune_auto_closed();

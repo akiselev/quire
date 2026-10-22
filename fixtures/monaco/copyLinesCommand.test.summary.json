@@ -1,0 +1,50 @@
+[
+ {
+  "name": "Editor Contrib - Copy Lines Command > copy first line down",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > copy first line up",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > copy last line down",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > copy last line up",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > issue #1322: copy line up",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > issue #1322: copy last line up",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > copy many lines up",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Copy Lines Command > ignore empty selection",
+  "fixture": "copyLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Duplicate Selection > empty selection",
+  "na": "new DuplicateSelectionAction.run"
+ },
+ {
+  "name": "Editor Contrib - Duplicate Selection > with selection",
+  "na": "new DuplicateSelectionAction.run"
+ }
+]

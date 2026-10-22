@@ -1,0 +1,316 @@
+[
+ {
+  "name": "Multicursor > issue #26393: Multiple cursors + Word wrap",
+  "na": "viewModel.getCursorStates"
+ },
+ {
+  "name": "Multicursor > issue #2205: Multi-cursor pastes in reverse order",
+  "na": "paste variants"
+ },
+ {
+  "name": "Multicursor > issue #1336: Insert cursor below on last line adds a cursor to the end of the current line",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > issue #8817: Cursor position changes when you cancel multicursor",
+  "na": "new SelectHighlightsAction"
+ },
+ {
+  "name": "Multicursor selection > issue #5400: \"Select All Occurrences of Find Match\" does not select all if find uses regex",
+  "na": "new SelectHighlightsAction"
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction can work with multiline",
+  "na": "selection.startLineNumber"
+ },
+ {
+  "name": "Multicursor selection > issue #6661: AddSelectionToNextFindMatchAction can work with touching ranges",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > issue #23541: Multiline Ctrl+D does not work in CRLF files",
+  "na": "model.setEOL"
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with single collapsed selection",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 1)",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 2)",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with all collapsed selections",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > AddSelectionToNextFindMatchAction starting with all collapsed selections on different words",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > issue #20651: AddSelectionToNextFindMatchAction case insensitive",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > defaults to Find and reports live option changes",
+  "na": "editor.getOption"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > default selected-text matching uses Find match case and whole word options",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: selected text, match case false, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: selected text, match case false, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: empty selection always starts whole-word and case-sensitive, caseInsensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: selected text, match case true, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: selected text, match case true, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: empty selection always starts whole-word and case-sensitive, caseSensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: selected text, match case false, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: selected text, match case false, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseInsensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: selected text, match case true, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: selected text, match case true, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseSensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: selected text, match case false, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: selected text, match case false, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseInsensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: selected text, match case true, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: selected text, match case true, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToNextFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseSensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: selected text, match case false, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: selected text, match case false, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseInsensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: selected text, match case true, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: selected text, match case true, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new MoveSelectionToPreviousFindMatchAction.id: empty selection always starts whole-word and case-sensitive, caseSensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: selected text, match case false, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: selected text, match case false, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: empty selection always starts whole-word and case-sensitive, caseInsensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: selected text, match case true, Find visible false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: selected text, match case true, Find visible true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: empty selection always starts whole-word and case-sensitive, caseSensitive setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > issue #18239: replacing selected prefixes preserves differently cased identifiers",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > select all replaces only selected-text occurrences while regex Find is visible",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > changing Find options ends caret-started sessions before applying the selected-text matching setting",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > mixed-case initial selections are compared using the selection setting, not Find",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > Find-focused mixed-case initial selections respect Find match case false",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > Find-focused mixed-case initial selections respect Find match case true",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > switching focus transfers matching rules between selection and Find sessions",
+  "na": "new MoveSelectionToNextFindMatchAction"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > the default Find session survives returning focus to the editor",
+  "na": "TestCodeEditor.Symbol(Symbol.hasInstance)"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > a selection session does not survive replacing the editor model",
+  "na": "editor.setModel"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case false",
+  "na": "model.setEOL"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > multiline CRLF selections match literal substrings with match case true",
+  "na": "model.setEOL"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > undefined: Find-focused commands retain Find matching rules",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new AddSelectionToPreviousFindMatchAction.id: Find-focused commands retain Find matching rules",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > new SelectHighlightsAction.id: Find-focused commands retain Find matching rules",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > Find-focused regex select all follows Find options in both independent matching modes",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > add next occurrence does not highlight unrelated Find options",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > add previous occurrence does not highlight unrelated Find options",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > select all occurrences does not highlight unrelated Find options",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching > Find-focused occurrence selection still highlights Find options",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > selection highlighting uses match case false, editor focused true",
+  "na": "SelectionHighlighter.ID"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > only suppress duplicate Find highlights with the same matching rules, match case false",
+  "na": "SelectionHighlighter.ID"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > selection highlighting uses match case true, editor focused true",
+  "na": "SelectionHighlighter.ID"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > only suppress duplicate Find highlights with the same matching rules, match case true",
+  "na": "SelectionHighlighter.ID"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > selection highlighting refreshes on case-only configuration changes without cursor movement",
+  "na": "sinon.useFakeTimers"
+ },
+ {
+  "name": "Multicursor selection > Selected text occurrence matching highlights > Find regex select-all discards an existing selection-driven session",
+  "na": "SelectionHighlighter.ID"
+ },
+ {
+  "name": "Multicursor selection > Find state disassociation > caret-started sessions temporarily override and restore Find options in every matching mode",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Find state disassociation > changing Find options ends a default caret-started session without reverting user preferences",
+  "na": "find controller state"
+ },
+ {
+  "name": "Multicursor selection > Find state disassociation > enters mode",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > Find state disassociation > leaves mode when selection changes",
+  "fixture": "multicursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Multicursor selection > Find state disassociation > Select Highlights respects mode ",
+  "na": "new SelectHighlightsAction"
+ }
+]

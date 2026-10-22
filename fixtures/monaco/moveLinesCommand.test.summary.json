@@ -1,0 +1,73 @@
+[
+ {
+  "name": "Editor Contrib - Move Lines Command > move first up / last down disabled #1",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move first up / last down disabled #2",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move first line down",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move 2nd line up",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > issue #1322a: move 2nd line up",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > issue #1322b: move last line up",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > issue #1322c: move last line selected up",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move last line up",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move 4th line down",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > move multiple lines down",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Move Lines Command > invisible selection is ignored",
+  "fixture": "moveLinesCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor contrib - Move Lines Command honors Indentation Rules > first line indentation adjust to 0",
+  "na": "new LanguageService"
+ },
+ {
+  "name": "Editor contrib - Move Lines Command honors Indentation Rules > move lines across block",
+  "na": "new LanguageService"
+ },
+ {
+  "name": "Editor contrib - Move Lines Command honors Indentation Rules > move line should still work as before if there is no indentation rules",
+  "na": "move lines with indentation rules (autoIndent full)"
+ },
+ {
+  "name": "Editor - contrib - Move Lines Command honors onEnter Rules > issue #54829. move block across block",
+  "na": "new LanguageService"
+ }
+]

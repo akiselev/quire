@@ -21,6 +21,11 @@
 //! expectPrimarySel 1 1 1 5               the primary selection
 //! expectHead 1 5                         the primary head
 //! expectLineCount 3
+//! columnSelect 4 15 [drag]             VS Code mouse column select to (line, mouseColumn)
+//! setValue "..."                         replace the text (a reload)
+//! expectMaxColumn 2 5                    VS Code getLineMaxColumn
+//! expectSelCount 2                       number of selections
+//! expectRanges 1 1 1 4; 2 1 2 4          ranges regardless of direction, sorted by start
 //! wordSelect 1 5                         double-click word selection at a position
 //! closeUndoGroup                         VS Code pushStackElement / pushUndoStop
 //! ```
@@ -232,6 +237,89 @@ fn run_case(c: &Case) -> Result<(), String> {
                         "selection: expected {}, got {}",
                         fmt_sel(doc.text(), &want),
                         fmt_sel(doc.text(), got)
+                    )));
+                }
+            }
+            "columnSelect" => {
+                // VS Code `ColumnSelect` (mouse): to (line, mouseColumn); with `drag` the anchor
+                // is the current column-select start, i.e. the primary's anchor.
+                let n = nums(rest);
+                let (hl, hc) = (n[0] - 1, n[1] as u32 - 1);
+                let (al, ac) = if rest.ends_with("drag") {
+                    let a = view.selection().primary().anchor;
+                    let t = doc.text();
+                    let line = t.byte_to_line(a);
+                    let tab = doc.config().tab_size.max(1);
+                    let mut vis = 0u32;
+                    for c in t.slice(t.line_to_byte(line)..a).to_string().chars() {
+                        vis = if c == '\t' {
+                            (vis / tab + 1) * tab
+                        } else {
+                            vis + 1
+                        };
+                    }
+                    (line, vis)
+                } else {
+                    (hl, hc)
+                };
+                exec(
+                    &mut doc,
+                    &mut view,
+                    EditorCommand::ColumnSelect {
+                        anchor_line: al,
+                        anchor_column: ac,
+                        head_line: hl,
+                        head_column: hc,
+                    },
+                    time,
+                )?;
+            }
+            "setValue" => {
+                // `model.setValue` as a reload: a diff against the new text.
+                let s: String =
+                    serde_json::from_str(rest).map_err(|e| err(format!("string: {e}")))?;
+                let new = Text::from_file(&s);
+                let changes = quire_core::ChangeSet::diff(doc.text(), &new);
+                doc.apply_remote(doc.version(), changes, quire_core::Origin::Reload)
+                    .map_err(|e| err(format!("refused: {e}")))?;
+                view.sync(&doc);
+            }
+            "expectMaxColumn" => {
+                let n = nums(rest);
+                let got = doc
+                    .text()
+                    .byte_to_utf16(doc.text().line_range(n[0] - 1).end)
+                    .1
+                    + 1;
+                if got != n[1] {
+                    return Err(err(format!("max column: expected {}, got {got}", n[1])));
+                }
+            }
+            "expectSelCount" => {
+                let n: usize = rest.parse().map_err(|_| err("number".into()))?;
+                if view.selection().len() != n {
+                    return Err(err(format!(
+                        "selection count: expected {n}, got {}",
+                        view.selection().len()
+                    )));
+                }
+            }
+            "expectRanges" => {
+                // Direction-agnostic ranges (VS Code `fromRange`), sorted by start.
+                let want: Vec<(usize, usize)> = parse_sels(doc.text(), rest)
+                    .iter()
+                    .map(|r| (r.from(), r.to()))
+                    .collect();
+                let got: Vec<(usize, usize)> = view
+                    .selection()
+                    .ranges()
+                    .iter()
+                    .map(|r| (r.from(), r.to()))
+                    .collect();
+                if want != got {
+                    return Err(err(format!(
+                        "ranges: expected {rest}, got {}",
+                        fmt_sel(doc.text(), view.selection())
                     )));
                 }
             }

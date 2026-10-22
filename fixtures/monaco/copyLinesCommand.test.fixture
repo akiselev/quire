@@ -1,0 +1,70 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/linesOperations/test/browser/copyLinesCommand.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Contrib - Copy Lines Command > copy first line down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 3 1 1
+cmd editor.action.copyLinesDownAction
+expectText "first\nfirst\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 3 2 1
+
+=== Editor Contrib - Copy Lines Command > copy first line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 3 1 1
+cmd editor.action.copyLinesUpAction
+expectText "first\nfirst\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 3 1 1
+
+=== Editor Contrib - Copy Lines Command > copy last line down
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 3 5 1
+cmd editor.action.copyLinesDownAction
+expectText "first\nsecond line\nthird line\nfourth line\nfifth\nfifth"
+expectSel 6 3 6 1
+
+=== Editor Contrib - Copy Lines Command > copy last line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 3 5 1
+cmd editor.action.copyLinesUpAction
+expectText "first\nsecond line\nthird line\nfourth line\nfifth\nfifth"
+expectSel 5 3 5 1
+
+=== Editor Contrib - Copy Lines Command > issue #1322: copy line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 3 11 3 11
+cmd editor.action.copyLinesUpAction
+expectText "first\nsecond line\nthird line\nthird line\nfourth line\nfifth"
+expectSel 3 11 3 11
+
+=== Editor Contrib - Copy Lines Command > issue #1322: copy last line up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 6 5 6
+cmd editor.action.copyLinesUpAction
+expectText "first\nsecond line\nthird line\nfourth line\nfifth\nfifth"
+expectSel 5 6 5 6
+
+=== Editor Contrib - Copy Lines Command > copy many lines up
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 3 2 1
+cmd editor.action.copyLinesUpAction
+expectText "first\nsecond line\nthird line\nfourth line\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 4 3 2 1
+
+=== Editor Contrib - Copy Lines Command > ignore empty selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 1 1
+cmd editor.action.copyLinesUpAction
+expectText "first\nfirst\nsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 1 1 1
+

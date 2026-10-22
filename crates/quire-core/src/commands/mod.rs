@@ -14,8 +14,10 @@
 
 mod edit;
 mod find;
+mod lines;
 pub(crate) mod model;
 mod motion;
+mod multi;
 pub(crate) mod words;
 
 use crate::change::{Bias, ChangeSet};
@@ -283,6 +285,56 @@ pub(crate) fn run(
         C::InsertLineAfter => edit_out(edit::insert_line(&ctx, &st(), true), cmd_origin(cmd)),
         C::InsertLineBefore => edit_out(edit::insert_line(&ctx, &st(), false), cmd_origin(cmd)),
         C::DeleteLines => edit_out(edit::delete_lines(&st()), cmd_origin(cmd)),
+        C::InsertCursorAbove | C::InsertCursorBelow => sel_out(
+            doc,
+            multi::insert_cursor(&ctx, text, sel, matches!(cmd, C::InsertCursorBelow)),
+        ),
+        C::AddNextMatch => match multi::add_next_match(&ctx, text, view) {
+            Some(o) => sel_out(doc, o),
+            None => Ok(CommandOutput::Nothing),
+        },
+        C::ColumnSelectLeft
+        | C::ColumnSelectRight
+        | C::ColumnSelectUp
+        | C::ColumnSelectDown
+        | C::ColumnSelectPageUp { .. }
+        | C::ColumnSelectPageDown { .. } => {
+            let dir = match cmd {
+                C::ColumnSelectLeft => multi::ColumnDir::Left,
+                C::ColumnSelectRight => multi::ColumnDir::Right,
+                C::ColumnSelectUp => multi::ColumnDir::Up(1),
+                C::ColumnSelectDown => multi::ColumnDir::Down(1),
+                C::ColumnSelectPageUp { lines } => multi::ColumnDir::Up(*lines),
+                C::ColumnSelectPageDown { lines } => multi::ColumnDir::Down(*lines),
+                _ => unreachable!("column select command"),
+            };
+            sel_out(doc, multi::column_select_step(&ctx, text, view, dir))
+        }
+        C::ColumnSelect {
+            anchor_line,
+            anchor_column,
+            head_line,
+            head_column,
+        } => sel_out(
+            doc,
+            multi::column_select_mouse(
+                &ctx,
+                text,
+                *anchor_line,
+                *anchor_column,
+                *head_line,
+                *head_column,
+            ),
+        ),
+        C::MoveLinesUp | C::MoveLinesDown => isolated(edit_out(
+            lines::move_lines(&st(), matches!(cmd, C::MoveLinesDown)),
+            cmd_origin(cmd),
+        )),
+        C::CopyLinesUp | C::CopyLinesDown => isolated(edit_out(
+            lines::copy_lines(&st(), matches!(cmd, C::CopyLinesDown)),
+            cmd_origin(cmd),
+        )),
+        C::DeleteAllLeft => isolated(edit_out(lines::delete_all_left(&st()), cmd_origin(cmd))),
         C::Undo | C::Redo => {
             let undo = matches!(cmd, C::Undo);
             if doc.undo_mode() == UndoMode::Host {
@@ -325,6 +377,31 @@ pub(crate) fn run(
                 .with_effect(Effect::RevealLine(*line)),
         )),
     }
+}
+
+/// A selection command's output: selection-only transaction, the session effect and a reveal.
+fn sel_out(doc: &Document, o: multi::SelOut) -> Result<CommandOutput, Refusal> {
+    let reveal = o.reveal.unwrap_or(o.sel.primary().head);
+    let mut tr = Transaction::select(doc.version(), doc.text().len_bytes(), o.sel).with_effect(
+        Effect::ScrollIntoView {
+            pos: reveal,
+            center: false,
+        },
+    );
+    if let Some(s) = o.session {
+        tr = tr.with_effect(Effect::ViewSession(s));
+    }
+    Ok(CommandOutput::Transaction(tr))
+}
+
+/// Pushes undo stops before and after (VS Code `pushUndoStop` around `executeCommands`).
+fn isolated(r: Result<CommandOutput, Refusal>) -> Result<CommandOutput, Refusal> {
+    r.map(|o| match o {
+        CommandOutput::Transaction(tr) => {
+            CommandOutput::Transaction(tr.with_group(GroupHint::Isolated))
+        }
+        o => o,
+    })
 }
 
 impl CommandOutput {

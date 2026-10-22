@@ -10,8 +10,14 @@ port=$here/crates/quire-core/tests/port
 fx=$here/fixtures/monaco
 SUITES=(
   src/vs/editor/test/browser/controller/cursor.test.ts
+  src/vs/editor/contrib/linesOperations/test/browser/copyLinesCommand.test.ts
+  src/vs/editor/contrib/linesOperations/test/browser/moveLinesCommand.test.ts
+  src/vs/editor/contrib/linesOperations/test/browser/linesOperations.test.ts
+  src/vs/editor/contrib/multicursor/test/browser/multicursor.test.ts
 )
+# PORT_ONLY=<substring> regenerates only matching suites (the others keep their fixtures).
 for rel in "${SUITES[@]}"; do
+  [[ -n "${PORT_ONLY:-}" && "$rel" != *"$PORT_ONLY"* ]] && continue
   mkdir -p "$src/$(dirname "$rel")"
   curl -sfL "https://raw.githubusercontent.com/microsoft/vscode/$SHA/$rel" -o "$src/$rel"
   name=$(basename "$rel" .ts)

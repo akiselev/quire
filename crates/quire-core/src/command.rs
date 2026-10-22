@@ -155,6 +155,71 @@ pub enum EditorCommand {
     /// Delete the selected lines.
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.deleteLines"))]
     DeleteLines,
+    /// Add a cursor one line above each selection (VS Code `addCursorUp`, logical lines).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.insertCursorAbove"))]
+    InsertCursorAbove,
+    /// Add a cursor one line below each selection.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.insertCursorBelow"))]
+    InsertCursorBelow,
+    /// Select the word at an empty cursor, else add the next occurrence of the selected text
+    /// (Ctrl+D).
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "editor.action.addSelectionToNextFindMatch")
+    )]
+    AddNextMatch,
+    /// Move the selected lines up one line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.moveLinesUpAction"))]
+    MoveLinesUp,
+    /// Move the selected lines down one line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.moveLinesDownAction"))]
+    MoveLinesDown,
+    /// Duplicate the selected lines above (the selection stays on the upper copy).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.copyLinesUpAction"))]
+    CopyLinesUp,
+    /// Duplicate the selected lines below (the selection moves to the lower copy).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.copyLinesDownAction"))]
+    CopyLinesDown,
+    /// Delete from each cursor to its line start.
+    #[cfg_attr(feature = "serde", serde(rename = "deleteAllLeft"))]
+    DeleteAllLeft,
+    /// Column selection: extend the head one visual column left.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectLeft"))]
+    ColumnSelectLeft,
+    /// Column selection: extend one visual column right.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectRight"))]
+    ColumnSelectRight,
+    /// Column selection: extend one line up.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectUp"))]
+    ColumnSelectUp,
+    /// Column selection: extend one line down.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectDown"))]
+    ColumnSelectDown,
+    /// Column selection: extend a page up.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectPageUp"))]
+    ColumnSelectPageUp {
+        /// Lines per page.
+        lines: u32,
+    },
+    /// Column selection: extend a page down.
+    #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectPageDown"))]
+    ColumnSelectPageDown {
+        /// Lines per page.
+        lines: u32,
+    },
+    /// Column (box) selection from an anchor to a head, e.g. Alt+Shift+drag. Lines are 0-based;
+    /// columns are visual (tabs and wide characters expanded) and may lie past a line's end.
+    #[cfg_attr(feature = "serde", serde(rename = "columnSelect"))]
+    ColumnSelect {
+        /// Anchor line.
+        anchor_line: usize,
+        /// Anchor visual column.
+        anchor_column: u32,
+        /// Head line.
+        head_line: usize,
+        /// Head visual column.
+        head_column: u32,
+    },
     /// Undo (a host request in host mode).
     #[cfg_attr(feature = "serde", serde(rename = "undo"))]
     Undo,
@@ -231,6 +296,21 @@ impl EditorCommand {
             InsertLineAfter => "editor.action.insertLineAfter",
             InsertLineBefore => "editor.action.insertLineBefore",
             DeleteLines => "editor.action.deleteLines",
+            InsertCursorAbove => "editor.action.insertCursorAbove",
+            InsertCursorBelow => "editor.action.insertCursorBelow",
+            AddNextMatch => "editor.action.addSelectionToNextFindMatch",
+            MoveLinesUp => "editor.action.moveLinesUpAction",
+            MoveLinesDown => "editor.action.moveLinesDownAction",
+            CopyLinesUp => "editor.action.copyLinesUpAction",
+            CopyLinesDown => "editor.action.copyLinesDownAction",
+            DeleteAllLeft => "deleteAllLeft",
+            ColumnSelectLeft => "cursorColumnSelectLeft",
+            ColumnSelectRight => "cursorColumnSelectRight",
+            ColumnSelectUp => "cursorColumnSelectUp",
+            ColumnSelectDown => "cursorColumnSelectDown",
+            ColumnSelectPageUp { .. } => "cursorColumnSelectPageUp",
+            ColumnSelectPageDown { .. } => "cursorColumnSelectPageDown",
+            ColumnSelect { .. } => "columnSelect",
             Undo => "undo",
             Redo => "redo",
             Save => "workbench.action.files.save",
@@ -250,7 +330,7 @@ impl EditorCommand {
     pub fn from_vscode_id(id: &str, page_lines: u32) -> Option<EditorCommand> {
         use EditorCommand::*;
         let (base, select) = match id.strip_suffix("Select") {
-            Some(b) if b.starts_with("cursor") => (b, true),
+            Some(b) if b.starts_with("cursor") && !b.starts_with("cursorColumn") => (b, true),
             _ => (id, false),
         };
         let motion = match base {
@@ -295,6 +375,20 @@ impl EditorCommand {
             "editor.action.insertLineAfter" => InsertLineAfter,
             "editor.action.insertLineBefore" => InsertLineBefore,
             "editor.action.deleteLines" => DeleteLines,
+            "editor.action.insertCursorAbove" => InsertCursorAbove,
+            "editor.action.insertCursorBelow" => InsertCursorBelow,
+            "editor.action.addSelectionToNextFindMatch" => AddNextMatch,
+            "editor.action.moveLinesUpAction" => MoveLinesUp,
+            "editor.action.moveLinesDownAction" => MoveLinesDown,
+            "editor.action.copyLinesUpAction" => CopyLinesUp,
+            "editor.action.copyLinesDownAction" => CopyLinesDown,
+            "deleteAllLeft" => DeleteAllLeft,
+            "cursorColumnSelectLeft" => ColumnSelectLeft,
+            "cursorColumnSelectRight" => ColumnSelectRight,
+            "cursorColumnSelectUp" => ColumnSelectUp,
+            "cursorColumnSelectDown" => ColumnSelectDown,
+            "cursorColumnSelectPageUp" => ColumnSelectPageUp { lines: page_lines },
+            "cursorColumnSelectPageDown" => ColumnSelectPageDown { lines: page_lines },
             "undo" => Undo,
             "redo" => Redo,
             "workbench.action.files.save" => Save,

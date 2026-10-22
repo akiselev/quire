@@ -386,13 +386,40 @@ fn auto_close(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
             return None;
         }
     }
+    // A contained pair (`(`,`)` inside `(*`,`*)`): when its closing text already follows every
+    // cursor, insert only the rest of the closing text (VS Code `_findContainedAutoClosingPair`).
+    let mut contained: Option<&(String, String)> = None;
+    if open.chars().count() > 1 {
+        for cand in &cfg.auto_closing_pairs {
+            if cand.0 != *open
+                && open.contains(cand.0.as_str())
+                && close.ends_with(cand.1.as_str())
+                && contained.is_none_or(|c| cand.0.len() > c.0.len())
+            {
+                contained = Some(cand);
+            }
+        }
+    }
+    let inserted_close = match contained {
+        Some((_, cc))
+            if st.sel.ranges().iter().all(|r| {
+                let line_end = text.line_range(text.byte_to_line(r.head)).end;
+                text.slice(r.head..line_end)
+                    .to_string()
+                    .starts_with(cc.as_str())
+            }) =>
+        {
+            &close[..close.len() - cc.len()]
+        }
+        _ => close.as_str(),
+    };
     let mut new_ac = Vec::new();
     let edits = st
         .sel
         .ranges()
         .iter()
         .map(|r| {
-            let insert = format!("{ch}{close}");
+            let insert = format!("{ch}{inserted_close}");
             Some(RangeEdit {
                 range: r.head..r.head,
                 insert,

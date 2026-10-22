@@ -314,7 +314,8 @@
  },
  {
   "name": "Editor Controller - Cursor > column select 1",
-  "na": "CoreNavigationCommands.ColumnSelect"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > grapheme breaking",
@@ -323,23 +324,28 @@
  },
  {
   "name": "Editor Controller - Cursor > issue #4905 - column select is biased to the right",
-  "na": "CoreNavigationCommands.ColumnSelect"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > issue #20087: column select with mouse",
-  "na": "CoreNavigationCommands.ColumnSelect"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > issue #20087: column select with keyboard",
-  "na": "CoreNavigationCommands.CursorColumnSelectLeft"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > issue #118062: Column selection cannot select first position of a line",
-  "na": "CoreNavigationCommands.CursorColumnSelectLeft"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > column select with keyboard",
-  "na": "CoreNavigationCommands.CursorColumnSelectRight"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller - Cursor > setSelection / setPosition with source",
@@ -388,8 +394,14 @@
   "features": []
  },
  {
-  "name": "Editor Controller > bug #16740: [editor] Cut line doesn't quite cut the last line",
-  "na": "two editors in one test"
+  "name": "Editor Controller > bug #16740: [editor] Cut line doesn't quite cut the last line #1",
+  "fixture": "cursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Controller > bug #16740: [editor] Cut line doesn't quite cut the last line #2",
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller > issue #128602: When cutting multiple lines (ctrl x), the last line will not be erased",
@@ -661,7 +673,7 @@
  },
  {
   "name": "Editor Controller > removeAutoWhitespace on: removes only whitespace the cursor added 2",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn used as a string"
  },
  {
   "name": "Editor Controller > removeAutoWhitespace on: test 1",
@@ -669,7 +681,7 @@
  },
  {
   "name": "Editor Controller > issue #15118: remove auto whitespace when pasting entire line",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn used as a string"
  },
  {
   "name": "Editor Controller > issue #40695: maintain cursor position when copying lines using ctrl+c, ctrl+v",
@@ -1043,39 +1055,73 @@
  },
  {
   "name": "Editor Controller > autoClosingPairs - open parens: default",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
   "name": "Editor Controller > autoClosingPairs - open parens: whitespace",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
   "name": "Editor Controller > autoClosingPairs - open parens disabled/enabled open quotes enabled/disabled",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
   "name": "Editor Controller > autoClosingPairs - configurable open parens",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
   "name": "Editor Controller > autoClosingPairs - auto-pairing can be disabled",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
-  "name": "Editor Controller > autoClosingPairs - auto wrapping is configurable",
-  "na": "two editors in one test"
+  "name": "Editor Controller > autoClosingPairs - auto wrapping is configurable #1",
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
+ },
+ {
+  "name": "Editor Controller > autoClosingPairs - auto wrapping is configurable #2",
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
+ },
+ {
+  "name": "Editor Controller > autoClosingPairs - auto wrapping is configurable #3",
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport",
+   "autoSurround quotes"
+  ]
+ },
+ {
+  "name": "Editor Controller > autoClosingPairs - auto wrapping is configurable #4",
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport",
+   "autoSurround brackets"
+  ]
  },
  {
   "name": "Editor Controller > autoClosingPairs - quote",
-  "na": "model.getLineMaxColumn"
+  "na": "maxColumn.valueOf"
  },
  {
   "name": "Editor Controller > autoClosingPairs - multi-character autoclose",
-  "na": "model.setValue"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport"
+  ]
  },
  {
   "name": "Editor Controller > issue #338693: undo after multi-character autoclose first removes only the auto-closed characters",
-  "na": "selections.map"
+  "na": "selections.map(?)"
  },
  {
   "name": "Editor Controller > issue #338693: multi-character autoclose does not insert an orphan close when a listener reentrantly removes the typed character",
@@ -1087,11 +1133,11 @@
  },
  {
   "name": "Editor Controller > issue #338693: undo after multi-character autoclose with auto-indentation first removes only the auto-closed characters",
-  "na": "selections.map"
+  "na": "selections.map(?)"
  },
  {
   "name": "Editor Controller > autoClosingPairs - beforeText",
-  "na": "model.setValue"
+  "na": "array of markers"
  },
  {
   "name": "Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair",
@@ -1106,11 +1152,17 @@
  },
  {
   "name": "Editor Controller > autoClosingPairs - doc comments can be turned off",
-  "na": "model.setValue"
+  "fixture": "cursor.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)",
+   "language __electricCharacterSupport",
+   "editor option autoClosingComments"
+  ]
  },
  {
   "name": "Editor Controller > issue #72177: multi-character autoclose with conflicting patterns",
-  "na": "model.setValue"
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Controller > issue #55314: Do not auto-close when ending with open",
@@ -1275,8 +1327,14 @@
   "na": "CoreNavigationCommands.LineSelectDrag"
  },
  {
-  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor",
-  "na": "two editors in one test"
+  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #1",
+  "fixture": "cursor.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #2",
+  "fixture": "cursor.test.fixture",
+  "features": []
  },
  {
   "name": "Undo stops > there is an undo stop between typing and deleting left",

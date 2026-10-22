@@ -1,0 +1,117 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/multicursor/test/browser/multicursor.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Multicursor > issue #1336: Insert cursor below on last line adds a cursor to the end of the current line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc"
+cmd editor.action.insertCursorBelow
+expectSelCount 1
+
+=== Multicursor selection > issue #6661: AddSelectionToNextFindMatchAction can work with touching ranges
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abcabc\nabc\nabcabc"
+setSelections 1 1 1 4
+cmd editor.action.addSelectionToNextFindMatch
+expectRanges 1 1 1 4; 1 4 1 7
+cmd editor.action.addSelectionToNextFindMatch
+cmd editor.action.addSelectionToNextFindMatch
+cmd editor.action.addSelectionToNextFindMatch
+expectRanges 1 1 1 4; 1 4 1 7; 2 1 2 4; 3 1 3 4; 3 4 3 7
+type "z"
+expectRanges 1 2 1 2; 1 3 1 3; 2 2 2 2; 3 2 3 2; 3 3 3 3
+expectText "zz\nz\nzz"
+
+=== Multicursor selection > AddSelectionToNextFindMatchAction starting with single collapsed selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc pizza\nabc house\nabc bar"
+setSelections 1 2 1 2
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+
+=== Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 1)
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc pizza\nabc house\nabc bar"
+setSelections 1 1 1 4; 2 2 2 2
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+
+=== Multicursor selection > AddSelectionToNextFindMatchAction starting with two selections, one being collapsed 2)
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc pizza\nabc house\nabc bar"
+setSelections 1 2 1 2; 2 1 2 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+
+=== Multicursor selection > AddSelectionToNextFindMatchAction starting with all collapsed selections
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc pizza\nabc house\nabc bar"
+setSelections 1 2 1 2; 2 2 2 2; 3 1 3 1
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4; 3 1 3 4
+
+=== Multicursor selection > AddSelectionToNextFindMatchAction starting with all collapsed selections on different words
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "abc pizza\nabc house\nabc bar"
+setSelections 1 6 1 6; 2 6 2 6; 3 6 3 6
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 5 1 10; 2 5 2 10; 3 5 3 8
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 5 1 10; 2 5 2 10; 3 5 3 8
+
+=== Multicursor selection > issue #20651: AddSelectionToNextFindMatchAction case insensitive
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "test\ntestte\nTest\ntestte\ntest"
+setSelections 1 1 1 5
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 5; 2 1 2 5
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 5; 2 1 2 5; 3 1 3 5
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 5; 2 1 2 5; 3 1 3 5; 4 1 4 5
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 5; 2 1 2 5; 3 1 3 5; 4 1 4 5; 5 1 5 5
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 5; 2 1 2 5; 3 1 3 5; 4 1 4 5; 5 1 5 5
+
+=== Multicursor selection > Find state disassociation > enters mode
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "app\napples\nwhatsapp\napp\nApp\n app"
+setSelections 1 2 1 2
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 4 1 4 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 4 1 4 4; 6 2 6 5
+
+=== Multicursor selection > Find state disassociation > leaves mode when selection changes
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "app\napples\nwhatsapp\napp\nApp\n app"
+setSelections 1 2 1 2
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 4 1 4 4
+setSelections 1 1 1 4
+cmd editor.action.addSelectionToNextFindMatch
+expectSel 1 1 1 4; 2 1 2 4
+

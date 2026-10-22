@@ -490,6 +490,14 @@ text: "    \tMy First Line\t \r\n\tMy Second Line\n    Third Line🐶\n\r\n1"
 cmd editor.action.selectAll
 expectSel 1 1 5 2
 
+=== Editor Controller - Cursor > column select 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "\tprivate compute(a:number): boolean {\n\t\tif (a + 3 === 0 || a + 5 === 0) {\n\t\t\treturn false;\n\t\t}\n\t}"
+moveTo 1 7
+expectSel 1 7 1 7
+columnSelect 4 15 drag
+expectSel 1 7 1 12; 2 4 2 9; 3 3 3 6; 4 4 4 4
+
 === Editor Controller - Cursor > grapheme breaking
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
 text: "abcabc\nãããããã\n辻󠄀辻󠄀辻󠄀\nபு"
@@ -517,6 +525,115 @@ cmd cursorUp
 expectSel 2 5 2 5
 cmd cursorUp
 expectSel 1 3 1 3
+
+=== Editor Controller - Cursor > issue #4905 - column select is biased to the right
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "var gulp = require(\"gulp\");\nvar path = require(\"path\");\nvar rimraf = require(\"rimraf\");\nvar isarray = require(\"isarray\");\nvar merge = require(\"merge-stream\");\nvar concat = require(\"gulp-concat\");\nvar newer = require(\"gulp-newer\");"
+moveTo 1 4
+expectSel 1 4 1 4
+columnSelect 4 1 drag
+expectSel 1 4 1 1; 2 4 2 1; 3 4 3 1; 4 4 4 1
+
+=== Editor Controller - Cursor > issue #20087: column select with mouse
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" Key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SoMEKEy\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" valuE=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"00X\"/>"
+moveTo 10 10
+expectSel 10 10 10 10
+columnSelect 1 1 drag
+expectSel 1 10 1 1; 2 10 2 1; 3 10 3 1; 4 10 4 1; 5 10 5 1; 6 10 6 1; 7 10 7 1; 8 10 8 1; 9 10 9 1; 10 10 10 1
+columnSelect 1 1 drag
+expectSel 1 10 1 1; 2 10 2 1; 3 10 3 1; 4 10 4 1; 5 10 5 1; 6 10 6 1; 7 10 7 1; 8 10 8 1; 9 10 9 1; 10 10 10 1
+
+=== Editor Controller - Cursor > issue #20087: column select with keyboard
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" Key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SoMEKEy\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" valuE=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"000\"/>\n<property id=\"SomeThing\" key=\"SomeKey\" value=\"00X\"/>"
+moveTo 10 10
+expectSel 10 10 10 10
+cmd cursorColumnSelectLeft
+expectSel 10 10 10 9
+cmd cursorColumnSelectLeft
+expectSel 10 10 10 8
+cmd cursorColumnSelectRight
+expectSel 10 10 10 9
+cmd cursorColumnSelectUp
+expectSel 9 10 9 9; 10 10 10 9
+cmd cursorColumnSelectDown
+expectSel 10 10 10 9
+
+=== Editor Controller - Cursor > issue #118062: Column selection cannot select first position of a line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello world"
+moveTo 1 2
+expectSel 1 2 1 2
+cmd cursorColumnSelectLeft
+expectSel 1 2 1 1
+
+=== Editor Controller - Cursor > column select with keyboard
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "var gulp = require(\"gulp\");\nvar path = require(\"path\");\nvar rimraf = require(\"rimraf\");\nvar isarray = require(\"isarray\");\nvar merge = require(\"merge-stream\");\nvar concat = require(\"gulp-concat\");\nvar newer = require(\"gulp-newer\");"
+moveTo 1 4
+expectSel 1 4 1 4
+cmd cursorColumnSelectRight
+expectSel 1 4 1 5
+cmd cursorColumnSelectDown
+expectSel 1 4 1 5; 2 4 2 5
+cmd cursorColumnSelectDown
+expectSel 1 4 1 5; 2 4 2 5; 3 4 3 5
+cmd cursorColumnSelectDown
+cmd cursorColumnSelectDown
+cmd cursorColumnSelectDown
+cmd cursorColumnSelectDown
+expectSel 1 4 1 5; 2 4 2 5; 3 4 3 5; 4 4 4 5; 5 4 5 5; 6 4 6 5; 7 4 7 5
+cmd cursorColumnSelectRight
+expectSel 1 4 1 6; 2 4 2 6; 3 4 3 6; 4 4 4 6; 5 4 5 6; 6 4 6 6; 7 4 7 6
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 16; 2 4 2 16; 3 4 3 16; 4 4 4 16; 5 4 5 16; 6 4 6 16; 7 4 7 16
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 26; 2 4 2 26; 3 4 3 26; 4 4 4 26; 5 4 5 26; 6 4 6 26; 7 4 7 26
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 28; 4 4 4 28; 5 4 5 28; 6 4 6 28; 7 4 7 28
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 32; 5 4 5 32; 6 4 6 32; 7 4 7 32
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 34; 6 4 6 34; 7 4 7 34
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 35; 6 4 6 35; 7 4 7 35
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 37; 6 4 6 37; 7 4 7 35
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 37; 6 4 6 37; 7 4 7 35
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+cmd cursorColumnSelectRight
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 37; 6 4 6 37; 7 4 7 35
+cmd cursorColumnSelectLeft
+expectSel 1 4 1 28; 2 4 2 28; 3 4 3 32; 4 4 4 34; 5 4 5 36; 6 4 6 36; 7 4 7 35
 
 === Editor Controller > issue microsoft/monaco-editor#443: Indentation of a single row deletes selected text in some cases
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
@@ -594,6 +711,27 @@ expectSel 7 1 7 1
 cmd tab
 expectLine 7 "\t"
 expectSel 7 2 7 2
+
+=== Editor Controller > bug #16740: [editor] Cut line doesn't quite cut the last line #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "asdasd\nqwerty"
+moveTo 2 1
+expectSel 2 1 2 1
+cmd editor.action.clipboardCutAction
+expectLineCount 1
+expectLine 1 "asdasd"
+
+=== Editor Controller > bug #16740: [editor] Cut line doesn't quite cut the last line #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "asdasd\n"
+moveTo 2 1
+expectSel 2 1 2 1
+cmd editor.action.clipboardCutAction
+expectLineCount 1
+expectLine 1 "asdasd"
+cmd editor.action.clipboardCutAction
+expectLineCount 1
+expectLine 1 ""
 
 === Editor Controller > issue #128602: When cutting multiple lines (ctrl x), the last line will not be erased
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
@@ -1426,6 +1564,59 @@ moveTo 2 1 select
 type "}"
 expectLine 2 "}"
 
+=== Editor Controller > autoClosingPairs - auto wrapping is configurable #1
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "var a = asd"
+setSelections 1 1 1 4; 1 9 1 12
+type "`"
+expectText "`var` a = `asd`"
+type "("
+expectText "`(var)` a = `(asd)`"
+
+=== Editor Controller > autoClosingPairs - auto wrapping is configurable #2
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"],"autoSurround":false}
+text: "var a = asd"
+setSelections 1 1 1 4
+type "`"
+expectText "` a = asd"
+
+=== Editor Controller > autoClosingPairs - auto wrapping is configurable #3
+status: fail-ours needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, autoSurround quotes
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport; autoSurround quotes
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "var a = asd"
+setSelections 1 1 1 4
+type "`"
+expectText "`var` a = asd"
+type "("
+expectText "`(` a = asd"
+
+=== Editor Controller > autoClosingPairs - auto wrapping is configurable #4
+status: fail-ours needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, autoSurround brackets
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport; autoSurround brackets
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: "var a = asd"
+setSelections 1 1 1 4
+type "("
+expectText "(var) a = asd"
+type "`"
+expectText "(`) a = asd"
+
+=== Editor Controller > autoClosingPairs - multi-character autoclose
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+setValue "begi"
+setSelections 1 5 1 5
+type "n"
+expectLine 1 "beginend"
+setValue "/*"
+setSelections 1 3 1 3
+type "*"
+expectLine 1 "/** */"
+
 === Editor Controller > autoClosingPairs - beforeText falls back to a shorter pair
 status: fail-ours needs autoClosingPairs.beforeText
 # features: autoClosingPairs.beforeText
@@ -1434,6 +1625,36 @@ text: "prefixbegi"
 setSelections 1 11 1 11
 type "n"
 expectText "prefixbegin]"
+
+=== Editor Controller > autoClosingPairs - doc comments can be turned off
+status: fail-ours needs autoClosingPairs.notIn (needs tokens), language __electricCharacterSupport, editor option autoClosingComments
+# features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport; editor option autoClosingComments
+config: {"autoClosingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"surroundingPairs":[["{","}"],["[","]"],["(",")"],["'","'"],["\"","\""],["`","`"],["/**"," */"],["begin","end"]],"brackets":[],"lineComment":null,"blockComment":["/*","*/"]}
+text: ""
+setValue "/*"
+setSelections 1 3 1 3
+type "*"
+expectLine 1 "/**"
+
+=== Editor Controller > issue #72177: multi-character autoclose with conflicting patterns
+config: {"autoClosingPairs":[["(",")"],["(*","*)"],["<@","@>"],["<@@","@@>"]],"surroundingPairs":[["(",")"],["(*","*)"],["<@","@>"],["<@@","@@>"]],"brackets":[],"lineComment":null,"blockComment":null}
+text: ""
+type "("
+expectLine 1 "()"
+type "*"
+expectLine 1 "(**)"
+setValue "("
+setSelections 1 2 1 2
+type "*"
+expectLine 1 "(**)"
+setValue ""
+type "<"
+type "@"
+expectLine 1 "<@@>"
+type "@"
+expectLine 1 "<@@@@>"
+type "("
+expectLine 1 "<@@()@@>"
 
 === Editor Controller > issue #37315 - overtypes only those characters that it inserted
 # features: autoClosingPairs.notIn (needs tokens); language __electricCharacterSupport
@@ -1621,6 +1842,19 @@ text: "just some text\nand another line\nand another one"
 wordSelect 2 6
 moveTo 1 8 select
 expectSel 2 12 1 6
+
+=== Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "just\n\nsome text"
+setSelections 2 1 2 1
+
+=== Editor Controller > issue #111513: Text gets automatically selected when typing at the same location in another editor #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "just\n\nsome text"
+setSelections 2 1 2 1
+type "e"
+expectSel 2 2 2 2
+expectSel 2 2 2 2
 
 === Undo stops > there is an undo stop between typing and deleting left
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}

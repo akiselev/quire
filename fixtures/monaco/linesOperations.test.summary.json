@@ -1,0 +1,261 @@
+[
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesAscendingAction > should sort selected lines in ascending order",
+  "na": "new SortLinesAscendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesAscendingAction > should sort lines in ascending order",
+  "na": "new SortLinesAscendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesAscendingAction > should sort multiple selections in ascending order",
+  "na": "new SortLinesAscendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesAscendingAction > applies to whole document when selection is single line",
+  "na": "new SortLinesAscendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesDescendingAction > should sort selected lines in descending order",
+  "na": "new SortLinesDescendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > SortLinesDescendingAction > should sort multiple selections in descending order",
+  "na": "new SortLinesDescendingAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteDuplicateLinesAction > should remove duplicate lines within selection",
+  "na": "new DeleteDuplicateLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteDuplicateLinesAction > should remove duplicate lines",
+  "na": "new DeleteDuplicateLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteDuplicateLinesAction > should remove duplicate lines in multiple selections",
+  "na": "new DeleteDuplicateLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteDuplicateLinesAction > applies to whole document when selection is single line",
+  "na": "new DeleteDuplicateLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllLeftAction > should delete to the left of the cursor",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllLeftAction > should jump to the previous line when on first column",
+  "na": "lines.0"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllLeftAction > should keep deleting lines in multi cursor mode",
+  "na": "selections.0"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllLeftAction > should work in multi cursor mode",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllLeftAction > issue #36234: should push undo stop",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > JoinLinesAction > should join lines and insert space if necessary",
+  "na": "new JoinLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > JoinLinesAction > #50471 Join lines at the end of document",
+  "na": "new JoinLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > JoinLinesAction > should work in multi cursor mode",
+  "na": "new JoinLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > JoinLinesAction > should push undo stop",
+  "na": "new JoinLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > reverses lines",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > excludes empty last line",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > updates cursor",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > preserves cursor on empty last line",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > preserves selected text when selections do not span lines",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > reverses lines within selection",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > reverses lines within partial selection",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > reverses lines with multiple selections",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > updates selection positions after reversal",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > applies to whole document when selection is single line",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > excludes end line when selection ends at column 1",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > ReverseLinesAction > applies to whole document when selection is single line",
+  "na": "new ReverseLinesAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > transpose",
+  "na": "new TransposeAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > toggle case",
+  "na": "new UpperCaseAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should be noop on empty",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should delete selected range",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should delete to the right of the cursor",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should join two lines, if at the end of the line",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should work with multiple cursors",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should work with undo/redo",
+  "na": "new DeleteAllRightAction"
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineBeforeAction #1",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineBeforeAction #2",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineBeforeAction #3",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineAfterAction #1",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineAfterAction #2",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > InsertLineAfterAction #3",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > Bug 18276:[editor] Indentation broken when selection is empty",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > issue #80736: Indenting while the cursor is at the start of a line of text causes the added spaces or tab to be selected",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > Indenting on empty line should move cursor",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > issue #62112: Delete line does not work properly when multiple cursors are on line",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > empty selection in middle of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > empty selection at top of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > empty selection at end of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with selection in middle of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with selection at top of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with selection at end of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with full line selection in middle of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with full line selection at top of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > with full line selection at end of lines",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Operations > multicursor 1",
+  "fixture": "linesOperations.test.fixture",
+  "features": []
+ }
+]

@@ -15,7 +15,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const known = new Set(['assert', 'Position', 'Range', 'Selection', 'CoreNavigationCommands', 'CoreEditingCommands',
   'withTestCodeEditor', 'withAsyncTestCodeEditor', 'createTextModel', 'instantiateTextModel', 'createCodeEditorServices',
   'DisposableStore', 'ILanguageConfigurationService', 'ILanguageService', 'ensureNoDisposablesAreLeakedInTestSuite',
-  'EndOfLinePreference', 'instantiateTestCodeEditor', 'TextModel', 'assertCursor']);
+  'EndOfLinePreference', 'instantiateTestCodeEditor', 'TextModel', 'assertCursor', 'testCommand']);
 const names = new Set();
 const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m, spec) => {
   spec = spec.replace(/^type\s+/, '');
@@ -33,10 +33,10 @@ const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m, sp
   const def = spec.match(/^(\w+)\s*(,|$)/);
   if (def) names.add(def[1]);
   return '';
-}).replace(/^import\s+'[^']+';\s*$/gm, '').replace(/^function assertCursor\(/m, 'function __upstream_assertCursor(');
+}).replace(/^import\s+'[^']+';\s*$/gm, '').replace(/@I\w+\s+(?=\w+\s*:)/g, '').replace(/^function assertCursor\(/m, 'function __upstream_assertCursor(');
 let header = '';
 for (const n of names) {
-  if (!known.has(n)) header += `const ${n} = globalThis.__unsupported(${JSON.stringify(n)});\n`;
+  if (!known.has(n)) header += `const ${n} = globalThis.__resolve(${JSON.stringify(n)});\n`;
 }
 const tmp = mkdtempSync(join(tmpdir(), 'quire-port-'));
 const tsPath = join(tmp, basename(rel));
@@ -105,6 +105,7 @@ function mapConfig(t) {
       case 'readOnly': cfg.readOnly = v; break;
       case 'multiCursorPaste': if (v !== 'spread') features.push(`multiCursorPaste ${v}`); break;
       case 'stickyTabStops': if (v) features.push('stickyTabStops'); break;
+      case 'serviceCollection': break;
       case 'wordWrap': case 'wordWrapColumn': case 'wrappingIndent': case 'fontInfo': case 'lineHeight':
       case 'cursorSurroundingLines': case 'cursorSurroundingLinesStyle': case 'scrollBeyondLastLine':
         features.push(`view option ${k}`); break;

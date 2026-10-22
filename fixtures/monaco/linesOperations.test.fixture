@@ -1,0 +1,258 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/linesOperations/test/browser/linesOperations.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Contrib - Line Operations > DeleteAllLeftAction > should delete to the left of the cursor
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "one\ntwo\nthree"
+setSelections 1 2 1 2
+cmd deleteAllLeft
+expectLine 1 "ne"
+setSelections 2 2 2 2; 3 2 3 2
+cmd deleteAllLeft
+expectLine 2 "wo"
+expectLine 3 "hree"
+
+=== Editor Contrib - Line Operations > DeleteAllLeftAction > should work in multi cursor mode
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nworld\nhello world\nhello\nbonjour\nhola\nworld\nhello world"
+setSelections 1 2 1 2; 1 4 1 4
+cmd deleteAllLeft
+expectLine 1 "lo"
+setSelections 2 2 2 2; 2 4 2 5
+cmd deleteAllLeft
+expectLine 2 "d"
+setSelections 3 2 3 5; 3 7 3 7
+cmd deleteAllLeft
+expectLine 3 "world"
+setSelections 4 3 4 3; 4 5 5 4
+cmd deleteAllLeft
+expectLine 4 "jour"
+setSelections 5 3 6 3; 6 5 7 5; 7 7 7 7
+cmd deleteAllLeft
+expectLine 5 "world"
+
+=== Editor Contrib - Line Operations > DeleteAllLeftAction > issue #36234: should push undo stop
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "one\ntwo\nthree"
+setSelections 1 1 1 1
+type "T"
+type "y"
+type "p"
+type "i"
+type "n"
+type "g"
+type " "
+type "s"
+type "o"
+type "m"
+type "e"
+type " "
+type "t"
+type "e"
+type "x"
+type "t"
+type " "
+type "h"
+type "e"
+type "r"
+type "e"
+type " "
+type "o"
+type "n"
+type " "
+type "l"
+type "i"
+type "n"
+type "e"
+type " "
+expectLine 1 "Typing some text here on line one"
+expectPrimarySel 1 31 1 31
+cmd deleteAllLeft
+expectLine 1 "one"
+expectPrimarySel 1 1 1 1
+cmd undo
+expectLine 1 "Typing some text here on line one"
+expectPrimarySel 1 31 1 31
+
+=== Editor Contrib - Line Operations > InsertLineBeforeAction #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 1 3
+cmd editor.action.insertLineBefore
+expectPrimarySel 1 1 1 1
+expectLine 1 ""
+expectLine 2 "First line"
+expectLine 3 "Second line"
+expectLine 4 "Third line"
+
+=== Editor Contrib - Line Operations > InsertLineBeforeAction #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 2 3
+cmd editor.action.insertLineBefore
+expectPrimarySel 2 1 2 1
+expectLine 1 "First line"
+expectLine 2 ""
+expectLine 3 "Second line"
+expectLine 4 "Third line"
+
+=== Editor Contrib - Line Operations > InsertLineBeforeAction #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 3 3
+cmd editor.action.insertLineBefore
+expectPrimarySel 3 1 3 1
+expectLine 1 "First line"
+expectLine 2 "Second line"
+expectLine 3 ""
+expectLine 4 "Third line"
+
+=== Editor Contrib - Line Operations > InsertLineAfterAction #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 1 3
+cmd editor.action.insertLineAfter
+expectPrimarySel 2 1 2 1
+expectLine 1 "First line"
+expectLine 2 ""
+expectLine 3 "Second line"
+expectLine 4 "Third line"
+
+=== Editor Contrib - Line Operations > InsertLineAfterAction #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 2 3
+cmd editor.action.insertLineAfter
+expectPrimarySel 3 1 3 1
+expectLine 1 "First line"
+expectLine 2 "Second line"
+expectLine 3 ""
+expectLine 4 "Third line"
+
+=== Editor Contrib - Line Operations > InsertLineAfterAction #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "First line\nSecond line\nThird line"
+moveTo 3 3
+cmd editor.action.insertLineAfter
+expectPrimarySel 4 1 4 1
+expectLine 1 "First line"
+expectLine 2 "Second line"
+expectLine 3 "Third line"
+expectLine 4 ""
+
+=== Editor Contrib - Line Operations > Bug 18276:[editor] Indentation broken when selection is empty
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "function baz() {"
+moveTo 1 2
+cmd editor.action.indentLines
+expectLine 1 "\tfunction baz() {"
+expectPrimarySel 1 3 1 3
+cmd tab
+expectLine 1 "\tf\tunction baz() {"
+
+=== Editor Contrib - Line Operations > issue #80736: Indenting while the cursor is at the start of a line of text causes the added spaces or tab to be selected
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"insertSpaces":false}
+text: "Some text"
+moveTo 1 1
+cmd editor.action.indentLines
+expectLine 1 "\tSome text"
+expectPrimarySel 1 2 1 2
+
+=== Editor Contrib - Line Operations > Indenting on empty line should move cursor
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null,"useTabStops":false}
+text: ""
+moveTo 1 1
+cmd editor.action.indentLines
+expectLine 1 "    "
+expectPrimarySel 1 5 1 5
+
+=== Editor Contrib - Line Operations > issue #62112: Delete line does not work properly when multiple cursors are on line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "a\nfoo boo\ntoo\nc"
+setSelections 2 4 2 4; 2 8 2 8; 3 4 3 4
+cmd editor.action.deleteLines
+expectText "a\nc"
+
+=== Editor Contrib - Line Operations > empty selection in middle of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 3 2 3
+cmd editor.action.deleteLines
+expectText "first\nthird line\nfourth line\nfifth"
+expectSel 2 3 2 3
+
+=== Editor Contrib - Line Operations > empty selection at top of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 5 1 5
+cmd editor.action.deleteLines
+expectText "second line\nthird line\nfourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Operations > empty selection at end of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 2 5 2
+cmd editor.action.deleteLines
+expectText "first\nsecond line\nthird line\nfourth line"
+expectSel 4 2 4 2
+
+=== Editor Contrib - Line Operations > with selection in middle of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 3 3 2 2
+cmd editor.action.deleteLines
+expectText "first\nfourth line\nfifth"
+expectSel 2 2 2 2
+
+=== Editor Contrib - Line Operations > with selection at top of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 4 1 5
+cmd editor.action.deleteLines
+expectText "second line\nthird line\nfourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Operations > with selection at end of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 5 1 5 2
+cmd editor.action.deleteLines
+expectText "first\nsecond line\nthird line\nfourth line"
+expectSel 4 2 4 2
+
+=== Editor Contrib - Line Operations > with full line selection in middle of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 1 2 1
+cmd editor.action.deleteLines
+expectText "first\nfourth line\nfifth"
+expectSel 2 1 2 1
+
+=== Editor Contrib - Line Operations > with full line selection at top of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 1 5
+cmd editor.action.deleteLines
+expectText "second line\nthird line\nfourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Operations > with full line selection at end of lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "first\nsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 1 5 2
+cmd editor.action.deleteLines
+expectText "first\nsecond line\nthird line"
+expectSel 3 2 3 2
+
+=== Editor Contrib - Line Operations > multicursor 1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "class P {\n\n    getA() {\n        if (true) {\n            return \"a\";\n        }\n    }\n\n    getB() {\n        if (true) {\n            return \"b\";\n        }\n    }\n\n    getC() {\n        if (true) {\n            return \"c\";\n        }\n    }\n}"
+setSelections 4 1 5 1; 10 1 11 1; 16 1 17 1
+cmd editor.action.deleteLines
+expectText "class P {\n\n    getA() {\n            return \"a\";\n        }\n    }\n\n    getB() {\n            return \"b\";\n        }\n    }\n\n    getC() {\n            return \"c\";\n        }\n    }\n}"
+expectSel 4 1 4 1; 9 1 9 1; 14 1 14 1
+

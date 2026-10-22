@@ -6,17 +6,22 @@
 class Unsupported extends Error {}
 globalThis.__Unsupported = Unsupported;
 
+// Outside a test (suite-level setup) an unsupported value is permissive and only records what
+// it was; inside a test any use throws `Unsupported`.
 function unsupported(name) {
   const f = function () {};
   return new Proxy(f, {
     get(_t, p) {
-      if (p === Symbol.toPrimitive || p === 'toString' || p === Symbol.toStringTag || p === 'then' || p === 'constructor') {
+      if (!cur && (p === Symbol.toPrimitive || p === 'toString')) return () => name;
+      if (p === Symbol.toPrimitive || p === 'toString' || p === Symbol.toStringTag || p === 'then' || p === 'constructor' || p === 'toJSON') {
         return undefined;
       }
+      if (!cur) return unsupported(`${name}.${String(p)}`);
       throw new Unsupported(`${name}.${String(p)}`);
     },
-    apply() { throw new Unsupported(`${name}()`); },
-    construct() { throw new Unsupported(`new ${name}`); },
+    set() { return true; },
+    apply() { if (!cur) return unsupported(`${name}()`); throw new Unsupported(`${name}()`); },
+    construct() { if (!cur) return unsupported(`new ${name}`); throw new Unsupported(`new ${name}`); },
   });
 }
 globalThis.__unsupported = unsupported;
@@ -79,6 +84,13 @@ function marker(kind, arg) {
   return new Proxy(m, {
     get(t, p) {
       if (p === MARK || p === 'kind' || p === 'arg') return t[p];
+      if (kind === 'selections' && p === 'length') return marker('selectionCount');
+      if (kind === 'selections' && p === 'map') {
+        return (fn) => {
+          if (fn && fn.name === 'fromRange') return marker('selectionRanges');
+          throw new Unsupported('selections.map(?)');
+        };
+      }
       if (p === Symbol.toPrimitive || p === 'then' || p === Symbol.toStringTag) return undefined;
       if (p === 'toString') return () => { throw new Unsupported(`${kind} used as a string`); };
       throw new Unsupported(`${kind}.${String(p)}`);
@@ -92,10 +104,19 @@ function expectFrom(actual, expected) {
   switch (actual.kind) {
     case 'line': step(`expectLine ${actual.arg} ${JSON.stringify(expected)}`); break;
     case 'value': step(`expectText ${JSON.stringify(String(expected).replace(/\r\n/g, '\n'))}`); break;
+    case 'lines': step(`expectText ${JSON.stringify(expected.join('\n'))}`); break;
+    case 'maxColumn': step(`expectMaxColumn ${actual.arg} ${expected}`); break;
     case 'lineCount': step(`expectLineCount ${expected}`); break;
     case 'selection': step(`expectPrimarySel ${selArgs(expected)}`); break;
     case 'selections': step(`expectSel ${sortSels(expected).map(selArgs).join('; ')}`); break;
     case 'position': step(`expectHead ${expected.lineNumber} ${expected.column}`); break;
+    case 'selectionCount': step(`expectSelCount ${expected}`); break;
+    case 'selectionRanges': {
+      const rs = [...expected].map((r) => r.join(' '));
+      rs.sort((a, b) => { const x = a.split(' ').map(Number), y = b.split(' ').map(Number); return x[0] - y[0] || x[1] - y[1]; });
+      step(`expectRanges ${rs.join('; ')}`);
+      break;
+    }
     default: throw new Unsupported(`assert on ${actual.kind}`);
   }
 }
@@ -119,6 +140,9 @@ const NAV = {
   CursorPageUp: 'cursorPageUp', CursorPageDown: 'cursorPageDown',
   SelectAll: 'editor.action.selectAll', ExpandLineSelection: 'expandLineSelection',
   RemoveSecondaryCursors: 'removeSecondaryCursors',
+  CursorColumnSelectLeft: 'cursorColumnSelectLeft', CursorColumnSelectRight: 'cursorColumnSelectRight',
+  CursorColumnSelectUp: 'cursorColumnSelectUp', CursorColumnSelectDown: 'cursorColumnSelectDown',
+  CursorColumnSelectPageUp: 'cursorColumnSelectPageUp', CursorColumnSelectPageDown: 'cursorColumnSelectPageDown',
 };
 const EDIT = {
   DeleteLeft: 'deleteLeft', DeleteRight: 'deleteRight', Undo: 'undo', Redo: 'redo', Tab: 'tab', Outdent: 'outdent',
@@ -131,12 +155,17 @@ function navCommand(name) {
         step(`moveTo ${p.lineNumber} ${p.column}${name === 'MoveToSelect' ? ' select' : ''}`);
         return;
       }
+      if (name === 'ColumnSelect') {
+        step(`columnSelect ${args.position.lineNumber} ${args.mouseColumn}${args.doColumnSelect ? ' drag' : ''}`);
+        return;
+      }
       if (name === 'WordSelect') {
         const p = args.position;
         step(`wordSelect ${p.lineNumber} ${p.column}`);
         return;
       }
       const base = name.endsWith('Select') ? name.slice(0, -6) : name;
+      if (NAV[name] && name.startsWith('CursorColumnSelect')) { step(`cmd ${NAV[name]}`); return; }
       if (NAV[base] && (base === name || NAV[base].startsWith('cursor'))) {
         step(`cmd ${NAV[base]}${base !== name ? 'Select' : ''}`);
         return;
@@ -170,6 +199,9 @@ function makeModel(text, languageId, modelOpts) {
     getLineContent: (n) => marker('line', n),
     getValue: (eol) => marker('value'),
     getLineCount: () => marker('lineCount'),
+    getLinesContent: () => marker('lines'),
+    getLineMaxColumn: (n) => marker('maxColumn', n),
+    setValue: (v) => step(`setValue ${JSON.stringify(v)}`),
     undo: () => step('cmd undo'),
     redo: () => step('cmd redo'),
     pushStackElement: () => step('closeUndoGroup'),
@@ -196,7 +228,12 @@ function startEditor(arg, opts, cb) {
 
 function makeEditor(model, opts) {
   if (!cur) throw new Unsupported('editor outside a test');
-  if (cur.editorStarted) throw new Unsupported('two editors in one test');
+  if (cur.editorStarted) {
+    // A second editor in one test: the first becomes its own fixture case ("… #1").
+    cur.parts = cur.parts || [];
+    cur.parts.push({ ...cur, parts: undefined, steps: cur.steps });
+    cur.steps = [];
+  }
   cur.text = model.__text;
   cur.languageId = model.__languageId;
   cur.modelOpts = model.__modelOpts;
@@ -216,6 +253,18 @@ function makeEditor(model, opts) {
     getSelections: () => marker('selections'),
     getPosition: () => marker('position'),
     pushUndoStop: () => step('closeUndoGroup'),
+    getValue: () => marker('value'),
+    trigger: (_src, id, args) => {
+      if (id === 'type') { for (const ch of Array.from(args.text)) step(`type ${JSON.stringify(ch)}`); return; }
+      if (id === 'paste') { if (args.multicursorText || args.pasteOnNewLine) throw new Unsupported('paste variants'); step(`json ${JSON.stringify({ id: 'editor.action.clipboardPasteAction', text: args.text, per_cursor: true })}`); return; }
+      if (id === 'undo' || id === 'redo' || id === 'removeSecondaryCursors' || id === 'cut') { step(`cmd ${id === 'cut' ? 'editor.action.clipboardCutAction' : id}`); return; }
+      throw new Unsupported(`editor.trigger(${id})`);
+    },
+    registerAndInstantiateContribution: (_id, ctor) => {
+      if (ctor && ctor.__contribution) return { dispose() {}, getState() { throw new Unsupported('find controller state'); } };
+      throw new Unsupported('contribution');
+    },
+    setHasTextFocus: () => { throw new Unsupported('text focus'); },
     focus: () => {},
     dispose: () => {},
   };
@@ -255,6 +304,48 @@ globalThis.assertCursor = (_vm, what) => {
 globalThis.withTestCodeEditor = (arg, opts, cb) => startEditor(arg, opts, cb);
 globalThis.withAsyncTestCodeEditor = () => { throw new Unsupported('async editor'); };
 
+// ---- stubs for imported VS Code classes (resolved by name; anything else is Unsupported) ----
+const STUBS = new Map();
+function actionClass(id) {
+  return class { run(_accessor, _editor, _args) { step(`cmd ${id}`); } };
+}
+for (const [name, id] of Object.entries({
+  InsertCursorAbove: 'editor.action.insertCursorAbove',
+  InsertCursorBelow: 'editor.action.insertCursorBelow',
+  AddSelectionToNextFindMatchAction: 'editor.action.addSelectionToNextFindMatch',
+  DeleteAllLeftAction: 'deleteAllLeft',
+  DeleteLinesAction: 'editor.action.deleteLines',
+  IndentLinesAction: 'editor.action.indentLines',
+  InsertLineAfterAction: 'editor.action.insertLineAfter',
+  InsertLineBeforeAction: 'editor.action.insertLineBefore',
+})) STUBS.set(name, actionClass(id));
+STUBS.set('CommonFindController', { ID: 'findController', __contribution: true });
+STUBS.set('MultiCursorSelectionController', { ID: 'multiCursorController', __contribution: true });
+STUBS.set('Handler', { Type: 'type', Paste: 'paste', Cut: 'cut', Undo: 'undo', Redo: 'redo' });
+// ICommand classes used through testCommand(): constructing one names the action it belongs to.
+STUBS.set('CopyLinesCommand', class { constructor(_sel, down) { this.__cmd = down ? 'editor.action.copyLinesDownAction' : 'editor.action.copyLinesUpAction'; } });
+STUBS.set('MoveLinesCommand', class { constructor(_sel, down, autoIndent) { this.__cmd = down ? 'editor.action.moveLinesDownAction' : 'editor.action.moveLinesUpAction'; this.__autoIndent = autoIndent; } });
+STUBS.set('EditorAutoIndentStrategy', { None: 0, Keep: 1, Brackets: 2, Advanced: 3, Full: 4 });
+STUBS.set('TestLanguageConfigurationService', class { register() { return { dispose() {} }; } dispose() {} });
+STUBS.set('ServiceCollection', class { constructor() {} set() {} });
+STUBS.set('InMemoryStorageService', class { dispose() {} });
+STUBS.set('IStorageService', Symbol('IStorageService'));
+globalThis.__resolve = (name) => STUBS.has(name) ? STUBS.get(name) : unsupported(name);
+
+// testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection)
+globalThis.testCommand = (lines, languageId, selection, factory, expectedLines, expectedSelection) => {
+  if (languageId) throw new Unsupported('testCommand with a language');
+  const model = makeModel(lines.join('\n'), null, {});
+  makeEditor(model, {});
+  step(`setSelections ${selArgs(selection)}`);
+  const c = factory(null, selection);
+  if (!c || !c.__cmd) throw new Unsupported('testCommand(other command)');
+  if (c.__autoIndent === 4) throw new Unsupported('move lines with indentation rules (autoIndent full)');
+  step(`cmd ${c.__cmd}`);
+  step(`expectText ${JSON.stringify(expectedLines.join('\n'))}`);
+  step(`expectSel ${selArgs(expectedSelection)}`);
+};
+
 // ---- services ----
 class DisposableStore { add(x) { return x; } dispose() {} clear() {} }
 globalThis.DisposableStore = DisposableStore;
@@ -274,7 +365,7 @@ globalThis.createCodeEditorServices = () => ({
   createInstance() { throw new Unsupported('instantiationService.createInstance'); },
   invokeFunction() { throw new Unsupported('instantiationService.invokeFunction'); },
 });
-globalThis.ensureNoDisposablesAreLeakedInTestSuite = () => {};
+globalThis.ensureNoDisposablesAreLeakedInTestSuite = () => new DisposableStore();
 globalThis.EndOfLinePreference = { TextDefined: 0, LF: 1, CRLF: 2 };
 
 // ---- mocha-style suite/test ----
@@ -302,6 +393,15 @@ function runTest(name, fn, skip) {
     else cur.unsupported = `error: ${e && e.message}`;
   }
   if (cur.languageId) cur.languageConfig = langConfigs.get(cur.languageId) || null;
+  if (cur.parts && !cur.unsupported) {
+    const parts = [...cur.parts, { ...cur, parts: undefined }];
+    parts.forEach((p, i) => {
+      if (p.languageId) p.languageConfig = langConfigs.get(p.languageId) || null;
+      results.push({ ...p, name: `${name} #${i + 1}` });
+    });
+    cur = null;
+    return;
+  }
   results.push(cur);
   cur = null;
 }
