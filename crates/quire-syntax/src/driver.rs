@@ -136,21 +136,21 @@ impl<H: Highlighter> SyntaxDriver<H> {
     }
 
     /// Applies finished results to `doc`, then starts a job if the text changed (after the
-    /// debounce) or `visible` lines lack tokens at the current version. `now_ms` is any
-    /// monotonic clock.
-    pub fn update(&mut self, doc: &mut Document, visible: Range<usize>, now_ms: u64) {
+    /// debounce) or `visible` lines lack tokens at the current version. `visible` holds the
+    /// visible line ranges of every view of the document (an empty slice is the top of the
+    /// file); each uncovered range gets its own job, one at a time. `now_ms` is any monotonic
+    /// clock.
+    pub fn update(&mut self, doc: &mut Document, visible: &[Range<usize>], now_ms: u64) {
         self.poll(doc);
         let version = doc.version();
-        let lines = doc.text().len_lines();
-        let want = visible.start.saturating_sub(self.margin).min(lines)
-            ..(visible.end + self.margin).min(lines);
+        let top = [0..0];
+        let visible = if visible.is_empty() {
+            &top[..]
+        } else {
+            visible
+        };
         let text_changed = self.tree.as_ref().is_none_or(|(_, v)| *v != version);
-        let uncovered = self.covered_at != Some(version)
-            || !self
-                .covered
-                .iter()
-                .any(|r| r.start <= visible.start.min(lines) && r.end >= visible.end.min(lines));
-        if !text_changed && !uncovered {
+        if !text_changed && self.first_uncovered(doc, visible).is_none() {
             self.debounce = None;
             return;
         }
@@ -171,9 +171,49 @@ impl<H: Highlighter> SyntaxDriver<H> {
             }
         }
         self.debounce = None;
-        self.spawn(doc, want, text_changed);
-        // A synchronous spawner has already finished the job.
-        self.poll(doc);
+        // The first job reparses if the text changed; later ones only highlight. A synchronous
+        // spawner finishes each job at once, so the next range can start; the bound stops a
+        // highlighter that never covers a range from looping.
+        let mut reparse = text_changed;
+        for _ in 0..=visible.len() {
+            let r = if reparse {
+                self.first_uncovered(doc, visible)
+                    .unwrap_or_else(|| visible[0].clone())
+            } else {
+                match self.first_uncovered(doc, visible) {
+                    Some(r) => r,
+                    None => break,
+                }
+            };
+            let lines = doc.text().len_lines();
+            let want =
+                r.start.saturating_sub(self.margin).min(lines)..(r.end + self.margin).min(lines);
+            self.spawn(doc, want, reparse);
+            self.poll(doc);
+            if self.in_flight.is_some() {
+                break;
+            }
+            reparse = self.tree.as_ref().is_none_or(|(_, v)| *v != doc.version());
+            if reparse {
+                break;
+            }
+        }
+    }
+
+    /// The first of `visible` (clamped to the document) without tokens at the current version.
+    fn first_uncovered(&self, doc: &Document, visible: &[Range<usize>]) -> Option<Range<usize>> {
+        let lines = doc.text().len_lines();
+        let fresh = self.covered_at == Some(doc.version());
+        visible
+            .iter()
+            .map(|r| r.start.min(lines)..r.end.min(lines))
+            .find(|r| {
+                !fresh
+                    || !self
+                        .covered
+                        .iter()
+                        .any(|c| c.start <= r.start && c.end >= r.end)
+            })
     }
 
     fn poll(&mut self, doc: &mut Document) {

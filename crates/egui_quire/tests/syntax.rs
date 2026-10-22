@@ -24,7 +24,8 @@ struct St {
 fn app(ui: &mut egui::Ui, st: &mut St) {
     let ctx = ui.ctx().clone();
     let now = (ctx.input(|i| i.time) * 1000.0) as u64;
-    st.driver.update(&mut st.doc, st.visible.clone(), now);
+    st.driver
+        .update(&mut st.doc, std::slice::from_ref(&st.visible), now);
     if let Some(at) = st.driver.next_deadline() {
         ctx.request_repaint_after(std::time::Duration::from_millis(at.saturating_sub(now)));
     }

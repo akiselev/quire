@@ -26,9 +26,10 @@ impl Spawner for ThreadSpawner {
     }
 }
 
-/// The host side of syntax highlighting for one editor view.
+/// The host side of syntax highlighting for one document shown in several views.
 ///
-/// - Before `show`: `SyntaxDriver::update` with the lines the view showed last frame; results
+/// - Before the views show: `SyntaxDriver::update` with the lines every view showed last frame
+///   (one range per view); results
 ///   that arrived since are applied (tokens via `Document::set_tokens`, folds via
 ///   `Document::set_fold_ranges`).
 /// - The driver's waker is `ctx.request_repaint`, so a finished background job brings a frame;
@@ -37,7 +38,8 @@ impl Spawner for ThreadSpawner {
 ///   editor's `EditorOutput::settled` (and `Document::settled_probe`) report busy.
 struct Highlighting {
     driver: SyntaxDriver<TreeSitterHighlighter>,
-    visible: Range<usize>,
+    /// Per view: the lines it showed last frame.
+    visible: [Range<usize>; 2],
 }
 
 impl Highlighting {
@@ -50,20 +52,20 @@ impl Highlighting {
         driver.set_waker(Arc::new(move || c.request_repaint()));
         Self {
             driver,
-            visible: 0..100,
+            visible: [0..100, 0..100],
         }
     }
 
     fn before_show(&mut self, ctx: &egui::Context, doc: &mut Document) {
         let now = (ctx.input(|i| i.time) * 1000.0) as u64;
-        self.driver.update(doc, self.visible.clone(), now);
+        self.driver.update(doc, &self.visible, now);
         if let Some(at) = self.driver.next_deadline() {
             ctx.request_repaint_after(Duration::from_millis(at.saturating_sub(now)));
         }
     }
 
-    fn after_show(&mut self, out: &EditorOutput) {
-        self.visible = out.visible_lines.clone();
+    fn after_show(&mut self, view: usize, out: &EditorOutput) {
+        self.visible[view] = out.visible_lines.clone();
     }
 }
 
@@ -98,8 +100,8 @@ impl eframe::App for App {
                     }
                     let out =
                         CodeEditor::new(&mut self.doc, view, ("playground", i), "Source").show(col);
+                    self.syntax.after_show(i, &out);
                     if i == 0 {
-                        self.syntax.after_show(&out);
                         self.settled = out.settled;
                     }
                     for e in out.events {
