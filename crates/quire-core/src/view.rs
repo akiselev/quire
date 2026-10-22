@@ -9,16 +9,10 @@ use crate::selection::{SelRange, Selection};
 use crate::text::Text;
 use crate::transaction::Effect;
 use crate::version::Version;
+use quire_text::{SyncStep, TextView};
 use std::ops::Range;
 
-/// An IME composition in progress. It renders at each cursor and changes no text.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub struct Preedit {
-    /// The composing text.
-    pub text: String,
-    /// The active (underlined) range within `text`, in bytes.
-    pub active: Option<Range<usize>>,
-}
+pub use quire_text::{Preedit, SyncOutcome};
 
 /// Scroll position, kept as a text anchor so edits above it do not move the visible text.
 #[derive(Clone, Copy, PartialEq, Debug, Default)]
@@ -89,29 +83,15 @@ pub(crate) struct NextMatchSession {
     pub last_added: SelRange,
 }
 
-/// How [`EditorView::sync`] caught up.
-#[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum SyncOutcome {
-    /// Already at the document's version.
-    UpToDate,
-    /// Mapped forward through the recent changes.
-    Mapped,
-    /// Older than the window: positions clamped, find marked stale.
-    Clamped,
-}
-
 /// One view of a document.
 #[derive(Clone, Debug)]
 pub struct EditorView {
-    selection: Selection,
-    selection_version: u64,
-    synced_at: Version,
+    /// Selection, selection version, synced version, focus and preedit (quire-text).
+    text: TextView,
     folds: Vec<Range<usize>>,
     find: Option<FindState>,
     scroll: Scroll,
     reveal: Option<Reveal>,
-    focused: bool,
-    preedit: Option<Preedit>,
     auto_closed: Vec<AutoClosed>,
     session: Option<ViewSession>,
     /// Byte ranges of the current text changed since the find matches were computed (`None`:
@@ -126,15 +106,11 @@ impl EditorView {
     /// A view of `doc` with a cursor at the start.
     pub fn new(doc: &Document) -> Self {
         EditorView {
-            selection: Selection::point(0),
-            selection_version: 0,
-            synced_at: doc.version(),
+            text: TextView::new(doc.text_document()),
             folds: Vec::new(),
             find: None,
             scroll: Scroll::default(),
             reveal: None,
-            focused: false,
-            preedit: None,
             auto_closed: Vec::new(),
             session: None,
             find_dirty: Some(Vec::new()),
@@ -144,22 +120,31 @@ impl EditorView {
 
     /// The selection (valid at [`EditorView::synced_at`]).
     pub fn selection(&self) -> &Selection {
-        &self.selection
+        self.text.selection()
+    }
+
+    /// The quire-text view underneath (selection, focus, preedit).
+    pub fn text_view(&self) -> &TextView {
+        &self.text
+    }
+
+    pub(crate) fn text_view_mut(&mut self) -> &mut TextView {
+        &mut self.text
     }
 
     /// Bumps whenever the selection changes.
     pub fn selection_version(&self) -> u64 {
-        self.selection_version
+        self.text.selection_version()
     }
 
     /// The document version the view's positions belong to.
     pub fn synced_at(&self) -> Version {
-        self.synced_at
+        self.text.synced_at()
     }
 
     /// Whether the view is behind the document.
     pub fn is_behind(&self, doc: &Document) -> bool {
-        self.synced_at != doc.version()
+        self.text.synced_at() != doc.version()
     }
 
     /// Folded byte ranges (sorted).
@@ -204,7 +189,9 @@ impl EditorView {
 
     /// The index of the find match the primary selection is on ([`FindState::current_match`]).
     pub fn find_current_match(&self) -> Option<usize> {
-        self.find.as_ref()?.current_match(&self.selection.primary())
+        self.find
+            .as_ref()?
+            .current_match(&self.text.selection().primary())
     }
 
     /// The scroll position.
@@ -224,18 +211,13 @@ impl EditorView {
 
     /// Whether the view has focus.
     pub fn focused(&self) -> bool {
-        self.focused
+        self.text.focused()
     }
 
     /// Sets focus; returns whether it changed. On a change the caller closes the document's undo
     /// group ([`Document::close_undo_group`]), one of Monaco's closing rules.
     pub fn set_focused(&mut self, f: bool) -> bool {
-        let changed = self.focused != f;
-        self.focused = f;
-        if !f {
-            self.preedit = None;
-        }
-        changed
+        self.text.set_focused(f)
     }
 
     /// Auto-inserted closing characters still tracked (VS Code's `autoClosedCharacters`).
@@ -245,17 +227,17 @@ impl EditorView {
 
     /// Whether an IME composition is active (the host must not route Enter or Escape elsewhere).
     pub fn composing(&self) -> bool {
-        self.preedit.is_some()
+        self.text.composing()
     }
 
     /// The active preedit.
     pub fn preedit(&self) -> Option<&Preedit> {
-        self.preedit.as_ref()
+        self.text.preedit()
     }
 
     /// Sets or clears the preedit.
     pub fn set_preedit(&mut self, p: Option<Preedit>) {
-        self.preedit = p.filter(|p| !p.text.is_empty());
+        self.text.set_preedit(p);
     }
 
     /// Sets the selection directly (view state; no document change). Positions are clamped to the
@@ -266,16 +248,25 @@ impl EditorView {
     }
 
     pub(crate) fn set_selection_raw(&mut self, sel: Selection) {
-        if sel != self.selection {
-            self.selection = sel;
-            self.selection_version += 1;
-        }
-        self.prune_auto_closed();
+        self.text.set_selection_unchecked(sel);
+        self.after_selection_set();
+    }
+
+    /// What a selection change does to the view state that depends on it.
+    fn after_selection_set(&mut self) {
+        prune_auto_closed(&mut self.auto_closed, self.text.selection());
         if self
             .session
             .as_ref()
-            .is_some_and(|s| s.at != self.selection)
+            .is_some_and(|s| s.at != *self.text.selection())
         {
+            self.session = None;
+        }
+    }
+
+    fn after_selection_set_to(&mut self, sel: &Selection) {
+        prune_auto_closed(&mut self.auto_closed, sel);
+        if self.session.as_ref().is_some_and(|s| s.at != *sel) {
             self.session = None;
         }
     }
@@ -284,64 +275,45 @@ impl EditorView {
     pub(crate) fn session(&self) -> Option<&SessionKind> {
         self.session
             .as_ref()
-            .filter(|s| s.at == self.selection)
+            .filter(|s| s.at == *self.text.selection())
             .map(|s| &s.kind)
-    }
-
-    fn prune_auto_closed(&mut self) {
-        if self.auto_closed.is_empty() {
-            return;
-        }
-        let sel = &self.selection;
-        self.auto_closed.retain(|a| {
-            a.close.start < a.close.end
-                && sel
-                    .ranges()
-                    .iter()
-                    .any(|r| r.head > a.open_start && r.head <= a.close.start)
-        });
     }
 
     /// Catches up with the document: maps selection, folds, find matches and scroll anchor
     /// through the recent changes since [`EditorView::synced_at`]; if the view is older than the
     /// window, clamps them to valid positions and marks find stale.
     pub fn sync(&mut self, doc: &Document) -> SyncOutcome {
-        if self.synced_at == doc.version() {
-            return SyncOutcome::UpToDate;
-        }
-        match doc.recent().since(self.synced_at) {
-            Ok(changes) => {
-                for e in changes {
-                    self.map_changes(&e.changes, Bias::Before);
-                }
-                self.synced_at = doc.version();
-                SyncOutcome::Mapped
+        let mut text = std::mem::replace(&mut self.text, TextView::new(doc.text_document()));
+        // Per step, as before the split: the secondary state is mapped, then the state that
+        // depends on the selection is pruned against the mapped selection.
+        let outcome = text.sync_with(doc.text_document(), |step, sel| {
+            match step {
+                SyncStep::Mapped(c) => self.map_secondary(c),
+                SyncStep::Clamped(t) => self.clamp_secondary(t),
             }
-            Err(_) => {
-                self.clamp_to(doc.text());
-                self.synced_at = doc.version();
-                SyncOutcome::Clamped
-            }
-        }
+            self.after_selection_set_to(sel);
+        });
+        self.text = text;
+        outcome
     }
 
     /// Maps the view through one applied record (for hosts that fan out). Returns `false` and
     /// does nothing if the view is not at `applied.prev_version`; call [`EditorView::sync`] then.
     pub fn map_through(&mut self, applied: &Applied) -> bool {
         if !applied.changed_text() {
-            return self.synced_at == applied.version;
+            return self.text.synced_at() == applied.version;
         }
-        if self.synced_at != applied.prev_version {
+        if self.text.synced_at() != applied.prev_version {
             return false;
         }
         self.map_changes(&applied.changes, Bias::Before);
-        self.synced_at = applied.version;
+        self.text.set_synced_at(applied.version);
         true
     }
 
     fn map_changes(&mut self, c: &ChangeSet, cursor_bias: Bias) {
         self.map_secondary(c);
-        let sel = self.selection.map(c, cursor_bias);
+        let sel = self.text.selection().map(c, cursor_bias);
         self.set_selection_raw(sel);
     }
 
@@ -390,9 +362,7 @@ impl EditorView {
         }
     }
 
-    fn clamp_to(&mut self, text: &Text) {
-        let sel = self.selection.clamped(text);
-        self.set_selection_raw(sel);
+    fn clamp_secondary(&mut self, text: &Text) {
         let len = text.len_bytes();
         self.folds = self
             .folds
@@ -410,11 +380,13 @@ impl EditorView {
         self.auto_closed.clear();
     }
 
-    /// After a local change made through this view.
-    pub(crate) fn after_local_change(&mut self, c: &ChangeSet, version: Version, sel: Selection) {
-        self.map_secondary(c);
-        self.set_selection_raw(sel);
-        self.synced_at = version;
+    /// After the document applied a transaction made through this view (the selection is
+    /// already set): maps the view state quire-text does not know about.
+    pub(crate) fn after_apply(&mut self, applied: &quire_text::Applied) {
+        if applied.changed_text() {
+            self.map_secondary(&applied.changes);
+        }
+        self.after_selection_set();
     }
 
     pub(crate) fn apply_effect(&mut self, e: &Effect, doc: &Document) {
@@ -431,7 +403,7 @@ impl EditorView {
             Effect::SetFolds(f) => self.set_folds(f.clone()),
             Effect::AutoClosed(list) => {
                 self.auto_closed.extend(list.iter().cloned());
-                self.prune_auto_closed();
+                prune_auto_closed(&mut self.auto_closed, self.text.selection());
             }
             // Applied by the document.
             Effect::SetInsertSpaces(_) | Effect::SetWordWrap(_) => {}
@@ -452,7 +424,7 @@ impl EditorView {
         {
             // Re-search only the edited lines when the matches were mapped up to now.
             if let Some(mut dirty) = self.find_dirty.take()
-                && self.synced_at == doc.version()
+                && self.text.synced_at() == doc.version()
             {
                 dirty.sort_by_key(|d| d.start);
                 if self.find_regex.as_ref().is_none_or(|(q, _)| *q != f.query) {
@@ -472,4 +444,17 @@ impl EditorView {
             self.set_find(doc, Some(q));
         }
     }
+}
+
+fn prune_auto_closed(auto_closed: &mut Vec<AutoClosed>, sel: &Selection) {
+    if auto_closed.is_empty() {
+        return;
+    }
+    auto_closed.retain(|a| {
+        a.close.start < a.close.end
+            && sel
+                .ranges()
+                .iter()
+                .any(|r| r.head > a.open_start && r.head <= a.close.start)
+    });
 }

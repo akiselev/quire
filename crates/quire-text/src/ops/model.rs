@@ -4,9 +4,12 @@
 use crate::text::Text;
 use unicode_segmentation::GraphemeCursor;
 
+/// A line and a char column in it.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-pub(crate) struct Pos {
+pub struct Pos {
+    /// The line.
     pub line: usize,
+    /// The char index in the line.
     pub col: usize,
 }
 
@@ -16,7 +19,10 @@ impl Pos {
     }
 }
 
-pub(crate) struct Model<'a> {
+/// Line/column queries over a text (VS Code's model API the ports use).
+#[derive(Copy, Clone, Debug)]
+pub struct Model<'a> {
+    /// The text.
     pub text: &'a Text,
 }
 
@@ -129,7 +135,7 @@ impl<'a> Model<'a> {
 use crate::columns::next_visible;
 
 /// Emoji and emoji components (ZWJ, variation selectors, skin tones, tags, regional indicators).
-pub(crate) fn is_emoji_like(c: char) -> bool {
+pub fn is_emoji_like(c: char) -> bool {
     let u = c as u32;
     matches!(u, 0x200D | 0xFE0E | 0xFE0F | 0x20E3 | 0x2600..=0x27BF | 0x1F000..=0x1FAFF | 0xE0020..=0xE007F)
 }
@@ -149,7 +155,7 @@ fn graphemes(chars: &[char]) -> Vec<(usize, usize)> {
 }
 
 /// `CursorColumns.visibleColumnFromColumn` with a char column; one step per grapheme cluster.
-pub(crate) fn visible_col(chars: &[char], col: usize, tab: u32) -> u32 {
+pub fn visible_col(chars: &[char], col: usize, tab: u32) -> u32 {
     let tab = tab.max(1);
     let mut v = 0;
     for (a, b) in graphemes(chars) {
@@ -163,7 +169,7 @@ pub(crate) fn visible_col(chars: &[char], col: usize, tab: u32) -> u32 {
 }
 
 /// `CursorColumns.columnFromVisibleColumn`; lands on grapheme boundaries.
-pub(crate) fn col_from_visible(chars: &[char], vis: u32, tab: u32) -> usize {
+pub fn col_from_visible(chars: &[char], vis: u32, tab: u32) -> usize {
     let tab = tab.max(1);
     if vis == 0 {
         return 0;
@@ -187,7 +193,7 @@ pub(crate) fn col_from_visible(chars: &[char], vis: u32, tab: u32) -> usize {
     chars.len()
 }
 
-pub(crate) fn prev_indent_tab_stop(vis: u32, size: u32) -> u32 {
+pub fn prev_indent_tab_stop(vis: u32, size: u32) -> u32 {
     let size = size.max(1);
     if vis == 0 {
         return 0;
@@ -195,7 +201,7 @@ pub(crate) fn prev_indent_tab_stop(vis: u32, size: u32) -> u32 {
     (vis - 1) - (vis - 1) % size
 }
 
-pub(crate) fn next_indent_tab_stop(vis: u32, size: u32) -> u32 {
+pub fn next_indent_tab_stop(vis: u32, size: u32) -> u32 {
     let size = size.max(1);
     vis + size - vis % size
 }

@@ -26,28 +26,20 @@ use crate::change::{Bias, ChangeSet};
 use crate::command::{CommandOutput, EditorCommand, HostRequest};
 use crate::config::EditorConfig;
 use crate::diagnostics::{Diagnostic, Diagnostics, SourceId};
-use crate::history::{History, Record, UndoGroupClosed, UndoMode};
+use crate::history::{UndoGroupClosed, UndoMode};
 use crate::large::Degraded;
 use crate::recent::{LineEdit, RecentChanges, Stale};
-use crate::selection::Selection;
 use crate::syntax::{FoldRange, PendingWork, TokenRuns, TokenStore};
 use crate::text::Text;
 use crate::transaction::{AuthorId, Effect, Origin, Transaction};
 use crate::version::Version;
 use crate::view::EditorView;
+use quire_text::{DocRules, TextDocument};
 use smallvec::SmallVec;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 
-/// An immutable view of the text at a version. Cloning is O(1); `Send + Sync`, for background
-/// work (parsing, compiling, saving).
-#[derive(Clone, Debug)]
-pub struct Snapshot {
-    /// The text.
-    pub text: Text,
-    /// Its version.
-    pub version: Version,
-}
+pub use quire_text::{Anchor, Snapshot};
 
 /// Why a transaction was refused. Nothing changed.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -72,6 +64,27 @@ pub enum Refusal {
     Rebase(crate::change::ChangeError),
     /// A find regex did not compile.
     InvalidQuery(String),
+    /// Inserted text contains a line break and the document is single-line (not reachable from
+    /// an [`EditorConfig`]).
+    LineBreak,
+    /// The text would exceed the character limit (not reachable from an [`EditorConfig`]).
+    MaxChars,
+}
+
+impl From<quire_text::Refusal> for Refusal {
+    fn from(r: quire_text::Refusal) -> Self {
+        use quire_text::Refusal as R;
+        match r {
+            R::Stale(s) => Refusal::Stale(s),
+            R::LengthMismatch { expected, got } => Refusal::LengthMismatch { expected, got },
+            R::NotCharBoundary(p) => Refusal::NotCharBoundary(p),
+            R::CarriageReturn => Refusal::CarriageReturn,
+            R::ReadOnly => Refusal::ReadOnly,
+            R::Rebase(e) => Refusal::Rebase(e),
+            R::LineBreak => Refusal::LineBreak,
+            R::MaxChars => Refusal::MaxChars,
+        }
+    }
 }
 
 impl std::fmt::Display for Refusal {
@@ -86,6 +99,8 @@ impl std::fmt::Display for Refusal {
             Refusal::ReadOnly => f.write_str("the document is read-only"),
             Refusal::Rebase(e) => write!(f, "rebase failed: {e}"),
             Refusal::InvalidQuery(e) => write!(f, "invalid query: {e}"),
+            Refusal::LineBreak => f.write_str("the document is single-line"),
+            Refusal::MaxChars => f.write_str("the text would exceed the character limit"),
         }
     }
 }
@@ -115,6 +130,19 @@ pub struct Applied {
 }
 
 impl Applied {
+    fn from_text(a: quire_text::Applied, selection_changed: bool, config_changed: bool) -> Self {
+        Applied {
+            prev_version: a.prev_version,
+            version: a.version,
+            changes: a.changes,
+            origin: a.origin,
+            author: a.author,
+            selection_changed,
+            config_changed,
+            closed: a.closed,
+        }
+    }
+
     /// Whether text changed.
     pub fn changed_text(&self) -> bool {
         self.version != self.prev_version
@@ -128,18 +156,6 @@ pub struct Executed {
     pub applied: Option<Applied>,
     /// A request for the host, if the command made one.
     pub request: Option<HostRequest>,
-}
-
-/// A persistent position: a byte offset at a version with a bias. Resolve it with
-/// [`Document::resolve_anchor`], which maps it through the recent changes.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-pub struct Anchor {
-    /// The offset at `version`.
-    pub pos: usize,
-    /// How it maps through insertions at its position.
-    pub bias: Bias,
-    /// The version `pos` belongs to.
-    pub version: Version,
 }
 
 /// A cheap `Send + Sync` handle that answers "is the document settled?" from another thread
@@ -160,10 +176,8 @@ impl SettledProbe {
 /// One file's shared model. See the module docs.
 #[derive(Debug)]
 pub struct Document {
-    text: Text,
-    version: Version,
-    history: History,
-    recent: RecentChanges,
+    /// Text, version, history and recent changes (quire-text).
+    doc: TextDocument,
     tokens: TokenStore,
     diagnostics: Diagnostics,
     saved_at: Option<Version>,
@@ -190,23 +204,25 @@ impl Document {
     pub fn from_text(text: Text, config: EditorConfig) -> Self {
         let lines = text.len_lines();
         Document {
-            recent: RecentChanges::new(config.recent_changes_window, Version::INITIAL),
             tokens: TokenStore::new(lines),
             diagnostics: Diagnostics::default(),
-            history: History::new(UndoMode::Local),
             saved_at: Some(Version::INITIAL),
             saved_text: Some(text.clone()),
             dirty: false,
-            version: Version::INITIAL,
             pending: PendingWork::default(),
             open_group: Arc::new(AtomicBool::new(false)),
             syntax_folds: None,
             indent_folds: OnceLock::new(),
             indent_levels: OnceLock::new(),
             degraded: crate::large::check(&text, &config.large_file),
-            text,
+            doc: TextDocument::from_text(text, Arc::new(doc_rules(&config, UndoMode::Local))),
             config,
         }
+    }
+
+    /// The quire-text document underneath (text, version, history, recent changes).
+    pub fn text_document(&self) -> &TextDocument {
+        &self.doc
     }
 
     /// The same document in another undo mode.
@@ -218,32 +234,29 @@ impl Document {
 
     /// Switches undo mode: closes the open group (returned) and clears the local stacks.
     pub fn set_undo_mode(&mut self, mode: UndoMode) -> Option<UndoGroupClosed> {
-        let c = self.history.set_mode(mode);
+        let c = self.doc.set_undo_mode(mode);
         self.update_probe();
         c
     }
 
     /// The undo mode.
     pub fn undo_mode(&self) -> UndoMode {
-        self.history.mode()
+        self.doc.undo_mode()
     }
 
     /// The text.
     pub fn text(&self) -> &Text {
-        &self.text
+        self.doc.text()
     }
 
     /// The version.
     pub fn version(&self) -> Version {
-        self.version
+        self.doc.version()
     }
 
     /// An O(1) snapshot of the text and version.
     pub fn snapshot(&self) -> Snapshot {
-        Snapshot {
-            text: self.text.clone(),
-            version: self.version,
-        }
+        self.doc.snapshot()
     }
 
     /// The config.
@@ -253,23 +266,15 @@ impl Document {
 
     /// Replaces the config. A changed recent-changes window applies to later changes.
     pub fn set_config(&mut self, config: EditorConfig) {
-        if config.recent_changes_window != self.recent.capacity() {
-            let mut r = RecentChanges::new(config.recent_changes_window, self.version);
-            // Keep what fits.
-            if let Ok(it) = self.recent.since(self.recent.oldest()) {
-                let entries: Vec<_> = it.cloned().collect();
-                r = RecentChanges::new(
-                    config.recent_changes_window,
-                    entries.first().map_or(self.version, |e| e.from),
-                );
-                for e in entries {
-                    r.push(e.changes, e.line_edits, e.author);
-                }
-            }
-            self.recent = r;
+        if config.recent_changes_window != self.config.recent_changes_window
+            || config.undo_pause_ms != self.config.undo_pause_ms
+            || config.read_only != self.config.read_only
+        {
+            let rules = doc_rules(&config, self.doc.undo_mode());
+            self.doc.set_rules(Arc::new(rules));
         }
         if config.large_file != self.config.large_file {
-            self.degraded = crate::large::check(&self.text, &config.large_file);
+            self.degraded = crate::large::check(self.doc.text(), &config.large_file);
         }
         if config.tab_size != self.config.tab_size {
             self.indent_folds = OnceLock::new();
@@ -292,10 +297,10 @@ impl Document {
         at: Version,
         mut ranges: Vec<FoldRange>,
     ) -> Result<(), Stale> {
-        for e in self.recent.since(at)? {
+        for e in self.doc.recent().since(at)? {
             crate::folding::map_fold_ranges(&mut ranges, &e.line_edits);
         }
-        let last = self.text.len_lines().saturating_sub(1);
+        let last = self.doc.text().len_lines().saturating_sub(1);
         ranges.retain(|r| r.start_line < r.end_line && r.end_line <= last);
         ranges.sort_by_key(|r| (r.start_line, std::cmp::Reverse(r.end_line)));
         self.syntax_folds = Some(ranges);
@@ -319,7 +324,7 @@ impl Document {
         self.indent_folds.get_or_init(|| {
             self.indent_levels
                 .get_or_init(|| {
-                    crate::folding::IndentLevels::compute(&self.text, self.config.tab_size)
+                    crate::folding::IndentLevels::compute(self.doc.text(), self.config.tab_size)
                 })
                 .ranges()
         })
@@ -327,12 +332,12 @@ impl Document {
 
     /// The history.
     pub fn history(&self) -> &crate::history::History {
-        &self.history
+        self.doc.history()
     }
 
     /// The recent changes.
     pub fn recent(&self) -> &RecentChanges {
-        &self.recent
+        self.doc.recent()
     }
 
     /// The token store.
@@ -354,8 +359,8 @@ impl Document {
     /// user typed while saving), the document stays dirty.
     pub fn mark_saved(&mut self, at: Version) {
         self.saved_at = Some(at);
-        if at == self.version {
-            self.saved_text = Some(self.text.clone());
+        if at == self.doc.version() {
+            self.saved_text = Some(self.doc.text().clone());
             self.dirty = false;
         } else {
             self.saved_text = None;
@@ -388,13 +393,13 @@ impl Document {
     }
 
     fn update_probe(&self) {
-        let open = self.history.mode() == UndoMode::Host && self.history.has_open_group();
+        let open = self.doc.undo_mode() == UndoMode::Host && self.doc.has_open_group();
         self.open_group.store(open, Ordering::Release);
     }
 
     /// Closes the open undo group (focus change, explicit stop).
     pub fn close_undo_group(&mut self) -> Option<UndoGroupClosed> {
-        let c = self.history.close();
+        let c = self.doc.close_undo_group();
         self.update_probe();
         c
     }
@@ -402,25 +407,19 @@ impl Document {
     /// Closes the open undo group if the pause since its last edit exceeds
     /// `EditorConfig::undo_pause_ms` at the host's clock `now_ms`.
     pub fn tick(&mut self, now_ms: u64) -> Option<UndoGroupClosed> {
-        let c = self.history.tick(now_ms, self.config.undo_pause_ms);
+        let c = self.doc.tick(now_ms);
         self.update_probe();
         c
     }
 
     /// An anchor at `pos` now.
     pub fn anchor(&self, pos: usize, bias: Bias) -> Anchor {
-        Anchor {
-            pos,
-            bias,
-            version: self.version,
-        }
+        self.doc.anchor(pos, bias)
     }
 
     /// Where an anchor is now.
     pub fn resolve_anchor(&self, a: &Anchor) -> Result<usize, Stale> {
-        self.recent
-            .map_pos(a.version, a.pos, a.bias)
-            .map(|p| self.text.clamp_to_boundary(p))
+        self.doc.resolve_anchor(a)
     }
 
     /// Replaces one source's diagnostics, computed at version `at`. Mapped forward if the text
@@ -435,31 +434,35 @@ impl Document {
         for d in &mut diags {
             d.clamp(len_at);
         }
-        for e in self.recent.since(at)? {
+        for e in self.doc.recent().since(at)? {
             for d in &mut diags {
                 d.map(&e.changes);
             }
         }
-        let len = self.text.len_bytes();
+        let text = self.doc.text();
+        let len = text.len_bytes();
         for d in &mut diags {
             d.clamp(len);
-            d.range.start = self.text.clamp_to_boundary(d.range.start);
-            d.range.end = self.text.clamp_to_boundary(d.range.end);
+            d.range.start = text.clamp_to_boundary(d.range.start);
+            d.range.end = text.clamp_to_boundary(d.range.end);
         }
         self.diagnostics.replace(source, diags);
         Ok(())
     }
 
     fn len_at(&self, at: Version) -> Result<usize, Stale> {
-        let mut it = self.recent.since(at)?;
-        Ok(it.next().map_or(self.text.len_bytes(), |e| e.changes.len()))
+        let mut it = self.doc.recent().since(at)?;
+        Ok(it
+            .next()
+            .map_or(self.doc.text().len_bytes(), |e| e.changes.len()))
     }
 
     /// Stores tokens computed at version `at`. Stale runs are shifted by whole lines past edits
     /// before them and cut at the first line an edit touched; refused outside the window.
     pub fn set_tokens(&mut self, at: Version, runs: TokenRuns) -> Result<(), Stale> {
         let since: Vec<&[LineEdit]> = self
-            .recent
+            .doc
+            .recent()
             .since(at)?
             .map(|e| e.line_edits.as_slice())
             .collect();
@@ -481,7 +484,7 @@ impl Document {
         view: &EditorView,
         cmd: &EditorCommand,
     ) -> Result<CommandOutput, Refusal> {
-        if view.synced_at() != self.version {
+        if view.synced_at() != self.doc.version() {
             let mut v = view.clone();
             v.sync(self);
             return crate::commands::run(self, &v, cmd);
@@ -532,7 +535,21 @@ impl Document {
     /// the transaction rebased if its base is old).
     pub fn apply(&mut self, tr: Transaction, view: &mut EditorView) -> Result<Applied, Refusal> {
         view.sync(self);
-        self.apply_inner(tr, Some(view))
+        let selection_before = view.selection().clone();
+        let (applied, effects) = self.doc.apply_with(tr, view.text_view_mut())?;
+        self.after_apply(&applied);
+        view.after_apply(&applied);
+        let config_changed = self.apply_doc_effects(&effects);
+        for e in &effects {
+            view.apply_effect(e, self);
+        }
+        let selection_changed = selection_before != *view.selection();
+        self.update_probe();
+        Ok(Applied::from_text(
+            applied,
+            selection_changed,
+            config_changed,
+        ))
     }
 
     /// Applies a foreign change (a collaborator's, merged by the host; or a reload, e.g.
@@ -555,196 +572,64 @@ impl Document {
         origin: Origin,
         author: AuthorId,
     ) -> Result<Applied, Refusal> {
-        let tr = Transaction::new(base, changes)
-            .with_origin(origin)
-            .with_author(author);
-        self.apply_inner(tr, None)
+        let applied = self.doc.apply_remote(base, changes, origin, author)?;
+        self.after_apply(&applied);
+        self.update_probe();
+        Ok(Applied::from_text(applied, false, false))
     }
 
-    fn rebase(&self, tr: &mut Transaction) -> Result<(), Refusal> {
-        if tr.base == self.version {
-            return Ok(());
+    /// What the document keeps beyond quire-text, after a text change: tokens, folds,
+    /// diagnostics, the large-file check on reload, dirty tracking.
+    fn after_apply(&mut self, applied: &quire_text::Applied) {
+        if !applied.changed_text() {
+            return;
         }
-        let r = self
-            .recent
-            .composed_since(tr.base)
-            .map_err(Refusal::Stale)?
-            .expect("base differs from version");
-        if tr.changes.len() != r.len() {
-            return Err(Refusal::LengthMismatch {
-                expected: r.len(),
-                got: tr.changes.len(),
-            });
+        let line_edits = &self
+            .doc
+            .recent()
+            .latest()
+            .expect("a text change is recorded")
+            .line_edits;
+        self.tokens.shift(line_edits);
+        if let Some(f) = &mut self.syntax_folds {
+            crate::folding::map_fold_ranges(f, line_edits);
         }
-        let changes = tr.changes.map(&r, false).map_err(Refusal::Rebase)?;
-        let r_after = r.map(&tr.changes, true).map_err(Refusal::Rebase)?;
-        if let Some(sel) = &tr.selection {
-            tr.selection = Some(sel.map(&r_after, Bias::After));
-        }
-        tr.changes = changes;
-        tr.base = self.version;
-        Ok(())
-    }
-
-    fn validate(&self, tr: &Transaction) -> Result<(), Refusal> {
-        let len = self.text.len_bytes();
-        if tr.changes.len() != len {
-            return Err(Refusal::LengthMismatch {
-                expected: len,
-                got: tr.changes.len(),
-            });
-        }
-        let sets_config = tr
-            .effects
-            .iter()
-            .any(|e| matches!(e, Effect::SetInsertSpaces(_)));
-        if (!tr.changes.is_empty() || sets_config)
-            && self.config.read_only
-            && !tr.origin.is_foreign()
-        {
-            return Err(Refusal::ReadOnly);
-        }
-        for e in tr.changes.edits() {
-            for p in [e.range.start, e.range.end] {
-                if !self.text.is_char_boundary(p) {
-                    return Err(Refusal::NotCharBoundary(p));
+        // Indentation folds: follow the levels incrementally, and the ranges around the
+        // edited lines only (E1 P3).
+        match self.indent_levels.get_mut() {
+            Some(lv) => match lv.update(self.doc.text(), line_edits) {
+                crate::folding::LevelChange::None => {}
+                crate::folding::LevelChange::Lines { old, new } => {
+                    if let Some(r) = self.indent_folds.get_mut() {
+                        lv.update_ranges(r, old, new);
+                    }
                 }
-            }
-            if e.insert.contains('\r') {
-                return Err(Refusal::CarriageReturn);
-            }
+                crate::folding::LevelChange::All => self.indent_folds = OnceLock::new(),
+            },
+            None => self.indent_folds = OnceLock::new(),
         }
-        Ok(())
-    }
-
-    fn apply_inner(
-        &mut self,
-        mut tr: Transaction,
-        mut view: Option<&mut EditorView>,
-    ) -> Result<Applied, Refusal> {
-        if tr.base > self.version {
-            return Err(Refusal::Stale(Stale {
-                at: tr.base,
-                oldest: self.recent.oldest(),
-                current: self.version,
-            }));
+        self.diagnostics.map(&applied.changes);
+        if matches!(applied.origin, Origin::Reload) {
+            self.degraded = crate::large::check(self.doc.text(), &self.config.large_file);
         }
-        self.rebase(&mut tr)?;
-        self.validate(&tr)?;
-        let new_text = if tr.changes.is_empty() {
-            None
-        } else {
-            let mut t = self.text.clone();
-            tr.changes.apply_to(&mut t);
-            Some(t)
+        // Dirty tracking: compare with the saved text only when an undo/redo may have
+        // returned to it (cheap length check first).
+        let text = self.doc.text();
+        self.dirty = match &self.saved_text {
+            Some(saved)
+                if matches!(applied.origin, Origin::Undo | Origin::Redo)
+                    && saved.len_bytes() == text.len_bytes() =>
+            {
+                saved != text
+            }
+            _ => true,
         };
-        let check_text = new_text.as_ref().unwrap_or(&self.text);
-        if let Some(sel) = &tr.selection {
-            for r in sel.ranges() {
-                for p in [r.anchor, r.head] {
-                    if !check_text.is_char_boundary(p) {
-                        return Err(Refusal::NotCharBoundary(p));
-                    }
-                }
-            }
-        }
+    }
 
-        // ---- commit ----
-        let prev_version = self.version;
-        let mut closed: SmallVec<[UndoGroupClosed; 1]> = SmallVec::new();
-        let selection_before = view.as_ref().map(|v| v.selection().clone());
-        if let Some(new_text) = new_text {
-            let inverse = tr.changes.invert(&self.text);
-            let line_edits = LineEdit::compute(&tr.changes, &self.text);
-            let old_text = std::mem::replace(&mut self.text, new_text);
-            self.version = self.version.next();
-            self.tokens.shift(&line_edits);
-            if let Some(f) = &mut self.syntax_folds {
-                crate::folding::map_fold_ranges(f, &line_edits);
-            }
-            // Indentation folds: follow the levels incrementally, and the ranges around the
-            // edited lines only (E1 P3).
-            match self.indent_levels.get_mut() {
-                Some(lv) => match lv.update(&self.text, &line_edits) {
-                    crate::folding::LevelChange::None => {}
-                    crate::folding::LevelChange::Lines { old, new } => {
-                        if let Some(r) = self.indent_folds.get_mut() {
-                            lv.update_ranges(r, old, new);
-                        }
-                    }
-                    crate::folding::LevelChange::All => self.indent_folds = OnceLock::new(),
-                },
-                None => self.indent_folds = OnceLock::new(),
-            }
-            self.recent.push(tr.changes.clone(), line_edits, tr.author);
-            self.diagnostics.map(&tr.changes);
-            if matches!(tr.origin, Origin::Reload) {
-                self.degraded = crate::large::check(&self.text, &self.config.large_file);
-            }
-
-            let sel_before = selection_before
-                .clone()
-                .unwrap_or_else(|| Selection::point(0));
-            let sel_after = match (&tr.selection, &view) {
-                (Some(s), _) => s.clone(),
-                (None, Some(v)) => v.selection().map(&tr.changes, Bias::After),
-                (None, None) => Selection::point(0),
-            };
-            let local = self.history.mode() == UndoMode::Local;
-            let recorded_specially = match &tr.origin {
-                Origin::Undo => {
-                    closed.extend(self.history.close());
-                    !local || self.history.applied_undo(&tr.changes, &old_text)
-                }
-                Origin::Redo => {
-                    closed.extend(self.history.close());
-                    !local || self.history.applied_redo(&tr.changes, &old_text)
-                }
-                Origin::Remote | Origin::Reload => {
-                    closed.extend(self.history.applied_foreign(&tr.changes));
-                    true
-                }
-                _ => false,
-            };
-            if !recorded_specially {
-                let origin = match &tr.origin {
-                    Origin::Undo => Origin::Command("undo".into()),
-                    Origin::Redo => Origin::Command("redo".into()),
-                    o => o.clone(),
-                };
-                closed.extend(self.history.record(Record {
-                    origin: &origin,
-                    author: tr.author,
-                    group: tr.group,
-                    time_ms: tr.time_ms,
-                    pause_ms: self.config.undo_pause_ms,
-                    from: prev_version,
-                    to: self.version,
-                    changes: &tr.changes,
-                    inverse: &inverse,
-                    selection_before: &sel_before,
-                    selection_after: &sel_after,
-                }));
-            }
-            // Dirty tracking: compare with the saved text only when an undo/redo may have
-            // returned to it (cheap length check first).
-            self.dirty = match &self.saved_text {
-                Some(saved)
-                    if matches!(tr.origin, Origin::Undo | Origin::Redo)
-                        && saved.len_bytes() == self.text.len_bytes() =>
-                {
-                    *saved != self.text
-                }
-                _ => true,
-            };
-            if let Some(v) = view.as_deref_mut() {
-                v.after_local_change(&tr.changes, self.version, sel_after);
-            }
-        } else if let (Some(v), Some(sel)) = (view.as_deref_mut(), tr.selection.clone()) {
-            v.set_selection_raw(sel);
-        }
+    /// Effects that act on the document; returns whether the config changed.
+    fn apply_doc_effects(&mut self, effects: &[Effect]) -> bool {
         let mut config_changed = false;
-        for e in &tr.effects {
+        for e in effects {
             match e {
                 Effect::SetInsertSpaces(b) if self.config.insert_spaces != *b => {
                     self.config.insert_spaces = *b;
@@ -757,23 +642,18 @@ impl Document {
                 _ => {}
             }
         }
-        let mut selection_changed = false;
-        if let Some(v) = view {
-            for e in &tr.effects {
-                v.apply_effect(e, self);
-            }
-            selection_changed = selection_before.as_ref() != Some(v.selection());
-        }
-        self.update_probe();
-        Ok(Applied {
-            prev_version,
-            version: self.version,
-            changes: tr.changes,
-            origin: tr.origin,
-            author: tr.author,
-            selection_changed,
-            config_changed,
-            closed,
-        })
+        config_changed
+    }
+}
+
+/// The quire-text rules an [`EditorConfig`] implies.
+fn doc_rules(config: &EditorConfig, undo_mode: UndoMode) -> DocRules {
+    DocRules {
+        undo_mode,
+        undo_pause_ms: Some(config.undo_pause_ms),
+        read_only: config.read_only,
+        recent_window: config.recent_changes_window,
+        track_line_edits: true,
+        ..DocRules::default()
     }
 }

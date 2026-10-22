@@ -12,8 +12,8 @@
 //!
 //! Positions are UTF-8 byte offsets, valid only with their [`Version`].
 
-pub mod change;
-pub mod columns;
+pub use quire_text::{change, columns, history, recent, selection, text, version, words};
+
 pub mod command;
 mod commands;
 pub mod config;
@@ -21,17 +21,11 @@ pub mod diagnostics;
 pub mod document;
 pub mod find;
 pub mod folding;
-pub mod history;
 mod lang;
 pub mod large;
-pub mod recent;
-pub mod selection;
 pub mod syntax;
-pub mod text;
 pub mod transaction;
-pub mod version;
 pub mod view;
-pub mod words;
 
 pub use change::{Bias, ChangeError, ChangeSet, Edit, Operation};
 pub use command::{CommandOutput, EditorCommand, HostRequest, Motion};
@@ -40,10 +34,11 @@ pub use config::{
     OnEnterRule, OvertypeStrategy, WordWrap, WrappingIndent,
 };
 pub use diagnostics::{DiagAction, DiagTags, Diagnostic, Diagnostics, Severity, SourceId};
-pub use document::{Anchor, Applied, Document, Executed, Refusal, SettledProbe, Snapshot};
+pub use document::{Applied, Document, Executed, Refusal, SettledProbe};
 pub use find::{FindError, FindQuery, FindState};
 pub use history::{History, UndoGroup, UndoGroupClosed, UndoMode};
 pub use large::{Degraded, DegradedReason, LargeFilePolicy};
+pub use quire_text::{Anchor, Snapshot};
 pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};

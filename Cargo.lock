@@ -2777,16 +2777,14 @@ version = "0.1.0"
 dependencies = [
  "criterion",
  "fancy-regex",
- "imara-diff",
  "proptest",
  "quire-core",
+ "quire-text",
  "regex-automata",
- "ropey",
  "schemars",
  "serde",
  "serde_json",
  "smallvec",
- "unicode-segmentation",
 ]
 
 [[package]]
@@ -2801,6 +2799,22 @@ dependencies = [
  "tree-sitter-htmlx-svelte",
  "tree-sitter-javascript",
  "tree-sitter-typescript",
+]
+
+[[package]]
+name = "quire-text"
+version = "0.1.0"
+dependencies = [
+ "imara-diff",
+ "proptest",
+ "quire-text",
+ "ropey",
+ "schemars",
+ "serde",
+ "smallvec",
+ "stats_alloc",
+ "unicode-general-category",
+ "unicode-segmentation",
 ]
 
 [[package]]

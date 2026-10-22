@@ -22,7 +22,7 @@
 // Differences: lines are `&[char]` and columns are 0-based char indices (VS Code: UTF-16 code
 // units, 1-based). The Intl word segmenter is not ported.
 
-use super::model::{Model, Pos};
+use crate::ops::model::{Model, Pos};
 use crate::words::{CharClass, WordClassifier};
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -43,7 +43,7 @@ struct FindWordResult {
 /// VS Code's `WordNavigationType`.
 #[allow(clippy::enum_variant_names)] // VS Code's names
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub(crate) enum WordNav {
+pub enum WordNav {
     WordStart,
     WordStartFast,
     WordEnd,
@@ -207,7 +207,7 @@ fn find_start_of_word(
 }
 
 /// `WordOperations.moveWordLeft`.
-pub(crate) fn move_word_left(
+pub fn move_word_left(
     m: &Model,
     cls: &WordClassifier,
     p: Pos,
@@ -247,7 +247,7 @@ pub(crate) fn move_word_left(
 }
 
 /// `WordOperations.moveWordRight`.
-pub(crate) fn move_word_right(m: &Model, cls: &WordClassifier, p: Pos, nav: WordNav) -> Pos {
+pub fn move_word_right(m: &Model, cls: &WordClassifier, p: Pos, nav: WordNav) -> Pos {
     let mut line = p.line;
     let mut col = p.col;
     let mut moved_down = false;
@@ -300,7 +300,7 @@ fn delete_word_left_whitespace(chars: &[char], p: Pos) -> Option<(Pos, Pos)> {
 
 /// `WordOperations.deleteWordLeft` for an empty selection (auto-closing pair delete is handled
 /// by the caller). Returns the range to delete.
-pub(crate) fn delete_word_left(
+pub fn delete_word_left(
     m: &Model,
     cls: &WordClassifier,
     p: Pos,
@@ -345,7 +345,7 @@ pub(crate) fn delete_word_left(
 }
 
 /// `WordOperations.deleteWordRight` for an empty selection.
-pub(crate) fn delete_word_right(
+pub fn delete_word_right(
     m: &Model,
     cls: &WordClassifier,
     p: Pos,
@@ -405,7 +405,7 @@ pub(crate) fn delete_word_right(
 /// The word under `p` for double-click (`WordOperations.word`, entering word selection): a
 /// regular word touching the position, else a separator run strictly containing it, else the
 /// next regular word touching it; else an empty range at `p`.
-pub(crate) fn word_at(m: &Model, cls: &WordClassifier, p: Pos) -> (Pos, Pos) {
+pub fn word_at(m: &Model, cls: &WordClassifier, p: Pos) -> (Pos, Pos) {
     let chars = m.line_chars(p.line);
     let prev = find_previous_word_on_line(&chars, cls, p.col);
     let next = find_next_word_on_line(&chars, cls, p.col);

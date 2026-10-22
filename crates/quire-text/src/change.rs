@@ -127,7 +127,7 @@ impl ChangeSet {
     ///
     /// Edits are sorted by start (stably, so several insertions at one position keep their
     /// order). Overlapping ranges and ranges past `base_len` are errors. Char boundaries are
-    /// checked by [`Document::apply`](crate::Document::apply), which has the text.
+    /// checked by [`TextDocument::apply`](crate::TextDocument::apply), which has the text.
     pub fn replace<S: AsRef<str>>(
         base_len: usize,
         edits: impl IntoIterator<Item = (Range<usize>, S)>,
@@ -289,7 +289,7 @@ impl ChangeSet {
     // ---- algebra ----
 
     /// Applies the change set to `text`. Panics if `text.len_bytes() != self.len()`; use
-    /// [`Document::apply`](crate::Document::apply), which checks, from outside the crate.
+    /// [`TextDocument::apply`](crate::TextDocument::apply), which checks, from outside the crate.
     pub(crate) fn apply_to(&self, text: &mut Text) {
         assert_eq!(text.len_bytes(), self.len, "change set length mismatch");
         let mut pos = 0;
@@ -521,7 +521,9 @@ impl ChangeSet {
 
     /// The change set that turns `old` into `new`, computed with imara-diff (histogram, by line),
     /// then trimmed to the changed bytes within each changed hunk, so carets outside changed text
-    /// keep their place. Used for reloads (`apply_remote(.., Origin::Reload)`).
+    /// keep their place. Used for reloads (`apply_remote(.., Origin::Reload)`). Behind the `diff`
+    /// feature (off by default; quire-core enables it), so field builds carry no diff library.
+    #[cfg(feature = "diff")]
     pub fn diff(old: &Text, new: &Text) -> ChangeSet {
         use imara_diff::{Algorithm, Diff, InternedInput};
         let a = old.to_string();
@@ -737,6 +739,7 @@ mod tests {
         assert_eq!(left.to_string(), "aXYYf!?");
     }
 
+    #[cfg(feature = "diff")]
     #[test]
     fn diff_keeps_unchanged_text() {
         let old = t("line one\nline two\nline three\n");

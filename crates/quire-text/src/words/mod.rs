@@ -1,6 +1,8 @@
 //! Word classification and multi-click helpers (VS Code's `WordCharacterClassifier` and
 //! `wordOperations.ts` rules).
 
+pub mod vscode;
+
 use crate::text::Text;
 use std::ops::Range;
 
@@ -49,8 +51,8 @@ impl WordClassifier {
 /// the position, else a separator run containing it). Between words, the whitespace run.
 pub fn word_range_at(text: &Text, pos: usize, cls: &WordClassifier) -> Range<usize> {
     let pos = text.clamp_to_boundary(pos);
-    let m = crate::commands::model::Model::new(text);
-    let (a, b) = crate::commands::words::word_at(&m, cls, m.pos(pos));
+    let m = crate::ops::model::Model::new(text);
+    let (a, b) = vscode::word_at(&m, cls, m.pos(pos));
     if a != b {
         return m.off(a)..m.off(b);
     }

@@ -10,18 +10,16 @@ publish.workspace = true
 [features]
 default = []
 ## serde derives for commands, config, selections, diagnostics and versions.
-serde = ["dep:serde", "smallvec/serde"]
+serde = ["dep:serde", "smallvec/serde", "quire-text/serde"]
 ## JSON schemas for `EditorCommand` and `EditorConfig` (implies serde).
-schemars = ["serde", "dep:schemars"]
+schemars = ["serde", "dep:schemars", "quire-text/schemars"]
 
 # No egui, no tokio, no threads; must build for wasm32-unknown-unknown.
 [dependencies]
-ropey.workspace = true
+quire-text = { workspace = true, features = ["diff"] }
 smallvec.workspace = true
-imara-diff.workspace = true
 regex-automata.workspace = true
 fancy-regex.workspace = true
-unicode-segmentation.workspace = true
 serde = { workspace = true, optional = true }
 schemars = { workspace = true, optional = true }
 

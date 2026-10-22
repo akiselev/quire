@@ -8,7 +8,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 /// Whether a char takes two columns (CJK wide/fullwidth and most emoji; an approximation of
 /// VS Code's `isFullWidthCharacter || isEmojiImprecise`).
-pub(crate) fn is_wide(c: char) -> bool {
+pub fn is_wide(c: char) -> bool {
     let u = c as u32;
     matches!(u,
         0x1100..=0x115F | 0x2E80..=0x303E | 0x3041..=0x33FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF |
@@ -17,7 +17,7 @@ pub(crate) fn is_wide(c: char) -> bool {
 }
 
 /// The visual column after a cluster starting with `c` at visual column `vis`.
-pub(crate) fn next_visible(c: char, vis: u32, tab: u32) -> u32 {
+pub fn next_visible(c: char, vis: u32, tab: u32) -> u32 {
     if c == '\t' {
         (vis / tab + 1) * tab
     } else if is_wide(c) {

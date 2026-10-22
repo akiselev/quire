@@ -5,11 +5,11 @@
 //! - a word boundary, per [`InputKind::stop_between`] (`abc` + ` d` are two groups);
 //! - a cursor jump: the acting view's selection before the edit differs from the selection the
 //!   group's last edit left;
-//! - a pause longer than `EditorConfig::undo_pause_ms` between `Transaction::time_ms` values (core
-//!   reads no clock; [`Document::tick`](crate::Document::tick) closes a group after a pause too);
+//! - a pause longer than `DocRules::undo_pause_ms` between `Transaction::time_ms` values (core
+//!   reads no clock; [`TextDocument::tick`](crate::TextDocument::tick) closes a group after a pause too);
 //! - a non-typing command (`Origin::Command`, and paste, IME commit and other input kinds: each
 //!   its own group);
-//! - a focus change ([`Document::close_undo_group`](crate::Document::close_undo_group), which
+//! - a focus change ([`TextDocument::close_undo_group`](crate::TextDocument::close_undo_group), which
 //!   the widget calls);
 //! - [`GroupHint::Close`] / [`GroupHint::Isolated`](crate::GroupHint::Isolated);
 //! - an undo, redo, remote or reload change.
@@ -29,6 +29,17 @@ use crate::text::Text;
 use crate::transaction::{AuthorId, GroupHint, InputKind, Origin};
 use crate::version::Version;
 use smallvec::SmallVec;
+
+/// Whose undo grouping a document follows.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
+pub enum UndoRules {
+    /// Monaco's (`editStack.ts`): word-boundary stops, cursor-jump stops, the pause rule, each
+    /// non-typing edit its own group. quire's editor.
+    #[default]
+    Monaco,
+}
 
 /// Who owns undo.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
@@ -122,10 +133,12 @@ fn same_ranges(a: &Selection, b: &Selection) -> bool {
 
 impl History {
     /// An empty history.
-    pub fn new(mode: UndoMode) -> Self {
+    pub const fn new(mode: UndoMode) -> Self {
         History {
             mode,
-            ..Default::default()
+            open: None,
+            undo: Vec::new(),
+            redo: Vec::new(),
         }
     }
 

@@ -124,6 +124,11 @@ impl RecentChanges {
         self.entries.front().map_or(self.current, |e| e.from)
     }
 
+    /// The newest change, if any.
+    pub fn latest(&self) -> Option<&RecentChange> {
+        self.entries.back()
+    }
+
     /// The current version.
     pub fn current(&self) -> Version {
         self.current

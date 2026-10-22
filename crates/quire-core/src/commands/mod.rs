@@ -19,10 +19,10 @@ mod find;
 mod fold;
 mod indentation;
 mod lines;
-pub(crate) mod model;
+pub(crate) use quire_text::ops::model;
 mod motion;
 mod multi;
-pub(crate) mod words;
+pub(crate) use quire_text::words::vscode as words;
 
 use crate::change::{Bias, ChangeSet};
 use crate::command::{CommandOutput, EditorCommand, HostRequest};

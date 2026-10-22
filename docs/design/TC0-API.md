@@ -6,16 +6,19 @@ recommended, with the review notes folded in below). TC-EVAL results folded in (
 against quire master `056133c` and svelters ARCH-WIDGETS §4.1–§4.7 (`c5c34599`). Scope: `TC0.md`.
 Approved amendments 1–7 of main-cadatomic's §4 sign-off are marked (A1)–(A7); TC-EVAL items (T1)–(T7).
 
-**Sources from svelters** (svelters is MIT, same author: relicensing to MIT OR Apache-2.0 is fine,
-svelters-agent). Each ported file carries one provenance line, `// ported from svelters <path> @
-<sha>`:
+**Sources from svelters** (MIT; the user decided svelters keeps MIT). Each ported file carries only a
+provenance line, `// ported from svelters <path> @ <sha>`, with no licence header. svelters' MIT
+copyright and permission notice is copied verbatim from svelters' `LICENSE` at the source sha into
+quire's `THIRD_PARTY_NOTICES.md`, next to Microsoft's, naming the two files it covers. quire's own
+licence is not decided (master `3096088`, `61fb592`): quire-text's `Cargo.toml` has no licence
+field.
 - FX1 words: `crates/svelters-egui/src/native/words.rs` on svelters master (last changed in
   `4365d5a9`), its in-file tests, and the model-level FX1 pin-1 cases of
   `crates/svelters-egui/tests/native_focus.rs` (`fx1_gtk_focus_policy_and_words`: Pango's
   Ctrl+BackSpace on `snake_case` → `snake_`, Ctrl+Left → 0).
-- FX3 undo: `crates/svelters-egui/src/native/undo.rs` on branch `ci/fx3` at `f120f7f3` (or svelters
-  master if a salvage lane lands it there first; identical), its in-file tests, and the model-level
-  parts of the `fx3_*` golden replays in `crates/svelters-egui/tests/native_edit.rs`
+- FX3 undo: `crates/svelters-egui/src/native/undo.rs` on svelters master at `e17ebbff` (the FX3s
+  salvage; the code is identical to `ci/fx3` `f120f7f3`), its in-file tests, and the model-level
+  parts of the `fx3_*` golden replays in `crates/svelters-egui/tests/native_edit.rs` on `ci/fx3`
   (`fx3_undo_grouping`, including "a text set from outside starts a new history").
 
 ## 1. Names
@@ -234,7 +237,7 @@ operations). Documented as "for editors built on quire-text".
 | `document.rs` | from quire-core `document.rs`: `Snapshot`, `Anchor`, `Refusal` (minus `InvalidQuery`), `Applied`, rebase, validate, history and recent bookkeeping of `apply_inner` |
 | `view.rs` | from quire-core `view.rs`: selection, `selection_version`, `synced_at`, focus, `Preedit`, `sync`/`map_through` core |
 | `history/{mod,monaco}.rs` | quire-core `history.rs` |
-| `history/{gtk,qt}.rs` | svelters FX3 `native/undo.rs` @ `f120f7f3` (+ its tests; provenance line) |
+| `history/{gtk,qt}.rs` | svelters FX3 `native/undo.rs` @ `e17ebbff` (+ its tests; provenance line) |
 | `words/{mod,vscode}.rs` | quire-core `words.rs` + `commands/words.rs` (Microsoft notice kept) |
 | `words/{pango,qt}.rs` | svelters FX1 `native/words.rs` @ `4365d5a9` (+ its 2 tests; provenance line) |
 | `ops/model.rs` | quire-core `commands/model.rs` |
