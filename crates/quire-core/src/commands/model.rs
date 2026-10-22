@@ -126,30 +126,12 @@ impl<'a> Model<'a> {
     }
 }
 
-/// Whether a char takes two columns (CJK wide/fullwidth and most emoji; an approximation of
-/// VS Code's `isFullWidthCharacter || isEmojiImprecise`).
-pub(crate) fn is_wide(c: char) -> bool {
-    let u = c as u32;
-    matches!(u,
-        0x1100..=0x115F | 0x2E80..=0x303E | 0x3041..=0x33FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF |
-        0xA000..=0xA4CF | 0xAC00..=0xD7A3 | 0xF900..=0xFAFF | 0xFE30..=0xFE4F | 0xFF00..=0xFF60 |
-        0xFFE0..=0xFFE6 | 0x1F300..=0x1F64F | 0x1F900..=0x1F9FF | 0x20000..=0x3FFFD)
-}
+use crate::columns::next_visible;
 
 /// Emoji and emoji components (ZWJ, variation selectors, skin tones, tags, regional indicators).
 pub(crate) fn is_emoji_like(c: char) -> bool {
     let u = c as u32;
     matches!(u, 0x200D | 0xFE0E | 0xFE0F | 0x20E3 | 0x2600..=0x27BF | 0x1F000..=0x1FAFF | 0xE0020..=0xE007F)
-}
-
-fn next_visible(c: char, vis: u32, tab: u32) -> u32 {
-    if c == '\t' {
-        (vis / tab + 1) * tab
-    } else if is_wide(c) {
-        vis + 2
-    } else {
-        vis + 1
-    }
 }
 
 /// Grapheme clusters of a char slice as (start char index, end char index).

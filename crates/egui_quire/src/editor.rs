@@ -897,10 +897,13 @@ impl FrameCx<'_> {
         let s = glue::line_str(glue::text(self.doc), line);
         let tab = self.doc.config().tab_size;
         if x <= ll.width() {
-            return (line, glue::visible_col(&s, ll.col_at(x), tab));
+            return (line, quire_core::columns::visual_col(&s, ll.col_at(x), tab));
         }
         let past = ((x - ll.width()) / self.geom.adv).round().max(0.0) as u32;
-        (line, glue::visible_col(&s, s.len(), tab) + past)
+        (
+            line,
+            quire_core::columns::visual_col(&s, s.len(), tab) + past,
+        )
     }
 
     /// Byte offset under a screen position.

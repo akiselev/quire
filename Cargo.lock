@@ -1138,7 +1138,6 @@ dependencies = [
  "serde",
  "serde_json",
  "stats_alloc",
- "unicode-segmentation",
 ]
 
 [[package]]

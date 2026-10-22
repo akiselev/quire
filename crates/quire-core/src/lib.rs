@@ -13,6 +13,7 @@
 //! Positions are UTF-8 byte offsets, valid only with their [`Version`].
 
 pub mod change;
+pub mod columns;
 pub mod command;
 mod commands;
 pub mod config;
