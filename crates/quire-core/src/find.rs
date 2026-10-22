@@ -77,6 +77,17 @@ impl FindState {
     }
 }
 
+impl FindState {
+    /// The index of the match equal to `primary`'s range (the "3 of 12" a find bar shows), or
+    /// `None` when the primary selection is not a match.
+    pub fn current_match(&self, primary: &crate::selection::SelRange) -> Option<usize> {
+        let r = primary.range();
+        self.matches
+            .binary_search_by(|m| (m.start, m.end).cmp(&(r.start, r.end)))
+            .ok()
+    }
+}
+
 fn build_regex(q: &FindQuery) -> Result<regex_automata::meta::Regex, FindError> {
     use regex_automata::meta::Regex;
     use regex_automata::util::syntax;
@@ -247,6 +258,10 @@ mod tests {
         let m = find_all(&r, &t, "").unwrap();
         assert_eq!(m, vec![7..10, 11..14]);
         assert_eq!(expand_replacement(&r, &t, 7..10, "<$1$$>").unwrap(), "<a$>");
+        let st = FindState::new(r.clone(), &t, Version(0), "");
+        assert_eq!(st.current_match(&crate::SelRange::new(11, 14)), Some(1));
+        assert_eq!(st.current_match(&crate::SelRange::new(14, 11)), Some(1));
+        assert_eq!(st.current_match(&crate::SelRange::point(11)), None);
         let mut bad = q("(");
         bad.is_regex = true;
         assert!(find_all(&bad, &t, "").is_err());

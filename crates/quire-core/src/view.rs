@@ -170,6 +170,11 @@ impl EditorView {
         self.find.as_ref()
     }
 
+    /// The index of the find match the primary selection is on ([`FindState::current_match`]).
+    pub fn find_current_match(&self) -> Option<usize> {
+        self.find.as_ref()?.current_match(&self.selection.primary())
+    }
+
     /// The scroll position.
     pub fn scroll(&self) -> Scroll {
         self.scroll
