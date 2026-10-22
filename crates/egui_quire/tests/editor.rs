@@ -641,6 +641,7 @@ fn keymap_resolves_against_core_commands() {
         vec![
             "deleteAllRight",
             "editor.action.addCommentLine",
+            "editor.action.blockComment",
             "editor.action.removeCommentLine",
         ]
     );

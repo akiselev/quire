@@ -51,6 +51,7 @@
   { "key": "ctrl+/", "mac": "cmd+/", "command": "editor.action.commentLine" },
   { "key": "ctrl+k ctrl+c", "mac": "cmd+k cmd+c", "command": "editor.action.addCommentLine" },
   { "key": "ctrl+k ctrl+u", "mac": "cmd+k cmd+u", "command": "editor.action.removeCommentLine" },
+  { "key": "shift+alt+a", "linux": "ctrl+shift+a", "command": "editor.action.blockComment" },
   { "mac": "ctrl+k", "command": "deleteAllRight" },
   { "key": "ctrl+]", "mac": "cmd+]", "command": "editor.action.indentLines" },
   { "key": "ctrl+[", "mac": "cmd+[", "command": "editor.action.outdentLines" },
