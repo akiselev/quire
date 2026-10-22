@@ -758,3 +758,70 @@ fn alt_shift_drag_box_selects_visual_rows() {
         "one range per visual row of line 0"
     );
 }
+
+// ---------------------------------------------------------------------------------------------
+// The IME preedit line through the galley cache, cut to the prefix.
+
+fn preedit(h: &mut Harness<'_, St>, text: &str) {
+    h.event(Event::Ime(egui::ImeEvent::Preedit {
+        text: text.into(),
+        active_range_chars: Some(text.chars().count()..text.chars().count()),
+    }));
+    h.run();
+}
+
+#[test]
+fn preedit_line_is_cached_and_cut_to_the_prefix() {
+    // A 10,000-char line rendered as a 200-char prefix, wrapped.
+    let text = format!("{}\nnext", words(2000));
+    let cfg = EditorConfig {
+        word_wrap: WordWrap::On,
+        stop_rendering_line_after: 200,
+        ..Default::default()
+    };
+    let mut h = harness(St::new(&text, cfg));
+    focus(&mut h);
+    caret_at(&mut h, 12);
+    let id = h.state().id;
+    let next_top = CodeEditor::anchor_rect(&h.ctx, id, "line[1]")
+        .unwrap()
+        .top();
+    preedit(&mut h, "nihon");
+    // The composition adds a few chars to the prefix; it does not lay out the whole line (which
+    // would push line 1 down by some 200 rows).
+    let row_h = caret(&h).height();
+    let with = CodeEditor::anchor_rect(&h.ctx, id, "line[1]")
+        .unwrap()
+        .top();
+    assert!(
+        with - next_top <= row_h + 0.5,
+        "line 1 moved from {next_top} to {with}"
+    );
+    // The caret sits after the preedit, on the first rows.
+    assert!(caret(&h).top() < next_top);
+    // Laid out once: more frames with the same preedit hit the cache.
+    let (_, misses) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    h.run();
+    h.run();
+    let (_, again) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    assert_eq!(misses, again, "the preedit line comes from the cache");
+    // A changed preedit is a new layout.
+    preedit(&mut h, "nihongo");
+    let (_, changed) = CodeEditor::galley_stats(&h.ctx, id).unwrap();
+    assert!(changed > again);
+
+    // A caret past the prefix: the preedit goes at the prefix's end, before the marker.
+    let near_end = words(2000).len() - 3;
+    h.event(Event::Ime(egui::ImeEvent::Commit(String::new())));
+    caret_at(&mut h, near_end);
+    preedit(&mut h, "ab");
+    let c = caret(&h);
+    let l1 = CodeEditor::anchor_rect(&h.ctx, id, "line[1]")
+        .unwrap()
+        .top();
+    assert!(
+        l1 - next_top <= row_h + 0.5,
+        "line 1 at {l1}, was {next_top}"
+    );
+    assert!(c.top() < l1, "caret {c:?} on line 0's rows");
+}

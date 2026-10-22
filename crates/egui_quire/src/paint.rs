@@ -131,18 +131,16 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
             }
             let start = text.line_to_byte(line);
             if let Some(p) = preedit.as_ref().filter(|_| line == head_line) {
-                let s = glue::line_str(text, line);
+                let doc_len = text.line(line).len_bytes();
                 let col = primary.head - start;
-                let layout = preedit_layout(f, &s, col, &p.text);
-                let doc_len = s.len();
-                f.note_rows(line, layout.n_rows());
+                let (layout, at) = f.layout_preedit_line(line, col, &p.text);
                 vis.push(VisLine {
                     line,
                     start,
                     doc_len,
                     top: 0.0,
                     layout,
-                    preedit: Some((col, p.text.len())),
+                    preedit: Some((at, p.text.len())),
                 });
             } else {
                 let layout = f.layout_line(line);
@@ -415,28 +413,6 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
     vis.clear();
     f.mem.vis_buf = vis;
     primary_caret
-}
-
-/// Layout of a line with the IME preedit spliced in at `col`, underlined. Not cached.
-fn preedit_layout(f: &FrameCx<'_>, line: &str, col: usize, pre: &str) -> VisualLine {
-    let col = col.min(line.len());
-    let font = f.theme.font.clone();
-    let plain = TextFormat::simple(font.clone(), f.theme.foreground);
-    let under = TextFormat {
-        underline: Stroke::new(1.0, f.theme.preedit_underline),
-        ..TextFormat::simple(font, f.theme.foreground)
-    };
-    let spliced: String = [&line[..col], pre, &line[col..]].concat();
-    let spans = [(col, under), (col + pre.len(), plain.clone())];
-    crate::wrap::shape_uncached(
-        f.ctx,
-        f.geom.mono,
-        f.doc.config().tab_size,
-        &spliced,
-        &spans,
-        &plain,
-        f.geom.wrap,
-    )
 }
 
 /// A chevron: pointing right when folded, down when expanded.

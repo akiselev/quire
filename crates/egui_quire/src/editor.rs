@@ -1686,6 +1686,66 @@ impl FrameCx<'_> {
         layout
     }
 
+    /// Line `line` with the IME preedit `pre` spliced in at byte `col`, underlined, through the
+    /// caches (keyed by the line, the preedit and where it goes). A line longer than
+    /// `stop_rendering_line_after` lays out only its prefix, with the preedit inside it: at the
+    /// prefix's end when the caret is past it. Returns the layout and the byte column the
+    /// preedit went to. Laying it out measures the line's rows.
+    pub fn layout_preedit_line(
+        &mut self,
+        line: usize,
+        col: usize,
+        pre: &str,
+    ) -> (VisualLine, usize) {
+        use egui::text::TextFormat;
+        let text = glue::text(self.doc);
+        let slice = text.line(line);
+        let full_len = slice.len_bytes();
+        let mut buf = std::mem::take(&mut self.mem.line_buf);
+        let s = rendered_str(slice, self.geom.stop_after, &mut buf);
+        let mut at = col.min(s.len());
+        while !s.is_char_boundary(at) {
+            at -= 1;
+        }
+        let spliced: String = [&s[..at], pre, &s[at..]].concat();
+        self.mem.line_buf = buf;
+        let theme = self.theme;
+        let font = theme.font.clone();
+        let plain = TextFormat::simple(font.clone(), theme.foreground);
+        let under = TextFormat {
+            underline: egui::Stroke::new(1.0, theme.preedit_underline),
+            ..TextFormat::simple(font, theme.foreground)
+        };
+        let spans = [(at, under), (at + pre.len(), plain.clone())];
+        let style = crate::galley_cache::hash_one((
+            "quire.preedit",
+            at,
+            pre.len(),
+            theme.preedit_underline,
+            theme.foreground,
+        )) ^ self.mem.style_salt;
+        let mut shaper = LineShaper {
+            cache: &mut self.mem.galleys,
+            ctx: self.ctx,
+            font: &self.theme.font,
+            pixels_per_point: self.ctx.pixels_per_point(),
+            mono: self.geom.mono,
+            tab_size: self.doc.config().tab_size,
+        };
+        let layout = wrap::shape_formatted(
+            &mut shaper,
+            &mut self.mem.wraps,
+            &spliced,
+            &spans,
+            &plain,
+            style,
+            self.geom.wrap,
+            full_len + pre.len(),
+        );
+        self.note_rows(line, layout.n_rows());
+        (layout, at)
+    }
+
     /// Record a laid-out line's measured rows in the height index (not for folded lines).
     /// Returns whether its height changed.
     pub fn note_rows(&mut self, line: usize, rows: usize) -> bool {

@@ -533,28 +533,53 @@ pub(crate) fn shape_line(
     VisualLine::new(Rows::Many(rows), full_len, adv)
 }
 
-/// Lay out `text` with formats `spans` (uncached; the IME preedit line), wrapped when `wrap` is
-/// set and the text is wider than a row.
-pub(crate) fn shape_uncached(
-    ctx: &Context,
-    mono: Mono,
-    tab_size: u32,
+/// Lay out `text` with formats `spans` through the caches (the IME preedit line; `style`
+/// hashes the formats), wrapped when `wrap` is set and the text is wider than a row. `full_len`
+/// is the bytes of the line as shown (more than `text` when the line is cut to a prefix).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn shape_formatted(
+    sh: &mut LineShaper<'_>,
+    wraps: &mut GalleyCache<Arc<WrappedRows>>,
     text: &str,
     spans: &[(usize, TextFormat)],
     default: &TextFormat,
+    style: u64,
     wrap: Option<Wrap>,
+    full_len: usize,
 ) -> VisualLine {
+    let (ctx, mono, ts) = (sh.ctx, sh.mono, sh.tab_size);
     let adv = mono.advance();
-    let tabs = mono.tab_stops(tab_size);
-    let galley = layout::layout_line_job(ctx, text, spans, default, mono, tabs);
+    let tabs = mono.tab_stops(ts);
+    let content = hash_one(text);
+    let key = GalleyKey::new(content, style, sh.font, sh.pixels_per_point, f32::INFINITY);
+    let galley = sh.cache.get_or_insert(key, || {
+        layout::layout_line_job(ctx, text, spans, default, mono, tabs)
+    });
     let one = LineLayout::new(galley, mono, tabs);
-    let full = text.len();
     match wrap {
         Some(w) if one.width() > w.cols as f32 * adv + 0.5 => {
-            let rows = build_rows(ctx, mono, tab_size, text, spans, default, w, Some(&one));
-            VisualLine::new(Rows::Many(Arc::new(rows)), full, adv)
+            let key = GalleyKey::new(
+                content,
+                style ^ hash_one(("quire.wrap", w, ts)),
+                sh.font,
+                sh.pixels_per_point,
+                w.cols as f32,
+            );
+            let rows = wraps.get_or_insert(key, || {
+                Arc::new(build_rows(
+                    ctx,
+                    mono,
+                    ts,
+                    text,
+                    spans,
+                    default,
+                    w,
+                    Some(&one),
+                ))
+            });
+            VisualLine::new(Rows::Many(rows), full_len, adv)
         }
-        _ => VisualLine::new(Rows::One(one), full, adv),
+        _ => VisualLine::new(Rows::One(one), full_len, adv),
     }
 }
 
