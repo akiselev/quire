@@ -43,6 +43,8 @@ quire depends on neither.
   quire's CI. During development run only filtered tests for what you touched, through
   `scripts/cargo.sh`. Never run it on unchanged code or for a docs-only change.
 - No hosted CI.
+- **Never `pkill`/`killall` by pattern** (it matched other lanes' cargo-slot runs once). Stop only
+  processes you started, by PID.
 
 ## Git
 
