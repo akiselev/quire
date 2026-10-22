@@ -41,12 +41,15 @@ function step(s) {
 class Position {
   constructor(lineNumber, column) { this.lineNumber = lineNumber; this.column = column; }
   equals(o) { return o && o.lineNumber === this.lineNumber && o.column === this.column; }
+  toString() { const f = (v) => (isMarker(v) ? "?" : v); return `(${f(this.lineNumber)},${f(this.column)})`; }
 }
 class Range {
   constructor(sl, sc, el, ec) {
     if (sl > el || (sl === el && sc > ec)) { [sl, sc, el, ec] = [el, ec, sl, sc]; }
     this.startLineNumber = sl; this.startColumn = sc; this.endLineNumber = el; this.endColumn = ec;
   }
+  getStartPosition() { return new Position(this.startLineNumber, this.startColumn); }
+  getEndPosition() { return new Position(this.endLineNumber, this.endColumn); }
 }
 class Selection extends Range {
   constructor(a, b, c, d) {
@@ -105,6 +108,9 @@ function expectFrom(actual, expected) {
     case 'line': step(`expectLine ${actual.arg} ${JSON.stringify(expected)}`); break;
     case 'value': step(`expectText ${JSON.stringify(String(expected).replace(/\r\n/g, '\n'))}`); break;
     case 'serializedStops': step(`expectStops ${JSON.stringify(expected)}`); break;
+    case 'findMatches': step(`expectFindAll ${actual.arg} => ${[...expected].map(matchArgs).join('; ')}`); break;
+    case 'findNext': step(`expectFindNext ${actual.arg} => ${matchArgs(expected)}`); break;
+    case 'findPrev': step(`expectFindPrev ${actual.arg} => ${matchArgs(expected)}`); break;
     case 'lines': step(`expectText ${JSON.stringify(expected.join('\n'))}`); break;
     case 'maxColumn': step(`expectMaxColumn ${actual.arg} ${expected}`); break;
     case 'lineCount': step(`expectLineCount ${expected}`); break;
@@ -196,12 +202,15 @@ function runEdit(name) {
 // ---- model / editor / view model ----
 function makeModel(text, languageId, modelOpts) {
   const model = {
+    __case: null,
     __model: true, __text: text, __languageId: languageId, __modelOpts: modelOpts || {},
     getLineContent: (n) => marker('line', n),
     getValue: (eol) => marker('value'),
     getLineCount: () => marker('lineCount'),
     getLinesContent: () => marker('lines'),
     getLineMaxColumn: (n) => marker('maxColumn', n),
+    setEOL: (eol) => step(`setEOL ${eol === 1 ? 'crlf' : 'lf'}`),
+    getFullModelRange: () => ({ __full: true }),
     setValue: (v) => step(`setValue ${JSON.stringify(v)}`),
     undo: () => step('cmd undo'),
     redo: () => step('cmd redo'),
@@ -213,7 +222,9 @@ function makeModel(text, languageId, modelOpts) {
 }
 globalThis.createTextModel = (text, languageId, modelOpts) => {
   if (typeof text !== 'string') throw new Unsupported('createTextModel(non-string)');
-  return makeModel(text, languageId ?? null, modelOpts);
+  const m = makeModel(text, languageId ?? null, modelOpts);
+  if (cur) startCase(m, {});
+  return m;
 };
 globalThis.instantiateTextModel = (_inst, text, languageId, modelOpts) => globalThis.createTextModel(text, languageId, modelOpts);
 
@@ -227,10 +238,11 @@ function startEditor(arg, opts, cb) {
   cb(editor, viewModel, model);
 }
 
-function makeEditor(model, opts) {
-  if (!cur) throw new Unsupported('editor outside a test');
+// Starts a fixture case for a model (a model-only test, or the model an editor is made for).
+function startCase(model, opts) {
+  if (!cur) throw new Unsupported('model outside a test');
   if (cur.editorStarted) {
-    // A second editor in one test: the first becomes its own fixture case ("… #1").
+    // A second model/editor in one test: the first becomes its own fixture case ("… #1").
     cur.parts = cur.parts || [];
     cur.parts.push({ ...cur, parts: undefined, steps: cur.steps });
     cur.steps = [];
@@ -240,6 +252,13 @@ function makeEditor(model, opts) {
   cur.modelOpts = model.__modelOpts;
   cur.editorOpts = opts || {};
   cur.editorStarted = true;
+  model.__case = cur.steps;
+}
+
+function makeEditor(model, opts) {
+  if (!cur) throw new Unsupported('editor outside a test');
+  if (model.__case !== cur.steps) startCase(model, opts);
+  else cur.editorOpts = opts || {};
   const editorTarget = {
     getModel: () => model,
     runCommand: (c, args) => {
@@ -380,6 +399,41 @@ STUBS.set('testRepeatedActionAndExtractPositions', (text, initial, action, recor
   step(`repeat ${cmds[0].slice(4)} ${recKind} ${until}`);
   return marker('stops');
 });
+// textModelSearch.ts
+STUBS.set('USUAL_WORD_SEPARATORS', '`~!@#$%^&*()-=+[{]}\\|;:\'",.<>/?');
+STUBS.set('EndOfLineSequence', { LF: 0, CRLF: 1 });
+class SearchParams { constructor(searchString, isRegex, matchCase, wordSeparators) { Object.assign(this, { searchString, isRegex, matchCase, wordSeparators }); } }
+STUBS.set('SearchParams', SearchParams);
+class FindMatch { constructor(range, matches) { this.range = range; this.matches = matches; } }
+STUBS.set('FindMatch', FindMatch);
+function queryJson(p) {
+  if (!(p instanceof SearchParams)) throw new Unsupported('search params');
+  return JSON.stringify({ searchString: p.searchString, isRegex: p.isRegex, matchCase: p.matchCase, wordSeparators: p.wordSeparators });
+}
+function posArg(p) {
+  if (isMarker(p.lineNumber) || isMarker(p.column)) return 'end';
+  return `${p.lineNumber} ${p.column}`;
+}
+STUBS.set('TextModelSearch', {
+  findMatches(_model, params, range, capture, _limit) {
+    if (!range || !range.__full) throw new Unsupported('findMatches in a range');
+    if (capture) throw new Unsupported('capturing matches');
+    return marker('findMatches', queryJson(params));
+  },
+  findNextMatch(_model, params, pos, capture) {
+    if (capture) throw new Unsupported('capturing matches');
+    return marker('findNext', `${posArg(pos)} ${queryJson(params)}`);
+  },
+  findPreviousMatch(_model, params, pos, capture) {
+    if (capture) throw new Unsupported('capturing matches');
+    return marker('findPrev', `${posArg(pos)} ${queryJson(params)}`);
+  },
+});
+function matchArgs(m) {
+  if (m === undefined || m === null) return 'none';
+  if (!(m instanceof FindMatch) || m.matches) throw new Unsupported('find match value');
+  return selArgs(m.range);
+}
 globalThis.__resolve = (name) => STUBS.has(name) ? STUBS.get(name) : unsupported(name);
 
 // testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection)

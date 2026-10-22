@@ -130,8 +130,8 @@ fn is_boundary_char(c: Option<char>, seps: &str) -> bool {
     }
 }
 
-/// All matches of `query` in `text` (non-overlapping, empty matches skipped), up to
-/// [`FIND_MATCH_LIMIT`].
+/// All matches of `query` in `text` (non-overlapping; zero-length matches such as `^` are kept,
+/// as in VS Code, stepping over whole code points), up to [`FIND_MATCH_LIMIT`].
 pub fn find_all(
     query: &FindQuery,
     text: &Text,
@@ -144,9 +144,6 @@ pub fn find_all(
     let hay = text.to_string();
     let mut out = Vec::new();
     for m in re.find_iter(hay.as_bytes()) {
-        if m.is_empty() {
-            continue;
-        }
         let r = m.range();
         if query.whole_word {
             let before = hay[..r.start].chars().next_back();

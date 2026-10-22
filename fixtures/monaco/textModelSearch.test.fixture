@@ -1,0 +1,801 @@
+# Translated from Visual Studio Code, src/vs/editor/test/common/model/textModelSearch.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== TextModelSearch > Simple find #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25; 2 48 2 51; 4 59 4 62
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindNext 2 48 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindNext 4 59 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 2 51 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindPrev 4 62 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+
+=== TextModelSearch > Simple find #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25; 2 48 2 51; 4 59 4 62
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindNext 2 48 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindNext 4 59 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 2 51 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindPrev 4 62 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+
+=== TextModelSearch > Case sensitive find #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+
+=== TextModelSearch > Case sensitive find #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"foo","isRegex":false,"matchCase":true,"wordSeparators":null} => 2 22 2 25
+
+=== TextModelSearch > Whole words find #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17; 1 44 1 47; 2 48 2 51
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 44 1 47
+expectFindNext 2 48 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 44 1 47
+expectFindPrev 2 51 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+
+=== TextModelSearch > Whole words find #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17; 1 44 1 47; 2 48 2 51
+expectFindNext 1 1 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 44 1 47
+expectFindNext 2 48 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+expectFindPrev end {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+expectFindPrev 1 17 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 44 1 47
+expectFindPrev 2 51 {"searchString":"foo","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 2 48 2 51
+
+=== TextModelSearch > /^/ find #1
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 2 1 2 1; 3 1 3 1; 4 1 4 1; 5 1 5 1
+expectFindNext 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 2 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 3 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 1
+expectFindNext 4 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindNext 5 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+expectFindPrev end {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+expectFindPrev 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 2 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 3 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 1
+expectFindPrev 4 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 5 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+
+=== TextModelSearch > /^/ find #2
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 2 1 2 1; 3 1 3 1; 4 1 4 1; 5 1 5 1
+expectFindNext 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 2 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 3 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 1
+expectFindNext 4 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindNext 5 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+expectFindPrev end {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+expectFindPrev 1 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 2 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 3 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 1
+expectFindPrev 4 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 5 1 {"searchString":"^","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 1
+
+=== TextModelSearch > /$/ find #1
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74; 2 69 2 69; 3 54 3 54; 4 65 4 65; 5 31 5 31
+expectFindNext 1 1 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindNext 1 74 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindNext 2 69 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 69 2 69
+expectFindNext 3 54 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 54 3 54
+expectFindNext 4 65 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 65 4 65
+expectFindNext 5 31 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+expectFindPrev end {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+expectFindPrev 1 74 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindPrev 2 69 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 69 2 69
+expectFindPrev 3 54 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 54 3 54
+expectFindPrev 4 65 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 65 4 65
+expectFindPrev 5 31 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+
+=== TextModelSearch > /$/ find #2
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74; 2 69 2 69; 3 54 3 54; 4 65 4 65; 5 31 5 31
+expectFindNext 1 1 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindNext 1 74 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindNext 2 69 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 69 2 69
+expectFindNext 3 54 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 54 3 54
+expectFindNext 4 65 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 65 4 65
+expectFindNext 5 31 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+expectFindPrev end {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+expectFindPrev 1 74 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 74 1 74
+expectFindPrev 2 69 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 69 2 69
+expectFindPrev 3 54 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 54 3 54
+expectFindPrev 4 65 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 65 4 65
+expectFindPrev 5 31 {"searchString":"$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 31 5 31
+
+=== TextModelSearch > /.*/ find #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74; 2 1 2 69; 3 1 3 54; 4 1 4 65; 5 1 5 31
+expectFindNext 1 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindNext 1 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindNext 2 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 69
+expectFindNext 3 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 54
+expectFindNext 4 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 65
+expectFindNext 5 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+expectFindPrev end {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+expectFindPrev 1 74 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindPrev 2 69 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 69
+expectFindPrev 3 54 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 54
+expectFindPrev 4 65 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 65
+expectFindPrev 5 31 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+
+=== TextModelSearch > /.*/ find #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74; 2 1 2 69; 3 1 3 54; 4 1 4 65; 5 1 5 31
+expectFindNext 1 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindNext 1 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindNext 2 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 69
+expectFindNext 3 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 54
+expectFindNext 4 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 65
+expectFindNext 5 1 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+expectFindPrev end {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+expectFindPrev 1 74 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 74
+expectFindPrev 2 69 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 69
+expectFindPrev 3 54 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 54
+expectFindPrev 4 65 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 65
+expectFindPrev 5 31 {"searchString":".*","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 31
+
+=== TextModelSearch > /^$/ find #1
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\n\nAnd here's a dull line with nothing interesting in it\n\nAgain nothing interesting here"
+expectFindAll {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1; 4 1 4 1
+expectFindNext 1 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 2 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 4 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev end {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 2 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 4 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+
+=== TextModelSearch > /^$/ find #2
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\n\nAnd here's a dull line with nothing interesting in it\n\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1; 4 1 4 1
+expectFindNext 1 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 2 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 4 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev end {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 2 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 4 1 {"searchString":"^$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+
+=== TextModelSearch > multiline find 1 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+expectFindAll {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1; 2 16 3 1
+expectFindNext 1 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindNext 1 16 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindNext 2 16 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+expectFindPrev end {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+expectFindPrev 2 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindPrev 3 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+
+=== TextModelSearch > multiline find 1 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+setEOL crlf
+expectFindAll {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1; 2 16 3 1
+expectFindNext 1 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindNext 1 16 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindNext 2 16 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+expectFindPrev end {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+expectFindPrev 2 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 1
+expectFindPrev 3 1 {"searchString":"text\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 16 3 1
+
+=== TextModelSearch > multiline find 2 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+expectFindAll {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 1 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 16 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev end {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev 2 5 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+
+=== TextModelSearch > multiline find 2 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+setEOL crlf
+expectFindAll {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 1 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 16 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev end {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev 2 5 {"searchString":"text\\nJust","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+
+=== TextModelSearch > multiline find 3 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+expectFindAll {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindNext 1 1 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindNext 3 16 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindPrev end {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindPrev 4 6 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+
+=== TextModelSearch > multiline find 3 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+setEOL crlf
+expectFindAll {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindNext 1 1 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindNext 3 16 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindPrev end {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+expectFindPrev 4 6 {"searchString":"\\nagain","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 16 4 6
+
+=== TextModelSearch > multiline find 4 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+expectFindAll {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindNext 1 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindNext 1 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindPrev end {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindPrev 3 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+
+=== TextModelSearch > multiline find 4 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nJust some text text\nsome text again\nagain some text"
+setEOL crlf
+expectFindAll {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindNext 1 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindNext 1 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindPrev end {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+expectFindPrev 3 1 {"searchString":".*\\nJust.*\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 3 1
+
+=== TextModelSearch > multiline find with line beginning regex #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\nelse\n\nif\nelse"
+expectFindAll {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5; 4 1 5 5
+expectFindNext 1 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 1 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 4 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+expectFindPrev end {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+expectFindPrev 2 5 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindPrev 5 5 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+
+=== TextModelSearch > multiline find with line beginning regex #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\nelse\n\nif\nelse"
+setEOL crlf
+expectFindAll {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5; 4 1 5 5
+expectFindNext 1 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 1 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 4 1 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+expectFindPrev end {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+expectFindPrev 2 5 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindPrev 5 5 {"searchString":"^if\\nelse","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 5
+
+=== TextModelSearch > matching empty lines using boundary expression #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\n\nelse\n  \nif\n \nelse"
+expectFindAll {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1; 4 1 5 1; 6 1 7 1
+expectFindNext 1 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 2 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 4 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 1
+expectFindNext 6 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+expectFindPrev end {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+expectFindPrev 3 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 5 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 1
+expectFindPrev 7 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+
+=== TextModelSearch > matching empty lines using boundary expression #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\n\nelse\n  \nif\n \nelse"
+setEOL crlf
+expectFindAll {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1; 4 1 5 1; 6 1 7 1
+expectFindNext 1 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 2 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 4 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 1
+expectFindNext 6 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+expectFindPrev end {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+expectFindPrev 3 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 5 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 5 1
+expectFindPrev 7 1 {"searchString":"^\\s*$\\n","isRegex":true,"matchCase":false,"wordSeparators":null} => 6 1 7 1
+
+=== TextModelSearch > matching lines starting with A and ending with B #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "a if b\na\nab\neb"
+expectFindAll {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7; 3 1 3 3
+expectFindNext 1 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindNext 1 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindNext 3 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+expectFindPrev end {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+expectFindPrev 1 7 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindPrev 3 3 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+
+=== TextModelSearch > matching lines starting with A and ending with B #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "a if b\na\nab\neb"
+setEOL crlf
+expectFindAll {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7; 3 1 3 3
+expectFindNext 1 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindNext 1 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindNext 3 1 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+expectFindPrev end {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+expectFindPrev 1 7 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 7
+expectFindPrev 3 3 {"searchString":"^a.*b$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 3
+
+=== TextModelSearch > multiline find with line ending regex #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\nelse\n\nif\nelseif\nelse"
+expectFindAll {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5; 5 5 6 5
+expectFindNext 1 1 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 1 1 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 5 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+expectFindPrev end {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+expectFindPrev 2 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindPrev 6 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+
+=== TextModelSearch > multiline find with line ending regex #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "if\nelse\n\nif\nelseif\nelse"
+setEOL crlf
+expectFindAll {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5; 5 5 6 5
+expectFindNext 1 1 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 1 1 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindNext 5 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+expectFindPrev end {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+expectFindPrev 2 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 2 5
+expectFindPrev 6 5 {"searchString":"if\\nelse$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 5 6 5
+
+=== TextModelSearch > issue #4836 - ^.*$ #1
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\n\nsome text again\n\nagain some text"
+expectFindAll {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20; 2 1 2 1; 3 1 3 16; 4 1 4 1; 5 1 5 16
+expectFindNext 1 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindNext 1 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindNext 2 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 3 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 16
+expectFindNext 4 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindNext 5 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+expectFindPrev end {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+expectFindPrev 1 20 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindPrev 2 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 3 16 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 16
+expectFindPrev 4 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 5 16 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+
+=== TextModelSearch > issue #4836 - ^.*$ #2
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\n\nsome text again\n\nagain some text"
+setEOL crlf
+expectFindAll {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20; 2 1 2 1; 3 1 3 16; 4 1 4 1; 5 1 5 16
+expectFindNext 1 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindNext 1 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindNext 2 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindNext 3 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 16
+expectFindNext 4 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindNext 5 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+expectFindPrev end {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+expectFindPrev 1 20 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 20
+expectFindPrev 2 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 1
+expectFindPrev 3 16 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 3 1 3 16
+expectFindPrev 4 1 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 1 4 1
+expectFindPrev 5 16 {"searchString":"^.*$","isRegex":true,"matchCase":false,"wordSeparators":null} => 5 1 5 16
+
+=== TextModelSearch > multiline find for non-regex string #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nsome text text\nsome text again\nagain some text\nbut not some"
+expectFindAll {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5; 2 11 3 5
+expectFindNext 1 1 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 16 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 2 11 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+expectFindPrev end {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+expectFindPrev 2 5 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev 3 5 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+
+=== TextModelSearch > multiline find for non-regex string #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text text\nsome text text\nsome text again\nagain some text\nbut not some"
+setEOL crlf
+expectFindAll {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5; 2 11 3 5
+expectFindNext 1 1 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 1 16 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindNext 2 11 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+expectFindPrev end {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+expectFindPrev 2 5 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 1 16 2 5
+expectFindPrev 3 5 {"searchString":"text\nsome","isRegex":false,"matchCase":false,"wordSeparators":null} => 2 11 3 5
+
+=== TextModelSearch > issue #3623: Match whole word does not work for not latin characters #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "я\nкомпилятор\nобфускация\n:я-я"
+expectFindAll {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2; 4 2 4 3; 4 4 4 5
+expectFindNext 1 1 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindNext 1 1 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindNext 4 2 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 2 4 3
+expectFindNext 4 4 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+expectFindPrev end {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+expectFindPrev 1 2 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindPrev 4 3 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 2 4 3
+expectFindPrev 4 5 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+
+=== TextModelSearch > issue #3623: Match whole word does not work for not latin characters #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "я\nкомпилятор\nобфускация\n:я-я"
+setEOL crlf
+expectFindAll {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2; 4 2 4 3; 4 4 4 5
+expectFindNext 1 1 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindNext 1 1 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindNext 4 2 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 2 4 3
+expectFindNext 4 4 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+expectFindPrev end {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+expectFindPrev 1 2 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 1 1 2
+expectFindPrev 4 3 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 2 4 3
+expectFindPrev 4 5 {"searchString":"я","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 4 4 4 5
+
+=== TextModelSearch > issue #27459: Match whole words regression #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this._register(this._textAreaInput.onKeyDown((e: IKeyboardEvent) => {\n\tthis._viewController.emitKeyDown(e);\n}));"
+expectFindAll {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindNext 1 1 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindNext 1 45 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindPrev end {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindPrev 1 50 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+
+=== TextModelSearch > issue #27459: Match whole words regression #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this._register(this._textAreaInput.onKeyDown((e: IKeyboardEvent) => {\n\tthis._viewController.emitKeyDown(e);\n}));"
+setEOL crlf
+expectFindAll {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindNext 1 1 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindNext 1 45 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindPrev end {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+expectFindPrev 1 50 {"searchString":"((e: ","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 45 1 50
+
+=== TextModelSearch > issue #27594: Search results disappear #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this.server.listen(0);"
+expectFindAll {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindNext 1 1 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindNext 1 13 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindPrev end {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindPrev 1 20 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+
+=== TextModelSearch > issue #27594: Search results disappear #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "this.server.listen(0);"
+setEOL crlf
+expectFindAll {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindNext 1 1 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindNext 1 13 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindPrev end {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+expectFindPrev 1 20 {"searchString":"listen(","isRegex":false,"matchCase":false,"wordSeparators":"`~!@#$%^&*()-=+[{]}\\|;:'\",.<>/?"} => 1 13 1 20
+
+=== TextModelSearch > issue #53415. W should match line break. #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "text\n180702-\n180703-180704"
+expectFindAll {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 2 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 3 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "text\n180702-\n180703-180704"
+setEOL crlf
+expectFindAll {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindNext 2 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 3 1 {"searchString":"\\d{6}-\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\n\nJust"
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\n\nJust"
+setEOL crlf
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #5
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\r\n\r\nJust"
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #6
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\r\n\r\nJust"
+setEOL crlf
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #7
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\n\tJust\nJust"
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 2 2; 2 6 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 2
+expectFindNext 2 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 2 2 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 2
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #8
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just some text\n\tJust\nJust"
+setEOL crlf
+expectFindAll {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6; 1 10 1 11; 1 15 2 1; 2 1 2 2; 2 6 3 1
+expectFindNext 1 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 5 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindNext 1 10 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindNext 1 15 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindNext 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 2
+expectFindNext 2 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+expectFindPrev end {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+expectFindPrev 1 6 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 6
+expectFindPrev 1 11 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 10 1 11
+expectFindPrev 2 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 15 2 1
+expectFindPrev 2 2 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 1 2 2
+expectFindPrev 3 1 {"searchString":"\\W","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 6 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #9
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just  some text\n\nJust"
+expectFindAll {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7; 1 16 3 1
+expectFindNext 1 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 5 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 16 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev end {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev 1 7 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindPrev 3 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #10
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just  some text\n\nJust"
+setEOL crlf
+expectFindAll {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7; 1 16 3 1
+expectFindNext 1 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 5 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 16 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev end {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev 1 7 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindPrev 3 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #11
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just  some text\r\n\r\nJust"
+expectFindAll {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7; 1 16 3 1
+expectFindNext 1 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 5 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 16 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev end {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev 1 7 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindPrev 3 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+
+=== TextModelSearch > issue #53415. W should match line break. #12
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "Just  some text\r\n\r\nJust"
+setEOL crlf
+expectFindAll {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7; 1 16 3 1
+expectFindNext 1 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 5 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindNext 1 16 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev end {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+expectFindPrev 1 7 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 7
+expectFindPrev 3 1 {"searchString":"\\W{2}","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 16 3 1
+
+=== TextModelSearch > Simple find using unicode escape sequences #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+expectFindAll {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25; 2 48 2 51; 4 59 4 62
+expectFindNext 1 1 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindNext 2 48 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindNext 4 59 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev end {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev 1 17 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 2 51 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindPrev 4 62 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+
+=== TextModelSearch > Simple find using unicode escape sequences #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "This is some foo - bar text which contains foo and bar - as in Barcelona.\nNow it begins a word fooBar and now it is caps Foo-isn't this great?\nAnd here's a dull line with nothing interesting in it\nIt is also interesting if it's part of a word like amazingFooBar\nAgain nothing interesting here"
+setEOL crlf
+expectFindAll {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17; 1 44 1 47; 2 22 2 25; 2 48 2 51; 4 59 4 62
+expectFindNext 1 1 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 14 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindNext 1 44 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindNext 2 22 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindNext 2 48 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindNext 4 59 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev end {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+expectFindPrev 1 17 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 14 1 17
+expectFindPrev 1 47 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 44 1 47
+expectFindPrev 2 25 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 22 2 25
+expectFindPrev 2 51 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 2 48 2 51
+expectFindPrev 4 62 {"searchString":"\\u{0066}\\u006f\\u006F","isRegex":true,"matchCase":false,"wordSeparators":null} => 4 59 4 62
+
+=== TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #1
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "1💻1"
+expectFindAll {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 1 2 1 2; 1 4 1 4; 1 5 1 5
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindNext 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindNext 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev end {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindPrev 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindPrev 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+
+=== TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #2
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "1💻1"
+setEOL crlf
+expectFindAll {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 1 2 1 2; 1 4 1 4; 1 5 1 5
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindNext 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindNext 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev end {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindPrev 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindPrev 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+
+=== TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #3
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "1🐱‍💻1"
+expectFindAll {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 1 2 1 2; 1 4 1 4; 1 5 1 5; 1 7 1 7; 1 8 1 8
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindNext 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindNext 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindNext 1 7 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 7 1 7
+expectFindNext 1 8 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+expectFindPrev end {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+expectFindPrev 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindPrev 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindPrev 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev 1 7 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 7 1 7
+expectFindPrev 1 8 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+
+=== TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #4
+status: fail-ours the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "1🐱‍💻1"
+setEOL crlf
+expectFindAll {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1; 1 2 1 2; 1 4 1 4; 1 5 1 5; 1 7 1 7; 1 8 1 8
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindNext 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindNext 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindNext 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindNext 1 7 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 7 1 7
+expectFindNext 1 8 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+expectFindPrev end {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+expectFindPrev 1 1 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 1 1 1
+expectFindPrev 1 2 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 2 1 2
+expectFindPrev 1 4 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 4 1 4
+expectFindPrev 1 5 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 5 1 5
+expectFindPrev 1 7 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 7 1 7
+expectFindPrev 1 8 {"searchString":"()","isRegex":true,"matchCase":false,"wordSeparators":null} => 1 8 1 8
+

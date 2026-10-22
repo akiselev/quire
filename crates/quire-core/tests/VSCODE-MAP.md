@@ -458,6 +458,88 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Multicursor selection > Find state disassociation > leaves mode when selection changes | `fixtures/monaco/multicursor.test.fixture` | pass |
 | Multicursor selection > Find state disassociation > Select Highlights respects mode  | N/A: new SelectHighlightsAction | — |
 
+## textModelSearch.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| TextModelSearch > Simple find #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Simple find #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Case sensitive find #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Case sensitive find #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Whole words find #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Whole words find #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > /^/ find #1 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > /^/ find #2 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > /$/ find #1 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > /$/ find #2 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > /.*/ find #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > /.*/ find #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > /^$/ find #1 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > /^$/ find #2 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > multiline find 1 #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 1 #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 2 #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 2 #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 3 #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 3 #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 4 #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find 4 #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find with line beginning regex #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find with line beginning regex #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > matching empty lines using boundary expression #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > matching empty lines using boundary expression #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > matching lines starting with A and ending with B #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > matching lines starting with A and ending with B #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find with line ending regex #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find with line ending regex #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #4836 - ^.*$ #1 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > issue #4836 - ^.*$ #2 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > multiline find for non-regex string #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > multiline find for non-regex string #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #3623: Match whole word does not work for not latin characters #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #3623: Match whole word does not work for not latin characters #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #27459: Match whole words regression #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #27459: Match whole words regression #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #27594: Search results disappear #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #27594: Search results disappear #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > findNextMatch without regex | N/A: findNext.range | — |
+| TextModelSearch > findNextMatch with beginning boundary regex | N/A: findNext.range | — |
+| TextModelSearch > findNextMatch with beginning boundary regex and line has repetitive beginnings | N/A: findNext.range | — |
+| TextModelSearch > findNextMatch with beginning boundary multiline regex and line has repetitive beginnings | N/A: findNext.range | — |
+| TextModelSearch > findNextMatch with ending boundary regex | N/A: findNext.range | — |
+| TextModelSearch > findMatches with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > findMatches multiline with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > findNextMatch with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > findNextMatch multiline with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > findPreviousMatch with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > findPreviousMatch multiline with capturing matches | N/A: capturing matches | — |
+| TextModelSearch > \n matches \r\n | N/A: model.getEOL | — |
+| TextModelSearch > \r can never be found | N/A: model.getEOL | — |
+| TextModelSearch > parseSearchRequest invalid | N/A: error: searchParams.parseSearchRequest is not a function | — |
+| TextModelSearch > parseSearchRequest non regex | N/A: new SearchData | — |
+| TextModelSearch > parseSearchRequest regex | N/A: new SearchData | — |
+| TextModelSearch > issue #53415. W should match line break. #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #3 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #4 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #5 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #6 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #7 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #8 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #9 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #10 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #11 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > issue #53415. W should match line break. #12 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Simple find using unicode escape sequences #1 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > Simple find using unicode escape sequences #2 | `fixtures/monaco/textModelSearch.test.fixture` | pass |
+| TextModelSearch > isMultilineRegexSource | N/A: isMultilineRegexSource() | — |
+| TextModelSearch > isMultilineRegexSource correctly identifies multiline patterns | N/A: isMultilineRegexSource() | — |
+| TextModelSearch > issue #74715. \d* finds empty string and stops searching. | N/A: capturing matches | — |
+| TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #1 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #2 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #3 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+| TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #4 | `fixtures/monaco/textModelSearch.test.fixture` | fail (ours: the harness checks findNext/findPrevious through quire's find step commands, which step past a zero-length match at the cursor (VS Code findController behaviour); VS Code's model-level findPreviousMatch returns that match. findMatches agrees) |
+
 ## wordOperations.test.ts
 
 | VS Code test | quire | status |
@@ -530,10 +612,11 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | linesOperations.test.ts | 59 | 23 | 0 | 0 | 36 |
 | moveLinesCommand.test.ts | 15 | 11 | 0 | 0 | 4 |
 | multicursor.test.ts | 76 | 10 | 0 | 0 | 66 |
+| textModelSearch.test.ts | 77 | 46 | 12 | 0 | 19 |
 | wordOperations.test.ts | 58 | 44 | 3 | 0 | 11 |
 
 ## Totals
 
-- VS Code tests listed: 486
-- translated: 277 (pass 251, fail ours 26, fail bug 0)
-- N/A: 209
+- VS Code tests listed: 563
+- translated: 335 (pass 297, fail ours 38, fail bug 0)
+- N/A: 228

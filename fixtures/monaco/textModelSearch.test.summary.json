@@ -1,0 +1,368 @@
+[
+ {
+  "name": "TextModelSearch > Simple find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Simple find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Case sensitive find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Case sensitive find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Whole words find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Whole words find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /^/ find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /^/ find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /$/ find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /$/ find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /.*/ find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /.*/ find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /^$/ find #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > /^$/ find #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 1 #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 1 #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 2 #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 2 #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 3 #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 3 #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 4 #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find 4 #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find with line beginning regex #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find with line beginning regex #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > matching empty lines using boundary expression #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > matching empty lines using boundary expression #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > matching lines starting with A and ending with B #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > matching lines starting with A and ending with B #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find with line ending regex #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find with line ending regex #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #4836 - ^.*$ #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #4836 - ^.*$ #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find for non-regex string #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > multiline find for non-regex string #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #3623: Match whole word does not work for not latin characters #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #3623: Match whole word does not work for not latin characters #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #27459: Match whole words regression #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #27459: Match whole words regression #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #27594: Search results disappear #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #27594: Search results disappear #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > findNextMatch without regex",
+  "na": "findNext.range"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch with beginning boundary regex",
+  "na": "findNext.range"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch with beginning boundary regex and line has repetitive beginnings",
+  "na": "findNext.range"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch with beginning boundary multiline regex and line has repetitive beginnings",
+  "na": "findNext.range"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch with ending boundary regex",
+  "na": "findNext.range"
+ },
+ {
+  "name": "TextModelSearch > findMatches with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > findMatches multiline with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > findNextMatch multiline with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > findPreviousMatch with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > findPreviousMatch multiline with capturing matches",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > \\n matches \\r\\n",
+  "na": "model.getEOL"
+ },
+ {
+  "name": "TextModelSearch > \\r can never be found",
+  "na": "model.getEOL"
+ },
+ {
+  "name": "TextModelSearch > parseSearchRequest invalid",
+  "na": "error: searchParams.parseSearchRequest is not a function"
+ },
+ {
+  "name": "TextModelSearch > parseSearchRequest non regex",
+  "na": "new SearchData"
+ },
+ {
+  "name": "TextModelSearch > parseSearchRequest regex",
+  "na": "new SearchData"
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #3",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #4",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #5",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #6",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #7",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #8",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #9",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #10",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #11",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #53415. W should match line break. #12",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Simple find using unicode escape sequences #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > Simple find using unicode escape sequences #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > isMultilineRegexSource",
+  "na": "isMultilineRegexSource()"
+ },
+ {
+  "name": "TextModelSearch > isMultilineRegexSource correctly identifies multiline patterns",
+  "na": "isMultilineRegexSource()"
+ },
+ {
+  "name": "TextModelSearch > issue #74715. \\d* finds empty string and stops searching.",
+  "na": "capturing matches"
+ },
+ {
+  "name": "TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #1",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #2",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #3",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ },
+ {
+  "name": "TextModelSearch > issue #100134. Zero-length matches should properly step over surrogate pairs #4",
+  "fixture": "textModelSearch.test.fixture",
+  "features": []
+ }
+]

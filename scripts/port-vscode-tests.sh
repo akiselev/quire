@@ -15,6 +15,7 @@ SUITES=(
   src/vs/editor/contrib/linesOperations/test/browser/linesOperations.test.ts
   src/vs/editor/contrib/multicursor/test/browser/multicursor.test.ts
   src/vs/editor/contrib/wordOperations/test/browser/wordOperations.test.ts
+  src/vs/editor/test/common/model/textModelSearch.test.ts
 )
 # PORT_ONLY=<substring> regenerates only matching suites (the others keep their fixtures).
 for rel in "${SUITES[@]}"; do

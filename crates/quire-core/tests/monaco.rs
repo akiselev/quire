@@ -24,6 +24,10 @@
 //! repeat cursorWordLeft position pos 1 1   repeat a command, recording the head (or `deleted`:
 //!                                        the deleted length) until a position (or `empty`)
 //! expectStops "|a |b"                    the recorded stops as pipes in the original text
+//! expectFindAll {query} => 1 1 1 4; …   all matches (VS Code TextModelSearch.findMatches)
+//! expectFindNext 1 1 {query} => r|none   the match found from a position (`end`: text end)
+//! expectFindPrev end {query} => r|none
+//! setEOL crlf                            no-op (the in-memory text is LF)
 //! columnSelect 4 15 [drag]             VS Code mouse column select to (line, mouseColumn)
 //! setValue "..."                         replace the text (a reload)
 //! expectMaxColumn 2 5                    VS Code getLineMaxColumn
@@ -242,6 +246,95 @@ fn run_case(c: &Case) -> Result<(), String> {
                         "selection: expected {}, got {}",
                         fmt_sel(doc.text(), &want),
                         fmt_sel(doc.text(), got)
+                    )));
+                }
+            }
+            "setEOL" => {
+                // The in-memory text is always LF; the file line ending does not change positions.
+            }
+            "expectFindAll" | "expectFindNext" | "expectFindPrev" => {
+                let (lhs, want) = rest
+                    .split_once(" => ")
+                    .ok_or_else(|| err("missing =>".into()))?;
+                let (pos_part, json) = match op {
+                    "expectFindAll" => ("", lhs),
+                    _ => {
+                        let i = lhs.find('{').ok_or_else(|| err("query".into()))?;
+                        (lhs[..i].trim(), &lhs[i..])
+                    }
+                };
+                let q: serde_json::Value =
+                    serde_json::from_str(json).map_err(|e| err(format!("query: {e}")))?;
+                let seps = q["wordSeparators"].as_str();
+                let query = quire_core::FindQuery {
+                    search_string: q["searchString"].as_str().unwrap_or("").into(),
+                    is_regex: q["isRegex"].as_bool().unwrap_or(false),
+                    match_case: q["matchCase"].as_bool().unwrap_or(false),
+                    whole_word: seps.is_some(),
+                };
+                let text = doc.text().clone();
+                let want_ranges: Vec<(usize, usize)> =
+                    if want.trim() == "none" || want.trim().is_empty() {
+                        Vec::new()
+                    } else {
+                        parse_sels(&text, want)
+                            .iter()
+                            .map(|r| (r.from(), r.to()))
+                            .collect()
+                    };
+                let fmt = |v: &[(usize, usize)]| {
+                    v.iter()
+                        .map(|(a, b)| format!("{} {}", fmt_pos(&text, *a), fmt_pos(&text, *b)))
+                        .collect::<Vec<_>>()
+                        .join("; ")
+                };
+                let got: Vec<(usize, usize)> = if op == "expectFindAll" {
+                    quire_core::find::find_all(&query, &text, seps.unwrap_or(""))
+                        .map_err(|e| err(format!("{e}")))?
+                        .into_iter()
+                        .map(|r| (r.start, r.end))
+                        .collect()
+                } else {
+                    let p = if pos_part == "end" {
+                        text.len_bytes()
+                    } else {
+                        let n = nums(pos_part);
+                        pos(&text, n[0], n[1])
+                    };
+                    let mut cfg = doc.config().clone();
+                    if let Some(s) = seps {
+                        cfg.word_separators = s.into();
+                    }
+                    let mut d = Document::new(&text.to_string(), cfg);
+                    let mut v = EditorView::new(&d);
+                    v.set_selection(&d, Selection::point(p));
+                    d.execute(&mut v, &EditorCommand::Find { query }, None)
+                        .map_err(|e| err(format!("{e}")))?;
+                    if op == "expectFindPrev" {
+                        v.set_selection(&d, Selection::point(p));
+                        d.execute(&mut v, &EditorCommand::FindPrevious, None)
+                            .map_err(|e| err(format!("{e}")))?;
+                    }
+                    let r = v.selection().primary();
+                    vec![(r.from(), r.to())]
+                };
+                // No match: the cursor stays where it was.
+                let want_ranges = if op != "expectFindAll" && want.trim() == "none" {
+                    let n = if pos_part == "end" {
+                        text.len_bytes()
+                    } else {
+                        let n = nums(pos_part);
+                        pos(&text, n[0], n[1])
+                    };
+                    vec![(n, n)]
+                } else {
+                    want_ranges
+                };
+                if got != want_ranges {
+                    return Err(err(format!(
+                        "matches: expected {}, got {}",
+                        fmt(&want_ranges),
+                        fmt(&got)
                     )));
                 }
             }

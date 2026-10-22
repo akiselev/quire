@@ -69,10 +69,20 @@ pub(crate) fn find_step(
         return Ok(CommandOutput::Nothing);
     };
     let p = view.selection().primary();
+    // A zero-length match at a cursor is the current match: step past it.
+    let on_empty = |m: &Range<usize>| p.is_empty() && m.start == p.head && m.end == p.head;
     let m = if forward {
-        next_from(&ms, if p.is_empty() { p.head } else { p.to() })
+        let from = if p.is_empty() { p.head } else { p.to() };
+        ms.iter()
+            .find(|m| m.start >= from && !on_empty(m))
+            .or(ms.first())
+            .cloned()
     } else {
-        prev_from(&ms, p.from())
+        ms.iter()
+            .rev()
+            .find(|m| m.end <= p.from() && !on_empty(m))
+            .or(ms.last())
+            .cloned()
     };
     Ok(match m {
         Some(m) => CommandOutput::Transaction(select_tr(doc, m)),
