@@ -99,5 +99,30 @@
   { "key": "shift+f3", "mac": "cmd+shift+g", "command": "editor.action.previousMatchFindAction" },
   { "mac": "shift+f3", "command": "editor.action.previousMatchFindAction" },
   { "key": "escape", "command": "closeFindWidget", "when": "findWidgetVisible" },
-  { "key": "shift+escape", "command": "closeFindWidget", "when": "findWidgetVisible" }
+  { "key": "shift+escape", "command": "closeFindWidget", "when": "findWidgetVisible" },
+
+  { "key": "tab", "command": "jumpToNextSnippetPlaceholder", "when": "inSnippetMode && hasNextTabstop" },
+  { "key": "shift+tab", "command": "jumpToPrevSnippetPlaceholder", "when": "inSnippetMode && hasPrevTabstop" },
+  { "key": "escape", "command": "leaveSnippet", "when": "inSnippetMode" },
+  { "key": "shift+escape", "command": "leaveSnippet", "when": "inSnippetMode" },
+
+  { "key": "ctrl+space", "command": "editor.action.triggerSuggest", "when": "!suggestWidgetVisible" },
+  { "key": "ctrl+i", "mac": "alt+escape", "command": "editor.action.triggerSuggest", "when": "!suggestWidgetVisible" },
+  { "mac": "cmd+i", "command": "editor.action.triggerSuggest", "when": "!suggestWidgetVisible" },
+  { "key": "ctrl+space", "command": "toggleSuggestionDetails", "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion" },
+  { "key": "ctrl+i", "mac": "cmd+i", "command": "toggleSuggestionDetails", "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion" },
+  { "key": "tab", "command": "acceptSelectedSuggestion", "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion" },
+  { "key": "enter", "command": "acceptSelectedSuggestion", "when": "suggestWidgetVisible && acceptSuggestionOnEnter && suggestionMakesTextEdit && suggestWidgetHasFocusedSuggestion" },
+  { "key": "down", "command": "selectNextSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "ctrl+down", "mac": "cmd+down", "command": "selectNextSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "mac": "ctrl+n", "command": "selectNextSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "up", "command": "selectPrevSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "ctrl+up", "mac": "cmd+up", "command": "selectPrevSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "mac": "ctrl+p", "command": "selectPrevSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "pagedown", "command": "selectNextPageSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "ctrl+pagedown", "mac": "cmd+pagedown", "command": "selectNextPageSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "pageup", "command": "selectPrevPageSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "ctrl+pageup", "mac": "cmd+pageup", "command": "selectPrevPageSuggestion", "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)" },
+  { "key": "escape", "command": "hideSuggestWidget", "when": "suggestWidgetVisible" },
+  { "key": "shift+escape", "command": "hideSuggestWidget", "when": "suggestWidgetVisible" }
 ]

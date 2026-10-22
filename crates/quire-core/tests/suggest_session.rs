@@ -721,3 +721,19 @@ fn item_command_retriggers_or_goes_to_the_host() {
     let outs = h.view.take_suggest_outputs();
     assert!(matches!(&outs[..], [SuggestOutput::Command(c)] if c.id == "host.cmd"));
 }
+
+#[test]
+fn quick_suggestions_off() {
+    let mut h = Host::new("abc def");
+    h.register(&[], always_something);
+    let mut cfg = h.doc.config().clone();
+    cfg.suggest.quick_suggestions = quire_core::completion::QuickSuggestions {
+        other: false,
+        comments: false,
+        strings: false,
+    };
+    h.doc.set_config(cfg);
+    h.set_pos(1, 4);
+    h.type_text("d");
+    assert!(!h.active());
+}

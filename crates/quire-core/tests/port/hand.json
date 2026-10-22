@@ -1,0 +1,1565 @@
+{
+ "vscode_sha": "bdce63db587665a91d1f1237b807d43471f0d9bc",
+ "suites": [
+  {
+   "suite": "completionModel.test.ts",
+   "vscode_path": "src/vs/editor/contrib/suggest/test/browser/completionModel.test.ts",
+   "file": "crates/quire-core/tests/suggest_model.rs",
+   "tests": [
+    [
+     "CompletionModel > filtering - cached",
+     {
+      "test": "filtering_cached"
+     }
+    ],
+    [
+     "CompletionModel > complete/incomplete",
+     {
+      "test": "complete_incomplete"
+     }
+    ],
+    [
+     "CompletionModel > Fuzzy matching of snippets stopped working with inline snippet suggestions #49895",
+     {
+      "test": "fuzzy_matching_of_snippets_49895"
+     }
+    ],
+    [
+     "CompletionModel > proper current word when length=0, #16380",
+     {
+      "test": "proper_current_word_when_length_0_16380"
+     }
+    ],
+    [
+     "CompletionModel > keep snippet sorting with prefix: top, #25495",
+     {
+      "test": "keep_snippet_sorting_top_25495"
+     }
+    ],
+    [
+     "CompletionModel > keep snippet sorting with prefix: bottom, #25495",
+     {
+      "test": "keep_snippet_sorting_bottom_25495"
+     }
+    ],
+    [
+     "CompletionModel > keep snippet sorting with prefix: inline, #25495",
+     {
+      "test": "keep_snippet_sorting_inline_25495"
+     }
+    ],
+    [
+     "CompletionModel > filterText seems ignored in autocompletion, #26874",
+     {
+      "test": "filter_text_seems_ignored_26874"
+     }
+    ],
+    [
+     "CompletionModel > Vscode 1.12 no longer obeys 'sortText' in completion items (from language server), #26096",
+     {
+      "test": "sort_text_from_language_server_26096"
+     }
+    ],
+    [
+     "CompletionModel > Completion item sorting broken when using label details #153026",
+     {
+      "test": "sorting_with_label_details_153026"
+     }
+    ],
+    [
+     "CompletionModel > Score only filtered items when typing more, score all when typing less",
+     {
+      "test": "score_only_filtered_items_when_typing_more"
+     }
+    ],
+    [
+     "CompletionModel > Have more relaxed suggest matching algorithm #15419",
+     {
+      "test": "more_relaxed_suggest_matching_15419"
+     }
+    ],
+    [
+     "CompletionModel > Emmet suggestion not appearing at the top of the list in jsx files, #39518",
+     {
+      "test": "emmet_suggestion_jsx_39518"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "filters.test.ts",
+   "vscode_path": "src/vs/base/test/common/filters.test.ts",
+   "file": "crates/quire-core/tests/suggest_filters.rs",
+   "tests": [
+    [
+     "Filters > or",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > PrefixFilter - case sensitive",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > PrefixFilter - ignore case",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > CamelCaseFilter",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > CamelCaseFilter - #19256",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > matchesContiguousSubString",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > matchesBaseContiguousSubString",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > matchesSubString",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > matchesSubString performance (#35346)",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > WordFilter",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > matchesWords performance (#309582)",
+     {
+      "na": "not the suggest scorer: quire ports only fuzzyScore and its variants (matchesPrefix, matchesCamelCase, matchesWords and `or` serve other VS Code lists)"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23215",
+     {
+      "test": "fuzzy_score_23215"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23332",
+     {
+      "test": "fuzzy_score_23332"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23190",
+     {
+      "test": "fuzzy_score_23190"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23581",
+     {
+      "test": "fuzzy_score_23581"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23458",
+     {
+      "test": "fuzzy_score_23458"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, #23746",
+     {
+      "test": "fuzzy_score_23746"
+     }
+    ],
+    [
+     "Filters > fuzzyScore",
+     {
+      "test": "fuzzy_score_basic"
+     }
+    ],
+    [
+     "Filters > fuzzyScore (first match can be weak)",
+     {
+      "test": "fuzzy_score_first_match_can_be_weak"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, many matches",
+     {
+      "test": "fuzzy_score_many_matches"
+     }
+    ],
+    [
+     "Filters > Freeze when fjfj -> jfjf, https://github.com/microsoft/vscode/issues/91807",
+     {
+      "test": "freeze_when_fjfj_jfjf_91807"
+     }
+    ],
+    [
+     "Filters > fuzzyScore, issue #26423",
+     {
+      "test": "fuzzy_score_26423"
+     }
+    ],
+    [
+     "Filters > Fuzzy IntelliSense matching vs Haxe metadata completion, #26995",
+     {
+      "test": "haxe_metadata_26995"
+     }
+    ],
+    [
+     "Filters > Separator only match should not be weak #79558",
+     {
+      "test": "separator_only_match_79558"
+     }
+    ],
+    [
+     "Filters > Cannot set property '1' of undefined, #26511",
+     {
+      "test": "cannot_set_property_26511"
+     }
+    ],
+    [
+     "Filters > Vscode 1.12 no longer obeys 'sortText' in completion items (from language server), #26096",
+     {
+      "test": "sort_text_26096"
+     }
+    ],
+    [
+     "Filters > patternPos isn't working correctly #79815",
+     {
+      "test": "pattern_pos_79815"
+     }
+    ],
+    [
+     "Filters > topScore - fuzzyScore",
+     {
+      "test": "top_score_fuzzy_score"
+     }
+    ],
+    [
+     "Filters > Unexpected suggestion scoring, #28791",
+     {
+      "test": "unexpected_suggestion_scoring_28791"
+     }
+    ],
+    [
+     "Filters > Bad completion ranking changes valid variable name to class name when pressing \".\" #187055",
+     {
+      "na": "skipped upstream (test.skip)"
+     }
+    ],
+    [
+     "Filters > HTML closing tag proposal filtered out #38880",
+     {
+      "test": "html_closing_tag_38880"
+     }
+    ],
+    [
+     "Filters > fuzzyScoreGraceful",
+     {
+      "test": "fuzzy_score_graceful_test"
+     }
+    ],
+    [
+     "Filters > List highlight filter: Not all characters from match are highlighterd #66923",
+     {
+      "test": "list_highlight_filter_66923"
+     }
+    ],
+    [
+     "Filters > Autocompletion is matched against truncated filterText to 54 characters #74133",
+     {
+      "test": "truncated_filter_text_74133"
+     }
+    ],
+    [
+     "Filters > \"Go to Symbol\" with the exact method name doesn't work as expected #84787",
+     {
+      "test": "go_to_symbol_exact_method_name_84787"
+     }
+    ],
+    [
+     "Filters > Wrong highlight after emoji #113404",
+     {
+      "test": "wrong_highlight_after_emoji_113404"
+     }
+    ],
+    [
+     "Filters > Suggestion is not highlighted #85826",
+     {
+      "test": "suggestion_not_highlighted_85826"
+     }
+    ],
+    [
+     "Filters > IntelliSense completion not correctly highlighting text in front of cursor #115250",
+     {
+      "test": "highlighting_text_in_front_of_cursor_115250"
+     }
+    ],
+    [
+     "Filters > anyScore should not require a strong first match",
+     {
+      "test": "any_score_no_strong_first_match"
+     }
+    ],
+    [
+     "Filters > configurable full match boost",
+     {
+      "test": "configurable_full_match_boost"
+     }
+    ],
+    [
+     "Filters > Unexpected suggest highlighting ignores whole word match in favor of matching first letter#147423",
+     {
+      "test": "whole_word_match_147423"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "snippetController2.old.test.ts",
+   "vscode_path": "src/vs/editor/contrib/snippet/test/browser/snippetController2.old.test.ts",
+   "file": "crates/quire-core/tests/snippet_session.rs",
+   "tests": [
+    [
+     "SnippetController > Simple accepted",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Simple canceled",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when deleting lines above",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when deleting lines below",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when inserting lines above",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when inserting lines below",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when calling model.setValue()",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when undoing",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when moving cursor outside",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Stops when disconnecting editor model",
+     {
+      "na": "editor model lifecycle"
+     }
+    ],
+    [
+     "SnippetController > Stops when disposing editor",
+     {
+      "na": "editor lifecycle"
+     }
+    ],
+    [
+     "SnippetController > Final tabstop with multiple selections",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Final tabstop, #11742 simple",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Final tabstop, #11742 different indents",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Final tabstop, #11890 stay at the beginning",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Final tabstop, no tabstop",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Multiple cursor and overwriteBefore/After, issue #11060",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Multiple cursor and overwriteBefore/After, #16277",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController > Insert snippet twice, #19449",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "snippetController2.test.ts",
+   "vscode_path": "src/vs/editor/contrib/snippet/test/browser/snippetController2.test.ts",
+   "file": "crates/quire-core/tests/snippet_session.rs",
+   "tests": [
+    [
+     "SnippetController2 > creation",
+     {
+      "na": "contribution lifecycle"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert -> abort",
+     {
+      "ours": "no soft cancel that keeps added cursors: leaveSnippet is VS Code's hard cancel (cancel(true))"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert -> tab, tab, done",
+     {
+      "test": "insert_tab_tab_done"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert -> cursor moves out (left/right)",
+     {
+      "test": "insert_cursor_moves_out_left_right"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert -> cursor moves out (up/down)",
+     {
+      "test": "insert_cursor_moves_out_up_down"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert -> cursors collapse",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > insert, insert plain text -> no snippet mode",
+     {
+      "test": "insert_plain_text_no_snippet_mode"
+     }
+    ],
+    [
+     "SnippetController2 > insert, delete snippet text",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > insert, nested trivial snippet",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > insert, nested snippet",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > insert, nested plain text",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > HTML Snippets Combine, #32211",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Problems with nested snippet insertion #39594",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Problems with nested snippet insertion #39594 (part2)",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetController2 > Placeholders order #58267",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > Must tab through deleted tab stops in snippets #31619",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (soft cancel)",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (hard cancel)",
+     {
+      "test": "cancelling_discards_added_cursors_68512_hard"
+     }
+    ],
+    [
+     "SnippetController2 > User defined snippet tab stops ignored #72862",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > Optional tabstop in snippets #72358",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > issue #90135: confusing trim whitespace edits",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (1 of 2)",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (2 of 2)",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > leading TAB by snippets won't replace by spaces #101870",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > leading TAB by snippets won't replace by spaces #101870 (part 2)",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetController2 > Snippet transformation does not work after inserting variable using intellisense, #112362",
+     {
+      "na": "skipped upstream (test.skip)"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > apply, tab, done",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > apply, tab, done with special final tabstop",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > apply, tab, tab, done",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > nested into apply works",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > nested into insert abort \"outer\" snippet",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > nested into \"insert\" abort \"outer\" snippet (2)",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > Bug: cursor position $0 with user snippets #163808",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > EOL-Sequence (CRLF) shifts tab stop in isFileTemplate snippets #167386",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > \"Surround With\" code action snippets use incorrect indentation levels and styles #169319",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > $TM_SELECTED_TEXT resolves per edit, not the last selection (multi-cursor wrap snippet) #206121",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > apply with multiple cursors threads $CURSOR_NUMBER per edit",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > undo restores original selection after apply (regression for #170041)",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "snippetParser.test.ts",
+   "vscode_path": "src/vs/editor/contrib/snippet/test/browser/snippetParser.test.ts",
+   "file": "crates/quire-core/tests/snippet_parser.rs",
+   "tests": [
+    [
+     "SnippetParser > Scanner",
+     {
+      "test": "scanner"
+     }
+    ],
+    [
+     "SnippetParser > Parser, escaped",
+     {
+      "test": "parser_escaped"
+     }
+    ],
+    [
+     "SnippetParser > Parser, text",
+     {
+      "test": "parser_text"
+     }
+    ],
+    [
+     "SnippetParser > Parser, TM text",
+     {
+      "test": "parser_tm_text"
+     }
+    ],
+    [
+     "SnippetParser > Parser, placeholder",
+     {
+      "test": "parser_placeholder"
+     }
+    ],
+    [
+     "SnippetParser > Parser, literal code",
+     {
+      "test": "parser_literal_code"
+     }
+    ],
+    [
+     "SnippetParser > Parser, variables/tabstop",
+     {
+      "test": "parser_variables_tabstop"
+     }
+    ],
+    [
+     "SnippetParser > Parser, variables/placeholder with defaults",
+     {
+      "test": "parser_variables_placeholder_with_defaults"
+     }
+    ],
+    [
+     "SnippetParser > Parser, variable transforms",
+     {
+      "test": "parser_variable_transforms"
+     }
+    ],
+    [
+     "SnippetParser > Parser, placeholder transforms",
+     {
+      "test": "parser_placeholder_transforms"
+     }
+    ],
+    [
+     "SnippetParser > No way to escape forward slash in snippet regex #36715",
+     {
+      "test": "escape_forward_slash_in_regex_36715"
+     }
+    ],
+    [
+     "SnippetParser > No way to escape forward slash in snippet format section #37562",
+     {
+      "test": "escape_forward_slash_in_format_37562"
+     }
+    ],
+    [
+     "SnippetParser > Parser, placeholder with choice",
+     {
+      "test": "parser_placeholder_with_choice"
+     }
+    ],
+    [
+     "SnippetParser > Snippet choices: unable to escape comma and pipe, #31521",
+     {
+      "test": "choices_escape_comma_and_pipe_31521"
+     }
+    ],
+    [
+     "SnippetParser > Marker, toTextmateString()",
+     {
+      "test": "marker_to_textmate_string"
+     }
+    ],
+    [
+     "SnippetParser > Marker, toTextmateString() <-> identity",
+     {
+      "test": "marker_to_textmate_string_identity"
+     }
+    ],
+    [
+     "SnippetParser > Parser, choise marker",
+     {
+      "test": "parser_choice_marker"
+     }
+    ],
+    [
+     "SnippetParser > Backslash character escape in choice tabstop doesn't work #58494",
+     {
+      "test": "backslash_escape_in_choice_58494"
+     }
+    ],
+    [
+     "SnippetParser > Parser, only textmate",
+     {
+      "test": "parser_only_textmate"
+     }
+    ],
+    [
+     "SnippetParser > Parser, real world",
+     {
+      "test": "parser_real_world"
+     }
+    ],
+    [
+     "SnippetParser > Parser, transform example",
+     {
+      "test": "parser_transform_example"
+     }
+    ],
+    [
+     "SnippetParser > Parser, default placeholder values",
+     {
+      "test": "parser_default_placeholder_values"
+     }
+    ],
+    [
+     "SnippetParser > Parser, default placeholder values and one transform",
+     {
+      "test": "parser_default_placeholder_values_and_one_transform"
+     }
+    ],
+    [
+     "SnippetParser > Repeated snippet placeholder should always inherit, #31040",
+     {
+      "test": "repeated_placeholder_should_inherit_31040"
+     }
+    ],
+    [
+     "SnippetParser > backspace esapce in TM only, #16212",
+     {
+      "test": "backspace_escape_in_tm_only_16212"
+     }
+    ],
+    [
+     "SnippetParser > colon as variable/placeholder value, #16717",
+     {
+      "test": "colon_as_variable_placeholder_value_16717"
+     }
+    ],
+    [
+     "SnippetParser > incomplete placeholder",
+     {
+      "test": "incomplete_placeholder"
+     }
+    ],
+    [
+     "SnippetParser > marker#len",
+     {
+      "test": "marker_len"
+     }
+    ],
+    [
+     "SnippetParser > parser, parent node",
+     {
+      "test": "parser_parent_node"
+     }
+    ],
+    [
+     "SnippetParser > TextmateSnippet#enclosingPlaceholders",
+     {
+      "test": "enclosing_placeholders"
+     }
+    ],
+    [
+     "SnippetParser > TextmateSnippet#offset",
+     {
+      "test": "snippet_offset"
+     }
+    ],
+    [
+     "SnippetParser > TextmateSnippet#placeholder",
+     {
+      "test": "snippet_placeholder"
+     }
+    ],
+    [
+     "SnippetParser > TextmateSnippet#replace 1/2",
+     {
+      "test": "snippet_replace_1"
+     }
+    ],
+    [
+     "SnippetParser > TextmateSnippet#replace 2/2",
+     {
+      "test": "snippet_replace_2"
+     }
+    ],
+    [
+     "SnippetParser > Snippet order for placeholders, #28185",
+     {
+      "test": "placeholder_order_28185"
+     }
+    ],
+    [
+     "SnippetParser > Maximum call stack size exceeded, #28983",
+     {
+      "test": "maximum_call_stack_28983"
+     }
+    ],
+    [
+     "SnippetParser > Snippet can freeze the editor, #30407",
+     {
+      "test": "snippet_can_freeze_the_editor_30407"
+     }
+    ],
+    [
+     "SnippetParser > Snippets: make parser ignore `${0|choice|}`, #31599",
+     {
+      "test": "parser_ignores_choice_on_final_tabstop_31599"
+     }
+    ],
+    [
+     "SnippetParser > Transform -> FormatString#resolve",
+     {
+      "test": "transform_format_string_resolve"
+     }
+    ],
+    [
+     "SnippetParser > Unicode Variable Transformations",
+     {
+      "test": "unicode_variable_transformations"
+     }
+    ],
+    [
+     "SnippetParser > Snippet variable transformation doesn't work if regex is complicated and snippet body contains '$$' #55627",
+     {
+      "test": "transform_with_complicated_regex_and_dollars_55627"
+     }
+    ],
+    [
+     "SnippetParser > [BUG] HTML attribute suggestions: Snippet session does not have end-position set, #33147",
+     {
+      "test": "html_attribute_end_position_33147"
+     }
+    ],
+    [
+     "SnippetParser > Snippet optional transforms are not applied correctly when reusing the same variable, #37702",
+     {
+      "test": "optional_transforms_reusing_variable_37702"
+     }
+    ],
+    [
+     "SnippetParser > problem with snippets regex #40570",
+     {
+      "test": "problem_with_snippets_regex_40570"
+     }
+    ],
+    [
+     "SnippetParser > Variable transformation doesn't work if undefined variables are used in the same snippet #51769",
+     {
+      "test": "undefined_variables_in_same_snippet_51769"
+     }
+    ],
+    [
+     "SnippetParser > transform serialization joins children without comma",
+     {
+      "test": "transform_serialization_joins_children_without_comma"
+     }
+    ],
+    [
+     "SnippetParser > Snippet parser freeze #53144",
+     {
+      "test": "snippet_parser_freeze_53144"
+     }
+    ],
+    [
+     "SnippetParser > snippets variable not resolved in JSON proposal #52931",
+     {
+      "test": "variable_not_resolved_in_json_proposal_52931"
+     }
+    ],
+    [
+     "SnippetParser > Mirroring sequence of nested placeholders not selected properly on backjumping #58736",
+     {
+      "test": "mirroring_nested_placeholders_backjumping_58736"
+     }
+    ],
+    [
+     "SnippetParser > Backspace can't be escaped in snippet variable transforms #65412",
+     {
+      "test": "backspace_escaped_in_variable_transforms_65412"
+     }
+    ],
+    [
+     "SnippetParser > Snippet cannot escape closing bracket inside conditional insertion variable replacement #78883",
+     {
+      "test": "escape_closing_bracket_in_conditional_78883"
+     }
+    ],
+    [
+     "SnippetParser > Snippet escape backslashes inside conditional insertion variable replacement #80394",
+     {
+      "test": "escape_backslashes_in_conditional_80394"
+     }
+    ],
+    [
+     "SnippetParser > Snippet placeholder empty right after expansion #152553",
+     {
+      "test": "placeholder_empty_right_after_expansion_152553"
+     }
+    ],
+    [
+     "SnippetParser > Snippet choices are incorrectly escaped/applied #180132",
+     {
+      "test": "choices_incorrectly_escaped_180132"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "snippetSession.test.ts",
+   "vscode_path": "src/vs/editor/contrib/snippet/test/browser/snippetSession.test.ts",
+   "file": "crates/quire-core/tests/snippet_session.rs",
+   "tests": [
+    [
+     "SnippetSession > normalize whitespace",
+     {
+      "test": "normalize_whitespace"
+     }
+    ],
+    [
+     "SnippetSession > adjust selection (overwrite[Before|After])",
+     {
+      "na": "internal helper (adjustSelection); overwriteBefore/After is covered through accepting completions"
+     }
+    ],
+    [
+     "SnippetSession > text edits & selection",
+     {
+      "test": "text_edits_and_selection"
+     }
+    ],
+    [
+     "SnippetSession > text edit with reversed selection",
+     {
+      "test": "text_edit_with_reversed_selection"
+     }
+    ],
+    [
+     "SnippetSession > snippets, repeated tabstops",
+     {
+      "test": "repeated_tabstops"
+     }
+    ],
+    [
+     "SnippetSession > snippets, just text",
+     {
+      "test": "just_text"
+     }
+    ],
+    [
+     "SnippetSession > snippets, selections and new text with newlines",
+     {
+      "test": "selections_and_new_text_with_newlines"
+     }
+    ],
+    [
+     "SnippetSession > snippets, newline NO whitespace adjust",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, selections -> next/prev",
+     {
+      "test": "selections_next_prev"
+     }
+    ],
+    [
+     "SnippetSession > snippets, selections & typing",
+     {
+      "test": "selections_and_typing"
+     }
+    ],
+    [
+     "SnippetSession > snippets, insert shorter snippet into non-empty selection",
+     {
+      "test": "insert_shorter_snippet_into_non_empty_selection"
+     }
+    ],
+    [
+     "SnippetSession > snippets, insert longer snippet into non-empty selection",
+     {
+      "test": "insert_longer_snippet_into_non_empty_selection"
+     }
+    ],
+    [
+     "SnippetSession > snippets, don't grow final tabstop",
+     {
+      "ours": "snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev"
+     }
+    ],
+    [
+     "SnippetSession > snippets, don't merge touching tabstops 1/2",
+     {
+      "ours": "snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev"
+     }
+    ],
+    [
+     "SnippetSession > snippets, don't merge touching tabstops 2/2",
+     {
+      "test": "dont_merge_touching_tabstops_2"
+     }
+    ],
+    [
+     "SnippetSession > snippets, gracefully move over final tabstop",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, overwriting nested placeholder",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, selections and snippet ranges",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, nested sessions",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, typing at final tabstop",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, typing at beginning",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, typing with nested placeholder",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, snippet with variables",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, merge",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, next does not throw when placeholder decorations are missing",
+     {
+      "na": "editor decorations"
+     }
+    ],
+    [
+     "SnippetSession > snippets, deep merge does not produce phantom cursors (#279349)",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, merge preserves mirrors in nested snippet",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position",
+     {
+      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, transform",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, multi placeholder same index one transform",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, transform example",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, transform with indent",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > snippets, transform example hit if",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Snippet tab stop selection issue #96545",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Snippet variable text isn't whitespace normalised, #31124",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Selecting text from left to right, and choosing item messes up code, #31199",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "SnippetSession > Tabs don't get replaced with spaces in snippet transformations #103818",
+     {
+      "ours": "not yet ported (model-level; listed for the next completion lane)"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > empty",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > basic",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > with $SELECTION variable",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > $TM_SELECTED_TEXT resolves per edit, not the primary selection #206121",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > $TM_LINE_NUMBER resolves per edit",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > per-edit resolution does not corrupt earlier edits when value lengths differ",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > $CURSOR_NUMBER uses caller-supplied edit order, not range-sorted order",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ],
+    [
+     "createEditsAndSnippetsFromEdits > cross-edit placeholder backfill resolves variables in earlier edit",
+     {
+      "na": "createEditsAndSnippetsFromEdits (snippet edits at arbitrary ranges, VS Code's insertSnippet with edits): not offered"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "suggestModel.test.ts",
+   "vscode_path": "src/vs/editor/contrib/suggest/test/browser/suggestModel.test.ts",
+   "file": "crates/quire-core/tests/suggest_session.rs",
+   "tests": [
+    [
+     "SuggestModel - Context > Context - shouldAutoTrigger",
+     {
+      "test": "context_should_auto_trigger"
+     }
+    ],
+    [
+     "SuggestModel - Context > shouldAutoTrigger at embedded language boundaries",
+     {
+      "na": "embedded-language tokens: quire's word rules are per document, not per embedded language"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > events - cancel/trigger",
+     {
+      "test": "events_cancel_trigger"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > events - suggest/empty",
+     {
+      "test": "events_suggest_empty"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > trigger - on type",
+     {
+      "test": "trigger_on_type"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > #17400: Keep filtering suggestModel.ts after space",
+     {
+      "test": "keep_filtering_after_space_17400"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > #21484: Trigger character always force a new completion session",
+     {
+      "test": "trigger_character_forces_new_session_21484"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Intellisense Completion doesn't respect space after equal sign (.html file), #29353 [1/2]",
+     {
+      "test": "space_after_equal_sign_29353_1"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Intellisense Completion doesn't respect space after equal sign (.html file), #29353 [2/2]",
+     {
+      "test": "space_after_equal_sign_29353_2"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Incomplete suggestion results cause re-triggering when typing w/o further context, #28400 (1/2)",
+     {
+      "test": "incomplete_results_retrigger_28400_1"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Incomplete suggestion results cause re-triggering when typing w/o further context, #28400 (2/2)",
+     {
+      "test": "incomplete_results_retrigger_28400_2"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Trigger character is provided in suggest context",
+     {
+      "test": "trigger_character_in_suggest_context"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Mac press and hold accent character insertion does not update suggestions, #35269",
+     {
+      "na": "an API edit (executeEdits) in the middle of a session: quire cancels on any non-typing transaction, as VS Code does after its refilter; press-and-hold input is IME composition in quire"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Backspace should not always cancel code completion, #36491",
+     {
+      "test": "backspace_should_not_always_cancel_36491"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Text changes for completion CodeAction are affected by the completion #39893",
+     {
+      "test": "completion_code_action_text_changes_39893"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Completion unexpectedly triggers on second keypress of an edit group in a snippet #43523",
+     {
+      "test": "second_keypress_in_snippet_43523"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Fails to render completion details #47988",
+     {
+      "na": "provider result disposal (CompletionList.dispose): quire holds plain data"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Trigger (full) completions when (incomplete) completions are already active #99504",
+     {
+      "test": "trigger_full_when_incomplete_active_99504"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > registerCompletionItemProvider with letters as trigger characters block other completion items to show up #127815",
+     {
+      "test": "letters_as_trigger_characters_127815"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Unexpected suggest scoring #167242",
+     {
+      "test": "unexpected_suggest_scoring_167242"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Completion list closes unexpectedly when typing a digit after a word separator #169390",
+     {
+      "test": "digit_after_word_separator_169390"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Set refilter-flag, keep triggerKind",
+     {
+      "test": "set_refilter_flag_keep_trigger_kind"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > Snippets gone from IntelliSense #173244",
+     {
+      "na": "VS Code's global snippet provider (setSnippetSuggestSupport): quire has none; hosts supply snippets as a source"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when inline provider returns empty results",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when no inline provider exists",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > offWhenInlineCompletions - allows quick suggest when inlineSuggest is disabled",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > string shorthand - \"off\" disables quick suggestions for all token types",
+     {
+      "test": "quick_suggestions_off"
+     }
+    ],
+    [
+     "SuggestModel - TriggerAndCancelOracle > string shorthand - \"offWhenInlineCompletions\" allows quick suggest when inline provider returns empty",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - offWhenInlineCompletions with InlineCompletionsController > suppresses quick suggest when inline completions are showing ghost text",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - offWhenInlineCompletions with InlineCompletionsController > allows quick suggest when inline completions resolve with no results",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - offWhenInlineCompletions with InlineCompletionsController > allows quick suggest when inlineSuggest is disabled even with provider",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ],
+    [
+     "SuggestModel - offWhenInlineCompletions with InlineCompletionsController > does not trigger after the inline model is disposed mid-wait (e.g., readonly toggled)",
+     {
+      "na": "inline completions (ghost text) are not part of quire"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "wordDistance.test.ts",
+   "vscode_path": "src/vs/editor/contrib/suggest/test/browser/wordDistance.test.ts",
+   "file": "crates/quire-core/tests/suggest_session.rs",
+   "tests": [
+    [
+     "suggest, word distance > Suggest locality bonus can boost current word #90515",
+     {
+      "ours": "no word-distance locality bonus (editor.suggest.localityBonus, default off, not implemented)"
+     }
+    ]
+   ]
+  }
+ ],
+ "departures": [
+  [
+   "quickSuggestionsDelay",
+   "quick suggestions are requested on the keystroke, not after VS Code's 10 ms editor.quickSuggestionsDelay (quire-core has no clock; typing inside a session only refilters)"
+  ],
+  [
+   "suggest.localityBonus",
+   "no word-distance locality bonus (default off in VS Code)"
+  ]
+ ]
+}

@@ -7,7 +7,13 @@ from, the projects below. Each translated file also carries the notice in its he
 
 Test cases under `fixtures/monaco/` and tests under `crates/*/tests/vscode_*` are translated from
 <https://github.com/microsoft/vscode> (`src/vs/editor/test/**`, `src/vs/editor/contrib/**/test/**`).
-Algorithms translated from VS Code are marked in their file headers.
+Algorithms translated from VS Code are marked in their file headers: among them the suggest
+scorer, completion model, suggest session and snippet parser and session in
+`crates/quire-core/src/completion/` (`src/vs/base/common/filters.ts`,
+`src/vs/editor/contrib/suggest/browser/**`, `src/vs/editor/contrib/snippet/browser/**`). The
+tests `crates/quire-core/tests/{suggest_filters,suggest_model,suggest_session,snippet_parser,snippet_session}.rs`
+are translated from `src/vs/base/test/common/filters.test.ts` and
+`src/vs/editor/contrib/{suggest,snippet}/test/**`.
 `crates/egui_quire/keymaps/vscode-default.json` is a subset of VS Code's default editor key
 bindings (JSON has no comments, so its notice is this entry).
 

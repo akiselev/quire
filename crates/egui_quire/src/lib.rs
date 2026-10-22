@@ -22,6 +22,7 @@ pub mod keymap;
 #[doc(hidden)]
 pub mod layout;
 mod paint;
+mod suggest_widget;
 pub mod theme;
 mod widths;
 mod wrap;
@@ -33,5 +34,6 @@ pub use editor::{CodeEditor, EditorEvent, EditorOutput, KeyHandling, default_key
 pub use find_bar::{query_id as find_query_id, replace_id as find_replace_id};
 pub use glue::FindOptions;
 pub use height::HeightIndex;
+pub use suggest_widget::{details_id as suggest_details_id, list_id as suggest_list_id};
 pub use keymap::{KeyLookup, Keymap};
 pub use theme::{EditorText, EditorTheme};

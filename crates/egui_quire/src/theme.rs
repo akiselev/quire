@@ -160,6 +160,12 @@ pub struct EditorText {
     /// Announced (AccessKit polite live region) when the accessibility page shifts to follow
     /// the caret; `{line}` is the 1-based line number.
     pub line_announcement: String,
+    /// The suggest list's accessible name (VS Code "Suggest").
+    pub suggest_label: String,
+    /// Shown while a manual request waits (VS Code "Loading...").
+    pub suggest_loading: String,
+    /// Shown when a manual request found nothing (VS Code "No suggestions.").
+    pub suggest_empty: String,
 }
 
 impl Default for EditorText {
@@ -180,6 +186,9 @@ impl Default for EditorText {
             match_count: "{current} of {total}".into(),
             no_results: "No results".into(),
             line_announcement: "Line {line}".into(),
+            suggest_label: "Suggest".into(),
+            suggest_loading: "Loading...".into(),
+            suggest_empty: "No suggestions.".into(),
         }
     }
 }

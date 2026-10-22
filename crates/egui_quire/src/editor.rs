@@ -79,6 +79,33 @@ pub enum EditorEvent {
         command_id: String,
         args: serde_json::Value,
     },
+    /// The suggest session asks the host's providers for items (VS Code
+    /// `provideCompletionItems`). Answer, now or later, with
+    /// `EditorView::set_completions(doc, id, version, lists)`.
+    CompletionRequested {
+        id: quire_core::completion::CompletionRequestId,
+        /// The cursor, in bytes at `version`.
+        pos: usize,
+        version: Version,
+        trigger: quire_core::completion::CompletionTriggerKind,
+        /// `false` for Ctrl+Space.
+        auto: bool,
+        /// The sources to ask (`None`: all).
+        sources: Option<Vec<quire_core::SourceId>>,
+    },
+    /// The focused item wants resolving (VS Code `resolveCompletionItem`); answer with
+    /// `EditorView::resolve_completion_item`.
+    CompletionResolveRequested {
+        id: quire_core::completion::CompletionRequestId,
+        source: quire_core::SourceId,
+        index: usize,
+        item: Arc<quire_core::completion::CompletionItem>,
+    },
+    /// An accepted item's command, for the host's registry.
+    CompletionCommand {
+        command_id: String,
+        args: serde_json::Value,
+    },
 }
 
 /// What one frame of the editor produced.
@@ -156,6 +183,8 @@ pub(crate) struct Mem {
     pub pending_chord: Option<crate::chord::Chord>,
     /// The last key event was a press the keymap consumed: the `Text` it produced is dropped.
     pub key_consumed: bool,
+    /// The manual suggest request waiting since (for VS Code's "Loading..." delay).
+    pub suggest_loading_since: Option<(quire_core::completion::CompletionRequestId, f64)>,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
     /// Reused per frame so clean frames do not allocate (E1).
@@ -602,6 +631,10 @@ impl<'a> CodeEditor<'a> {
             if !focused && glue::preedit(frame.view).is_some() {
                 glue::set_preedit(frame.view, None);
             }
+            if !focused {
+                // VS Code cancels suggest when the editor loses focus.
+                frame.view.cancel_suggest();
+            }
         }
 
         // Keyboard, text, IME, clipboard.
@@ -624,6 +657,12 @@ impl<'a> CodeEditor<'a> {
         if frame.mem.find.open {
             crate::find_bar::show(&mut frame, ui, text);
         }
+
+        // The suggest list (a foreground area at the caret).
+        if focused {
+            crate::suggest_widget::show(&mut frame, ui, caret_rect, text);
+        }
+        frame.drain_suggest();
 
         // Diagnostics hover.
         frame.diagnostic_hover(ui, &response);
@@ -651,7 +690,9 @@ impl<'a> CodeEditor<'a> {
         if ctx.memory(|m| m.has_focus(id)) {
             let escape = glue::preedit(frame.view).is_some()
                 || frame.mem.find.open
-                || frame.mem.pending_chord.is_some();
+                || frame.mem.pending_chord.is_some()
+                || frame.view.suggest().is_visible()
+                || frame.view.snippet().is_some();
             ctx.memory_mut(|m| {
                 m.set_focus_lock_filter(
                     id,
@@ -884,6 +925,13 @@ impl FrameCx<'_> {
         }
         if self.read_only && glue::changes_text(&cmd) {
             return;
+        }
+        // A commit character accepts the focused suggestion first (VS Code
+        // CommitCharacterController), then types.
+        if let EditorCommand::Type { text } = &cmd
+            && self.view.suggest().accepts_on(self.doc, text)
+        {
+            self.dispatch(EditorCommand::AcceptSelectedSuggestion);
         }
         let time_ms = (self.now() * 1000.0) as u64;
         match glue::run(self.doc, self.view, &cmd, time_ms, self.author) {
@@ -1321,9 +1369,54 @@ impl FrameCx<'_> {
     }
 
     fn when_context(&self) -> WhenContext {
+        let st = self.view.suggest();
+        let snippet = self.view.snippet();
+        let focused = st.focused().is_some();
         WhenContext {
             find_widget_visible: self.mem.find.open,
             multiple_selections: glue::selection(self.view).len() > 1,
+            suggest_widget_visible: st.is_visible(),
+            suggest_widget_has_focused_suggestion: focused,
+            suggest_widget_multiple_suggestions: st.items().len() > 1,
+            accept_suggestion_on_enter: self.doc.config().suggest.accept_suggestion_on_enter
+                != quire_core::completion::AcceptSuggestionOnEnter::Off,
+            suggestion_makes_text_edit: !focused
+                || st.makes_text_edit(self.doc, glue::selection(self.view)),
+            in_snippet_mode: snippet.is_some(),
+            has_next_tabstop: snippet.is_some_and(|s| s.has_next()),
+            has_prev_tabstop: snippet.is_some_and(|s| s.has_prev()),
+        }
+    }
+
+    /// What the view's suggest session wants from the host, as events.
+    pub(crate) fn drain_suggest(&mut self) {
+        use quire_core::completion::SuggestOutput as O;
+        for o in self.view.take_suggest_outputs() {
+            self.out.events.push(match o {
+                O::Request(r) => EditorEvent::CompletionRequested {
+                    id: r.id,
+                    pos: r.pos,
+                    version: r.version,
+                    trigger: r.trigger,
+                    auto: r.auto,
+                    sources: r.sources,
+                },
+                O::Resolve {
+                    id,
+                    source,
+                    index,
+                    item,
+                } => EditorEvent::CompletionResolveRequested {
+                    id,
+                    source,
+                    index,
+                    item,
+                },
+                O::Command(c) => EditorEvent::CompletionCommand {
+                    command_id: c.id,
+                    args: serde_json::from_str(&c.args_json).unwrap_or(serde_json::Value::Null),
+                },
+            });
         }
     }
 

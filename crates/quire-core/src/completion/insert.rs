@@ -79,12 +79,20 @@ impl SnippetSession {
     /// others stay put.
     pub(crate) fn map(&mut self, c: &ChangeSet) {
         let cur = self.current;
+        // An empty inactive placeholder at the end of an active one follows what is typed
+        // there (VS Code: `$1$2` keeps `$2` after the text typed into `$1`).
+        let active_ends: Vec<usize> = self.groups[cur].ranges.iter().map(|r| r.end).collect();
         for (i, g) in self.groups.iter_mut().enumerate() {
             for r in &mut g.ranges {
                 let (s, e) = if i == cur {
                     (c.map_pos(r.start, Bias::Before), c.map_pos(r.end, Bias::After))
                 } else if r.start == r.end {
-                    let p = c.map_pos(r.start, Bias::Before);
+                    let bias = if active_ends.contains(&r.start) {
+                        Bias::After
+                    } else {
+                        Bias::Before
+                    };
+                    let p = c.map_pos(r.start, bias);
                     (p, p)
                 } else {
                     (c.map_pos(r.start, Bias::After), c.map_pos(r.end, Bias::Before))
@@ -194,7 +202,8 @@ fn adjust_whitespace(snippet: &mut Snippet, line_leading_ws: &str, adjust: bool,
         let Marker::Text(value) = snippet.marker(m).clone() else {
             continue;
         };
-        let mut lines: Vec<String> = value.split('\n').map(str::to_string).collect();
+        let value_n = crate::text::normalize_line_endings(&value).into_owned();
+        let mut lines: Vec<String> = value_n.split('\n').map(str::to_string).collect();
         let offset = snippet.offset(m).unwrap_or(0);
         if offset == 0 {
             lines[0] = normalize_indentation(&lines[0], cfg);
@@ -212,6 +221,17 @@ fn adjust_whitespace(snippet: &mut Snippet, line_leading_ws: &str, adjust: bool,
             snippet.set_text(m, new);
         }
     }
+}
+
+/// VS Code `SnippetSession.adjustWhitespace(model, position, true, snippet)`: indents and
+/// normalises a snippet's text for insertion at `pos`.
+pub fn adjust_snippet_whitespace(doc: &Document, pos: usize, snippet: &mut Snippet) {
+    let text = doc.text();
+    let line = text.byte_to_line(pos);
+    let start = text.line_to_byte(line);
+    let upto = text.slice(start..pos).to_string();
+    let lead = &upto[..upto.len() - upto.trim_start_matches([' ', '\t']).len()];
+    adjust_whitespace(snippet, lead, true, doc.config());
 }
 
 /// The selection-, line- and comment-based snippet variables of one cursor.

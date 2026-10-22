@@ -41,6 +41,8 @@ SOURCES = [
     "src/vs/workbench/contrib/files/browser/fileCommands.ts",
     "src/vs/workbench/contrib/files/browser/fileConstants.ts",
     "src/vs/workbench/contrib/codeEditor/browser/toggleWordWrap.ts",
+    "src/vs/editor/contrib/suggest/browser/suggestController.ts",
+    "src/vs/editor/contrib/snippet/browser/snippetController2.ts",
 ]
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,17 +93,30 @@ IMPLICIT = {
     "CONTEXT_FOLDING_ENABLED": "folding is always enabled",
     "!isComposing": "the widget does not dispatch keys while an IME preedit is active",
     "!(accessibilityModeEnabled && isWindows)": "quire has no screen-reader word-navigation mode",
+    "EditorContextKeys.hasCompletionItemProvider": "the editor always asks; a host without providers "
+    "does not answer",
 }
 # Context keys quire's `When` models (keymap.rs), as written in keybindings.json.
 MODELED = {
     "EditorContextKeys.hasMultipleSelections": "editorHasMultipleSelections",
     "CONTEXT_FIND_WIDGET_VISIBLE": "findWidgetVisible",
+    "SuggestContext.Visible": "suggestWidgetVisible",
+    "SuggestContext.HasFocusedSuggestion": "suggestWidgetHasFocusedSuggestion",
+    "SuggestContext.MultipleSuggestions": "suggestWidgetMultipleSuggestions",
+    "SuggestContext.AcceptSuggestionsOnEnter": "acceptSuggestionOnEnter",
+    "SuggestContext.MakesTextEdit": "suggestionMakesTextEdit",
+    "SnippetController2.InSnippetMode": "inSnippetMode",
+    "SnippetController2.HasNextTabstop": "hasNextTabstop",
+    "SnippetController2.HasPrevTabstop": "hasPrevTabstop",
 }
 
 # Contexts quire does not model, with what quire does instead.
 UNMODELED = {
     "CONTEXT_FIND_INPUT_FOCUSED": "find input focused: quire's find bar handles Enter / Shift+Enter "
     "in its own text field",
+    "SnippetController2.InSnippetChoice": "a snippet choice list: quire binds no "
+    "acceptAlternativeSelectedSuggestion, so Shift+Tab needs no higher-weight rule there",
+    "SuggestContext.DetailsFocused": "the details panel never takes focus in quire",
 }
 
 KEYCODES = {
@@ -238,8 +253,8 @@ class Consts:
         for text in texts:
             for m in re.finditer(r"\bconst\s+(\w+)\s*=\s*'([^']*)'", text):
                 self.map[m.group(1)] = m.group(2)
-            for m in re.finditer(r"class\s+(\w+)[^{]*\{\s*(?:public\s+)?static\s+readonly\s+ID\s*=\s*'([^']*)'", text):
-                self.map[m.group(1) + ".ID"] = m.group(2)
+            for m in re.finditer(r"class\s+(\w+)[^{]*\{\s*(?:public\s+)?static\s+readonly\s+(ID|id)\s*=\s*'([^']*)'", text):
+                self.map[m.group(1) + "." + m.group(2)] = m.group(3)
             for m in re.finditer(r"export\s+const\s+(\w+)\s*=\s*\{", text):
                 end = matching(text, m.end() - 1, "{", "}")
                 body = text[m.end() - 1:end + 1]
@@ -337,8 +352,16 @@ def platform_keys(rule, os_):
 # when clauses
 
 
+def norm_atom(a):
+    """`X.negate()` / `X.toNegated()` as `!X`."""
+    a = a.strip()
+    m = re.fullmatch(r"(.*?)\.(?:negate|toNegated)(?:\(\))?", a)
+    return "!" + m.group(1) if m else a
+
+
 def when_atoms(exprs):
-    """Flatten an `and` of context expressions into atom strings. Returns None for `or`."""
+    """Flatten an `and` of context expressions into atom strings. An `or` of modeled atoms
+    becomes one atom `(a || b)` in quire's names; any other `or` returns None."""
     atoms = []
     for e in exprs:
         if not e or e in ("undefined", "null"):
@@ -348,8 +371,23 @@ def when_atoms(exprs):
         if m and any(a in IMPLICIT for a in split_args(m.group(1))):
             atoms.append(next(a for a in split_args(m.group(1)) if a in IMPLICIT))
             continue
-        if "ContextKeyExpr.or" in e:
-            return None
+        # A nested `or` of modeled atoms becomes one atom.
+        while True:
+            i = e.find("ContextKeyExpr.or(")
+            if i < 0:
+                break
+            j = matching(e, i + len("ContextKeyExpr.or"), "(", ")")
+            parts = [norm_atom(x) for x in split_args(e[i + len("ContextKeyExpr.or("):j])]
+            names = []
+            for p in parts:
+                neg = p.startswith("!")
+                base = p[1:] if neg else p
+                if base not in MODELED:
+                    return None
+                names.append(("!" if neg else "") + MODELED[base])
+            key = "OR" + str(len(OR_ATOMS))
+            OR_ATOMS[key] = "(" + " || ".join(names) + ")"
+            e = e[:i] + key + e[j + 1:]
         e = re.sub(
             r"ContextKeyExpr\.and\(\s*CONTEXT_ACCESSIBILITY_MODE_ENABLED\s*,\s*IsWindowsContext\s*\)\?\.negate\(\)",
             "!(accessibilityModeEnabled && isWindows)",
@@ -357,9 +395,14 @@ def when_atoms(exprs):
         )
         e = re.sub(r"ContextKeyExpr\.not\('(\w+)'\)", r"!\1", e)
         e = re.sub(r"ContextKeyExpr\.and\(", "(", e)
-        for a in re.findall(r"!\([^)]*\)|!?[A-Za-z_][\w.]*(?:\.negate\(\))?", e):
-            atoms.append(a)
+        for a in re.findall(r"!\([^)]*\)|!?[A-Za-z_][\w.]*(?:\.(?:negate|toNegated)\(\))?", e):
+            a = norm_atom(a)
+            if a not in atoms:
+                atoms.append(a)
     return atoms
+
+
+OR_ATOMS = {}
 
 
 def classify_when(atoms):
@@ -370,13 +413,16 @@ def classify_when(atoms):
     for a in atoms:
         if a in IMPLICIT:
             continue
-        if a in MODELED:
-            modeled.append(MODELED[a])
+        if a in OR_ATOMS:
+            modeled.append(OR_ATOMS[a])
             continue
-        return None, False, UNMODELED.get(a, f"context `{a}` not modeled by quire")
-    if len(modeled) > 1:
-        return None, False, "more than one modeled context"
-    return (modeled[0] if modeled else None), True, ""
+        neg = a.startswith("!") and not a.startswith("!(")
+        base = a[1:] if neg else a
+        if base in MODELED:
+            modeled.append(("!" if neg else "") + MODELED[base])
+            continue
+        return None, False, UNMODELED.get(base, f"context `{a}` not modeled by quire")
+    return (" && ".join(modeled) if modeled else None), True, ""
 
 
 # ---------------------------------------------------------------------------------------------
@@ -416,7 +462,7 @@ def extract(src_dir, wanted):
                 qwhen, ok, reason = classify_when(atoms)
                 found.setdefault(cid, []).append({
                     "source": f"{path}:{line}",
-                    "when": " && ".join(atoms) if atoms is not None else "|".join(
+                    "when": " && ".join(OR_ATOMS.get(a, a) for a in atoms) if atoms is not None else "|".join(
                         w for w in when_exprs if w),
                     "quire_when": qwhen,
                     "modeled": ok,
@@ -539,8 +585,9 @@ def main():
         "`primary` and `secondary`), `KeyMod.CtrlCmd` is Ctrl (Cmd on macOS), `KeyMod.WinCtrl` is "
         "Ctrl on macOS and Meta elsewhere. A rule's `when` is its `kbExpr` and the command's "
         "`precondition`. Contexts that always hold while the focused editor is in its default "
-        "state are implicit; `editorHasMultipleSelections` and `findWidgetVisible` are modeled; a "
-        "rule with any other context is N/A (listed with the reason).",
+        "state are implicit; the contexts quire's `When` models (`editorHasMultipleSelections`, "
+        "`findWidgetVisible`, the suggest widget's and snippet mode's) are kept, joined with `&&`; "
+        "a rule with any other context is N/A (listed with the reason).",
         "",
         "Sources read: " + ", ".join(f"`{x}`" for x in SOURCES) + ".",
         "",

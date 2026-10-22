@@ -54,13 +54,8 @@ fn ours(raw: &[RawBinding], id: &str, os: &str) -> Keys {
         .collect()
 }
 
-fn when_name(w: When) -> Option<&'static str> {
-    match w {
-        When::Always => None,
-        When::FindWidgetVisible(true) => Some("findWidgetVisible"),
-        When::MultipleSelections(true) => Some("editorHasMultipleSelections"),
-        other => panic!("default keymap uses {other:?}"),
-    }
+fn when_name(w: &When) -> Option<String> {
+    (!w.is_always()).then(|| w.to_string())
 }
 
 #[test]
@@ -115,10 +110,7 @@ fn every_vscode_key_reaches_its_command() {
         }
         for (os_name, os) in OSES {
             for (seq, when) in expected(&table, id, os_name) {
-                let ctx = WhenContext {
-                    find_widget_visible: when.as_deref() == Some("findWidgetVisible"),
-                    multiple_selections: when.as_deref() == Some("editorHasMultipleSelections"),
-                };
+                let ctx = WhenContext::satisfying(&When::parse(when.as_deref()).unwrap());
                 let mac = os == OperatingSystem::Mac;
                 let first = seq.first;
                 let found = match seq.second {
@@ -137,7 +129,7 @@ fn every_vscode_key_reaches_its_command() {
                 };
                 let b = found.unwrap_or_else(|| panic!("{id} [{os_name}]: {seq:?} unbound"));
                 assert_eq!(b.command_id, *id, "{id} [{os_name}]: {seq:?} shadowed");
-                assert_eq!(when_name(b.when), when.as_deref(), "{id} [{os_name}] when");
+                assert_eq!(when_name(&b.when), when, "{id} [{os_name}] when");
             }
         }
     }

@@ -1,5 +1,73 @@
 {
  "commands": {
+  "acceptSelectedSuggestion": {
+   "expected": {
+    "linux": [
+     {
+      "key": "tab",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "enter",
+      "when": "suggestWidgetVisible && acceptSuggestionOnEnter && suggestionMakesTextEdit && suggestWidgetHasFocusedSuggestion"
+     }
+    ],
+    "mac": [
+     {
+      "key": "tab",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "enter",
+      "when": "suggestWidgetVisible && acceptSuggestionOnEnter && suggestionMakesTextEdit && suggestWidgetHasFocusedSuggestion"
+     }
+    ],
+    "win": [
+     {
+      "key": "tab",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "enter",
+      "when": "suggestWidgetVisible && acceptSuggestionOnEnter && suggestionMakesTextEdit && suggestWidgetHasFocusedSuggestion"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "tab"
+     ],
+     "mac": [
+      "tab"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:843",
+     "when": "SuggestContext.Visible && EditorContextKeys.textInputFocus && SuggestContext.HasFocusedSuggestion",
+     "win": [
+      "tab"
+     ]
+    },
+    {
+     "linux": [
+      "enter"
+     ],
+     "mac": [
+      "enter"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && acceptSuggestionOnEnter && suggestionMakesTextEdit && suggestWidgetHasFocusedSuggestion",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:843",
+     "when": "SuggestContext.Visible && EditorContextKeys.textInputFocus && SuggestContext.AcceptSuggestionsOnEnter && SuggestContext.MakesTextEdit && SuggestContext.HasFocusedSuggestion",
+     "win": [
+      "enter"
+     ]
+    }
+   ]
+  },
   "actions.find": {
    "expected": {
     "linux": [
@@ -2447,6 +2515,66 @@
     }
    ]
   },
+  "editor.action.triggerSuggest": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+space",
+      "when": "!suggestWidgetVisible"
+     },
+     {
+      "key": "ctrl+i",
+      "when": "!suggestWidgetVisible"
+     }
+    ],
+    "mac": [
+     {
+      "key": "ctrl+space",
+      "when": "!suggestWidgetVisible"
+     },
+     {
+      "key": "alt+escape",
+      "when": "!suggestWidgetVisible"
+     },
+     {
+      "key": "cmd+i",
+      "when": "!suggestWidgetVisible"
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+space",
+      "when": "!suggestWidgetVisible"
+     },
+     {
+      "key": "ctrl+i",
+      "when": "!suggestWidgetVisible"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+space",
+      "ctrl+i"
+     ],
+     "mac": [
+      "ctrl+space",
+      "alt+escape",
+      "cmd+i"
+     ],
+     "modeled": true,
+     "quire_when": "!suggestWidgetVisible",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:802",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable && EditorContextKeys.hasCompletionItemProvider && !SuggestContext.Visible",
+     "win": [
+      "ctrl+space",
+      "ctrl+i"
+     ]
+    }
+   ]
+  },
   "editor.fold": {
    "expected": {
     "linux": [
@@ -2687,6 +2815,212 @@
     }
    ]
   },
+  "hideSuggestWidget": {
+   "expected": {
+    "linux": [
+     {
+      "key": "escape",
+      "when": "suggestWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "suggestWidgetVisible"
+     }
+    ],
+    "mac": [
+     {
+      "key": "escape",
+      "when": "suggestWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "suggestWidgetVisible"
+     }
+    ],
+    "win": [
+     {
+      "key": "escape",
+      "when": "suggestWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "suggestWidgetVisible"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "escape",
+      "shift+escape"
+     ],
+     "mac": [
+      "escape",
+      "shift+escape"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:912",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible",
+     "win": [
+      "escape",
+      "shift+escape"
+     ]
+    }
+   ]
+  },
+  "jumpToNextSnippetPlaceholder": {
+   "expected": {
+    "linux": [
+     {
+      "key": "tab",
+      "when": "inSnippetMode && hasNextTabstop"
+     }
+    ],
+    "mac": [
+     {
+      "key": "tab",
+      "when": "inSnippetMode && hasNextTabstop"
+     }
+    ],
+    "win": [
+     {
+      "key": "tab",
+      "when": "inSnippetMode && hasNextTabstop"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "tab"
+     ],
+     "mac": [
+      "tab"
+     ],
+     "modeled": true,
+     "quire_when": "inSnippetMode && hasNextTabstop",
+     "reason": "",
+     "source": "src/vs/editor/contrib/snippet/browser/snippetController2.ts:349",
+     "when": "EditorContextKeys.textInputFocus && SnippetController2.InSnippetMode && SnippetController2.HasNextTabstop",
+     "win": [
+      "tab"
+     ]
+    }
+   ]
+  },
+  "jumpToPrevSnippetPlaceholder": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+tab",
+      "when": "inSnippetMode && hasPrevTabstop"
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+tab",
+      "when": "inSnippetMode && hasPrevTabstop"
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+tab",
+      "when": "inSnippetMode && hasPrevTabstop"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+tab"
+     ],
+     "mac": [
+      "shift+tab"
+     ],
+     "modeled": true,
+     "quire_when": "inSnippetMode && hasPrevTabstop",
+     "reason": "",
+     "source": "src/vs/editor/contrib/snippet/browser/snippetController2.ts:360",
+     "when": "EditorContextKeys.textInputFocus && SnippetController2.InSnippetMode && SnippetController2.HasPrevTabstop",
+     "win": [
+      "shift+tab"
+     ]
+    },
+    {
+     "linux": [
+      "shift+tab"
+     ],
+     "mac": [
+      "shift+tab"
+     ],
+     "modeled": false,
+     "quire_when": null,
+     "reason": "a snippet choice list: quire binds no acceptAlternativeSelectedSuggestion, so Shift+Tab needs no higher-weight rule there",
+     "source": "src/vs/editor/contrib/snippet/browser/snippetController2.ts:374",
+     "when": "SnippetController2.InSnippetMode && SnippetController2.HasPrevTabstop && SnippetController2.InSnippetChoice && EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+tab"
+     ]
+    }
+   ]
+  },
+  "leaveSnippet": {
+   "expected": {
+    "linux": [
+     {
+      "key": "escape",
+      "when": "inSnippetMode"
+     },
+     {
+      "key": "shift+escape",
+      "when": "inSnippetMode"
+     }
+    ],
+    "mac": [
+     {
+      "key": "escape",
+      "when": "inSnippetMode"
+     },
+     {
+      "key": "shift+escape",
+      "when": "inSnippetMode"
+     }
+    ],
+    "win": [
+     {
+      "key": "escape",
+      "when": "inSnippetMode"
+     },
+     {
+      "key": "shift+escape",
+      "when": "inSnippetMode"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "escape",
+      "shift+escape"
+     ],
+     "mac": [
+      "escape",
+      "shift+escape"
+     ],
+     "modeled": true,
+     "quire_when": "inSnippetMode",
+     "reason": "",
+     "source": "src/vs/editor/contrib/snippet/browser/snippetController2.ts:381",
+     "when": "EditorContextKeys.textInputFocus && SnippetController2.InSnippetMode",
+     "win": [
+      "escape",
+      "shift+escape"
+     ]
+    }
+   ]
+  },
   "outdent": {
    "expected": {
     "linux": [
@@ -2832,6 +3166,236 @@
     }
    ]
   },
+  "selectNextPageSuggestion": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "mac": [
+     {
+      "key": "pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "cmd+pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "win": [
+     {
+      "key": "pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+pagedown",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pagedown",
+      "ctrl+pagedown"
+     ],
+     "mac": [
+      "pagedown",
+      "cmd+pagedown"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:944",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "win": [
+      "pagedown",
+      "ctrl+pagedown"
+     ]
+    }
+   ]
+  },
+  "selectNextSuggestion": {
+   "expected": {
+    "linux": [
+     {
+      "key": "down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "mac": [
+     {
+      "key": "down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "cmd+down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+n",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "win": [
+     {
+      "key": "down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+down",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "down",
+      "ctrl+down"
+     ],
+     "mac": [
+      "down",
+      "cmd+down",
+      "ctrl+n"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:924",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "win": [
+      "down",
+      "ctrl+down"
+     ]
+    }
+   ]
+  },
+  "selectPrevPageSuggestion": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "mac": [
+     {
+      "key": "pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "cmd+pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "win": [
+     {
+      "key": "pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+pageup",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pageup",
+      "ctrl+pageup"
+     ],
+     "mac": [
+      "pageup",
+      "cmd+pageup"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:975",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "win": [
+      "pageup",
+      "ctrl+pageup"
+     ]
+    }
+   ]
+  },
+  "selectPrevSuggestion": {
+   "expected": {
+    "linux": [
+     {
+      "key": "up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "mac": [
+     {
+      "key": "up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "cmd+up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+p",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ],
+    "win": [
+     {
+      "key": "up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     },
+     {
+      "key": "ctrl+up",
+      "when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "up",
+      "ctrl+up"
+     ],
+     "mac": [
+      "up",
+      "cmd+up",
+      "ctrl+p"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:962",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible && (suggestWidgetMultipleSuggestions || !suggestWidgetHasFocusedSuggestion)",
+     "win": [
+      "up",
+      "ctrl+up"
+     ]
+    }
+   ]
+  },
   "tab": {
    "expected": {
     "linux": [
@@ -2868,6 +3432,61 @@
      "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.tabDoesNotMoveFocus && EditorContextKeys.writable",
      "win": [
       "tab"
+     ]
+    }
+   ]
+  },
+  "toggleSuggestionDetails": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+space",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "ctrl+i",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     }
+    ],
+    "mac": [
+     {
+      "key": "ctrl+space",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "cmd+i",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+space",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     },
+     {
+      "key": "ctrl+i",
+      "when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+space",
+      "ctrl+i"
+     ],
+     "mac": [
+      "ctrl+space",
+      "cmd+i"
+     ],
+     "modeled": true,
+     "quire_when": "suggestWidgetVisible && suggestWidgetHasFocusedSuggestion",
+     "reason": "",
+     "source": "src/vs/editor/contrib/suggest/browser/suggestController.ts:1015",
+     "when": "EditorContextKeys.textInputFocus && SuggestContext.Visible && SuggestContext.HasFocusedSuggestion",
+     "win": [
+      "ctrl+space",
+      "ctrl+i"
      ]
     }
    ]

@@ -341,6 +341,15 @@ pub fn changes_text(cmd: &EditorCommand) -> bool {
             | ToggleFold
             | FoldAll
             | UnfoldAll
+            | TriggerSuggest
+            | HideSuggestWidget
+            | SelectNextSuggestion
+            | SelectPrevSuggestion
+            | SelectNextPageSuggestion
+            | SelectPrevPageSuggestion
+            | ToggleSuggestionDetails
+            | JumpToPrevSnippetPlaceholder
+            | LeaveSnippet
     )
 }
 

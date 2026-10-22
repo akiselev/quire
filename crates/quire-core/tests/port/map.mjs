@@ -1,7 +1,7 @@
 // Builds tests/VSCODE-MAP.md and applies triage statuses to fixtures.
 // Usage: node map.mjs <fixtures dir> <results.tsv> <triage.json> <out VSCODE-MAP.md> <vscode sha>
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 
 const [dir, tsvPath, triagePath, outPath, sha] = process.argv.slice(2);
 const results = new Map();
@@ -53,7 +53,37 @@ for (const f of readdirSync(dir).filter((f) => f.endsWith('.summary.json')).sort
   perSuite.push(`| ${fixture.replace('.fixture', '.ts')} | ${d('tests')} | ${d('pass')} | ${d('ours')} | ${d('bug')} | ${d('na')} |`);
   md += '\n';
 }
+// Hand-ported suites (tests/port/hand.json): one Rust test per VS Code test, run by check.sh;
+// `tests/vscode_hand_map.rs` checks that every listed test exists.
+const handPath = join(dirname(triagePath), 'hand.json');
+const hand = existsSync(handPath) ? JSON.parse(readFileSync(handPath, 'utf8')) : { suites: [], departures: [] };
+for (const s of hand.suites) {
+  md += `## ${s.suite}\n\n| VS Code test | quire | status |\n|---|---|---|\n`;
+  const before = { ...totals };
+  for (const [name, r] of s.tests) {
+    totals.tests++;
+    if (r.na) {
+      totals.na++;
+      md += `| ${esc(name)} | N/A: ${esc(r.na)} | — |\n`;
+      continue;
+    }
+    totals.translated++;
+    if (r.ours) {
+      totals.ours++;
+      md += `| ${esc(name)} | \`${s.file}\` | fail (ours: ${esc(r.ours)}) |\n`;
+      continue;
+    }
+    totals.pass++;
+    md += `| ${esc(name)} | \`${s.file}\` \`${r.test}\` | pass |\n`;
+  }
+  const d = (k) => totals[k] - before[k];
+  perSuite.push(`| ${s.suite} | ${d('tests')} | ${d('pass')} | ${d('ours')} | ${d('bug')} | ${d('na')} |`);
+  md += '\n';
+}
 md += `## Per suite\n\n| suite | tests | pass | ours | bug | N/A |\n|---|---|---|---|---|---|\n${perSuite.join('\n')}\n\n`;
 md += `## Totals\n\n- VS Code tests listed: ${totals.tests}\n- translated: ${totals.translated} (pass ${totals.pass}, fail ours ${totals.ours}, fail bug ${totals.bug})\n- N/A: ${totals.na}\n`;
+if (hand.departures.length) {
+  md += `\n## Departures without a VS Code test\n\n${hand.departures.map(([k, v]) => `- \`${k}\`: ${v}`).join('\n')}\n`;
+}
 writeFileSync(outPath, md);
 console.log(totals);

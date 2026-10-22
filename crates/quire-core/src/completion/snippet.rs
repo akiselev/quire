@@ -334,6 +334,20 @@ impl PartialEq for Transform {
 }
 
 impl Transform {
+    /// A transform of a JavaScript regex with JavaScript flags; `None` when either is invalid.
+    pub fn new(source: &str, flags: &str, items: Vec<FormatItem>) -> Option<Self> {
+        let mut t = Transform {
+            source: source.to_string(),
+            flags: flags.to_string(),
+            regexp: crate::lang::build_js_regex(source, flags)?,
+            items: Vec::new(),
+        };
+        for i in items {
+            t.push(i);
+        }
+        Some(t)
+    }
+
     fn push(&mut self, item: FormatItem) {
         if let (FormatItem::Text(t), Some(FormatItem::Text(last))) = (&item, self.items.last_mut())
         {
@@ -400,7 +414,8 @@ impl Transform {
         ret
     }
 
-    fn to_textmate_string(&self) -> String {
+    /// The transform in TextMate syntax (`/regex/format/flags`).
+    pub fn to_textmate_string(&self) -> String {
         let mut fmt = String::new();
         for i in &self.items {
             match i {
@@ -591,6 +606,21 @@ impl Snippet {
             self.nodes[o].parent = Some(parent);
         }
         self.nodes[child].parent = None;
+    }
+
+    /// Copies markers of another snippet (with their subtrees) into this one, detached; returns
+    /// their ids here (for [`Snippet::replace`]).
+    pub fn graft(&mut self, other: &Snippet, nodes: &[NodeId]) -> Vec<NodeId> {
+        fn copy(dst: &mut Snippet, src: &Snippet, id: NodeId) -> NodeId {
+            let n = dst.add(src.nodes[id].marker.clone());
+            for &k in &src.nodes[id].children {
+                let c = copy(dst, src, k);
+                dst.nodes[c].parent = Some(n);
+                dst.nodes[n].children.push(c);
+            }
+            n
+        }
+        nodes.iter().map(|&n| copy(self, other, n)).collect()
     }
 
     /// A deep copy of a marker's subtree, detached.
