@@ -1,17 +1,20 @@
-; Svelte folds. quire query, MIT OR Apache-2.0.
-; The block list is tree-sitter-svelte's queries/folds.scm (MIT, Copyright (c) 2024 Amaan Qureshi).
+; Source: tree-sitter-htmlx-svelte 0.1.16, queries/folds.scm (MIT, Copyright (c) 2025
+; mixednuts). See THIRD_PARTY_NOTICES.md. Changed for quire: none.
+
+; Svelte folding queries
+
 [
-  (element)
-  (script_element)
-  (style_element)
   (comment)
-  (if_statement)
-  (else_if_block)
-  (else_block)
-  (each_statement)
-  (await_statement)
-  (then_block)
-  (catch_block)
-  (key_statement)
-  (snippet_statement)
+  (element)
+  (if_block)
+  (else_if_clause)
+  (else_clause)
+  (each_block)
+  (await_block)
+  (await_pending)
+  (await_branch)
+  (await_branch_children)
+  (key_block)
+  (orphan_branch)
+  (snippet_block)
 ] @fold

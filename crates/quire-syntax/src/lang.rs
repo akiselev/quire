@@ -4,7 +4,7 @@
 /// crate features; [`Lang::is_available`] says.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum Lang {
-    /// Svelte components (`tree-sitter-svelte-ng`), with injected script, style and expressions.
+    /// Svelte components (`tree-sitter-htmlx-svelte`), with injected script, style and expressions.
     Svelte,
     /// TypeScript (`tree-sitter-typescript`, the `typescript` dialect).
     TypeScript,
@@ -63,7 +63,7 @@ impl Lang {
     pub(crate) fn grammar(self) -> Option<tree_sitter::Language> {
         match self {
             #[cfg(feature = "svelte")]
-            Lang::Svelte => Some(tree_sitter_svelte_ng::LANGUAGE.into()),
+            Lang::Svelte => Some(tree_sitter_htmlx_svelte::LANGUAGE.into()),
             #[cfg(feature = "typescript")]
             Lang::TypeScript => Some(tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into()),
             #[cfg(feature = "typescript")]

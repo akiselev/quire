@@ -1,4 +1,4 @@
-//! E5 grammar ABI check: every grammar loads into tree-sitter 0.27 through `LanguageFn`.
+//! E5 grammar ABI check: every grammar loads into tree-sitter 0.26 through `LanguageFn`.
 use tree_sitter::{Language, Parser};
 
 fn check(name: &str, lang: Language, src: &str) {
@@ -16,7 +16,7 @@ fn check(name: &str, lang: Language, src: &str) {
 
 #[test]
 fn grammars_load() {
-    check("svelte", tree_sitter_svelte_ng::LANGUAGE.into(), "<script lang=\"ts\">let a = 1;</script>\n<p>{a}</p>\n<style>p{color:red}</style>\n");
+    check("svelte", tree_sitter_htmlx_svelte::LANGUAGE.into(), "<script lang=\"ts\">let a = 1;</script>\n<p>{a}</p>\n<style>p{color:red}</style>\n");
     check("typescript", tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(), "let a: number = 1;");
     check("tsx", tree_sitter_typescript::LANGUAGE_TSX.into(), "const x = <div>{1}</div>;");
     check("javascript", tree_sitter_javascript::LANGUAGE.into(), "const a = () => 1;");

@@ -38,7 +38,7 @@ pub(crate) fn highlight<S: Source + ?Sized>(layers: &Layers, src: &S, lines: Ran
         let text = |n: Node<'_>| chunks.slices(n.byte_range());
         let mut caps = cursor.captures(&cfg.highlights, layer.tree.root_node(), text);
         while let Some((m, i)) = caps.next() {
-            let c = m.captures()[*i];
+            let c = m.captures[*i];
             let Some(Some(st)) = cfg.capture_styles.get(c.index as usize) else { continue };
             clipped.clear();
             clip(layer, c.node.byte_range(), &mut clipped);
@@ -106,7 +106,7 @@ pub(crate) fn folds(layers: &Layers) -> Vec<Fold> {
         let Some(fold) = q.a else { continue };
         let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
         while let Some((m, i)) = caps.next() {
-            let c = m.captures()[*i];
+            let c = m.captures[*i];
             if c.index != fold {
                 continue;
             }
@@ -142,8 +142,8 @@ pub(crate) fn brackets(layers: &Layers, r: Range<usize>) -> Vec<Brackets> {
         cursor.set_byte_range(r.clone());
         let mut ms = cursor.matches(&q.query, layer.tree.root_node(), &[] as &[u8]);
         while let Some(m) = ms.next() {
-            let o = m.captures().iter().find(|c| c.index == open);
-            let c = m.captures().iter().find(|c| c.index == close);
+            let o = m.captures.iter().find(|c| c.index == open);
+            let c = m.captures.iter().find(|c| c.index == close);
             if let (Some(o), Some(c)) = (o, c) {
                 if o.node.is_missing() || c.node.is_missing() {
                     continue;
@@ -194,7 +194,7 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
         let mut seen = Vec::new();
         let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
         while let Some((m, i)) = caps.next() {
-            let c = m.captures()[*i];
+            let c = m.captures[*i];
             let n = c.node;
             if Some(c.index) == q.a {
                 if seen.contains(&n.id()) {

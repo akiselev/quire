@@ -11,16 +11,17 @@ publish.workspace = true
 [features]
 default = ["svelte", "typescript", "javascript", "css"]
 # One feature per grammar: each is a C build. Svelte injects JS/TS/CSS, so it pulls them in.
-svelte = ["dep:tree-sitter-svelte-ng", "javascript", "typescript", "css"]
+svelte = ["dep:tree-sitter-htmlx-svelte", "javascript", "typescript", "css"]
 typescript = ["dep:tree-sitter-typescript"]
 javascript = ["dep:tree-sitter-javascript"]
 css = ["dep:tree-sitter-css"]
 
 [dependencies]
 quire-core.workspace = true
-tree-sitter = "0.27.1"
+# 0.26, not 0.27: tree-sitter-htmlx-svelte depends on tree-sitter ^0.26 (docs/design/E5.md).
+tree-sitter = "0.26.13"
 streaming-iterator = "0.1.9"
-tree-sitter-svelte-ng = { version = "1.0.2", optional = true }
+tree-sitter-htmlx-svelte = { version = "0.1.16", optional = true }
 tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-javascript = { version = "0.25.0", optional = true }
 tree-sitter-css = { version = "0.25.0", optional = true }

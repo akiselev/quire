@@ -275,12 +275,12 @@ fn find_injections(tree: &Tree, lang: Lang, parent_ranges: &[TsRange], chunks: &
     let mut matches = cursor.matches(&inj.query, tree.root_node(), text);
     while let Some(m) = matches.next() {
         let pat = &inj.patterns[m.pattern_index];
-        let Some(content) = m.captures().iter().find(|c| c.index == inj.content).map(|c| c.node) else {
+        let Some(content) = m.captures.iter().find(|c| c.index == inj.content).map(|c| c.node) else {
             continue;
         };
         let name = match &pat.lang {
             Some(InjLang::Fixed(s)) => s.clone(),
-            Some(InjLang::Captured) => match m.captures().iter().find(|c| Some(c.index) == inj.language) {
+            Some(InjLang::Captured) => match m.captures.iter().find(|c| Some(c.index) == inj.language) {
                 Some(c) => chunks.string(c.node.byte_range()),
                 None => continue,
             },

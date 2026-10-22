@@ -1,6 +1,6 @@
 //! quire-syntax: tree-sitter highlighters for quire.
 //!
-//! Grammars: Svelte (`tree-sitter-svelte-ng`), TypeScript and TSX (`tree-sitter-typescript`),
+//! Grammars: Svelte (`tree-sitter-htmlx-svelte`), TypeScript and TSX (`tree-sitter-typescript`),
 //! JavaScript (`tree-sitter-javascript`) and CSS (`tree-sitter-css`), one Cargo feature each.
 //! Queries live in `queries/<lang>/*.scm` (Helix's layout); see `THIRD_PARTY_NOTICES.md`.
 //!
