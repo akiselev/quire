@@ -47,7 +47,7 @@ pub(crate) fn highlight<S: Source + ?Sized>(
         let sh = layer.shift;
         cursor.set_byte_range(sh.tree(start)..sh.tree(end));
         let text = |n: Node<'_>| chunks.slices(sh.real(n.start_byte())..sh.real(n.end_byte()));
-        let mut caps = cursor.captures(&cfg.highlights, layer.tree.root_node(), text);
+        let mut caps = cursor.captures(&cfg.highlights, layer.data.tree.root_node(), text);
         while let Some((m, i)) = caps.next() {
             let c = m.captures[*i];
             let Some(Some(st)) = cfg.capture_styles.get(c.index as usize) else {
@@ -97,11 +97,11 @@ pub(crate) fn highlight<S: Source + ?Sized>(
 
 /// A node's range clipped to the layer's included ranges (an injected node may span gaps).
 fn clip(layer: &Layer, r: Range<usize>, out: &mut Vec<(usize, usize)>) {
-    if layer.ranges.is_empty() {
+    if layer.data.ranges.is_empty() {
         out.push((r.start, r.end));
         return;
     }
-    for x in &layer.ranges {
+    for x in layer.ranges() {
         let s = r.start.max(x.start);
         let e = r.end.min(x.end);
         if s < e {
@@ -127,7 +127,7 @@ pub(crate) fn folds(layers: &Layers) -> Vec<Fold> {
         };
         let Some(q) = &cfg.folds else { continue };
         let Some(fold) = q.a else { continue };
-        let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
+        let mut caps = cursor.captures(&q.query, layer.data.tree.root_node(), &[] as &[u8]);
         while let Some((m, i)) = caps.next() {
             let c = m.captures[*i];
             if c.index != fold {
@@ -173,7 +173,7 @@ pub(crate) fn brackets(layers: &Layers, r: Range<usize>) -> Vec<Brackets> {
         };
         let sh = layer.shift;
         cursor.set_byte_range(sh.tree(r.start)..sh.tree(r.end));
-        let mut ms = cursor.matches(&q.query, layer.tree.root_node(), &[] as &[u8]);
+        let mut ms = cursor.matches(&q.query, layer.data.tree.root_node(), &[] as &[u8]);
         while let Some(m) = ms.next() {
             let o = m.captures.iter().find(|c| c.index == open);
             let c = m.captures.iter().find(|c| c.index == close);
@@ -220,7 +220,7 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
     let mut any = false;
     let mut cursor = QueryCursor::new();
     for layer in layers.intersecting(b..b + 1) {
-        if !layer.ranges.is_empty() && !layer.ranges.iter().any(|r| r.start <= b && b <= r.end) {
+        if !layer.data.ranges.is_empty() && !layer.ranges().any(|r| r.start <= b && b <= r.end) {
             continue;
         }
         let Some(cfg) = config::get(layer.lang) else {
@@ -231,7 +231,7 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
         let sh = layer.shift;
         cursor.set_byte_range(sh.tree(b.saturating_sub(1))..sh.tree(b + 1));
         let mut seen = Vec::new();
-        let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
+        let mut caps = cursor.captures(&q.query, layer.data.tree.root_node(), &[] as &[u8]);
         while let Some((m, i)) = caps.next() {
             let c = m.captures[*i];
             let n = c.node;

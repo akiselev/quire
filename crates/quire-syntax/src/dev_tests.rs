@@ -42,7 +42,11 @@ fn svelte_dump() {
     let s0 = "<script lang=\"ts\">let a = 1;</script>\n<div>\n{#if a > 1}\n  <p>x</p>\n{:else if b}\n  <p>y</p>\n{:else}\n  <p>z</p>\n{/if}\n{#each xs as x, i (x.id)}\n  {x}\n{/each}\n<Foo bind:value={v} {w} on:click|once={() => f(1)} />\n</div>\n";
     eprintln!(
         "{}",
-        parse(Lang::Svelte, s0).layers[0].tree.root_node().to_sexp()
+        parse(Lang::Svelte, s0).layers[0]
+            .data
+            .tree
+            .root_node()
+            .to_sexp()
     );
     let s = "<script lang=\"ts\">\n  let n: number = 1;\n</script>\n<p class=\"a\">{n + 1}</p>\n{#if n > 0}\n  <b>{@html x}</b>\n{/if}\n<style>\n  p { color: red; }\n</style>\n";
     let l = parse(Lang::Svelte, s);
@@ -187,7 +191,7 @@ fn fixture_errors() {
     let s = gen_fixture::svelte_component(400);
     let l = parse(Lang::Svelte, &s);
     for x in &l.layers {
-        let root = x.tree.root_node();
+        let root = x.data.tree.root_node();
         if root.has_error() {
             let mut c = root.walk();
             let mut stack = vec![root];
@@ -301,7 +305,7 @@ fn byte_range_matches_whole_pattern() {
     let at = s.find("let b").unwrap();
     let mut c = tree_sitter::QueryCursor::new();
     c.set_byte_range(at..at + 1);
-    let mut m = c.matches(&inj.query, l.layers[0].tree.root_node(), s.as_bytes());
+    let mut m = c.matches(&inj.query, l.layers[0].data.tree.root_node(), s.as_bytes());
     let mut pats = Vec::new();
     while let Some(x) = m.next() {
         pats.push(x.pattern_index);
@@ -328,12 +332,16 @@ fn ranged_query_cost() {
             let mut n = 0;
             for _ in 0..10 {
                 c.set_byte_range(at..at + 2);
-                let mut m = c.matches(q, l.layers[0].tree.root_node(), s.as_bytes());
+                let mut m = c.matches(q, l.layers[0].data.tree.root_node(), s.as_bytes());
                 while m.next().is_some() {
                     n += 1;
                 }
             }
-            eprintln!("{name} at {frac}: {:?} per query ({} matches)", t.elapsed() / 10, n / 10);
+            eprintln!(
+                "{name} at {frac}: {:?} per query ({} matches)",
+                t.elapsed() / 10,
+                n / 10
+            );
         }
     }
 }
@@ -349,8 +357,16 @@ fn root_reparse_cost() {
         ts_src.push_str("export function f(a: number, b: string): number {\n  const x = { a, b: b.length };\n  return x.a + x.b * 2;\n}\n");
     }
     for (name, lang, text) in [
-        ("svelte", tree_sitter::Language::from(tree_sitter_htmlx_svelte::LANGUAGE), &s),
-        ("typescript", tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(), &ts_src),
+        (
+            "svelte",
+            tree_sitter::Language::from(tree_sitter_htmlx_svelte::LANGUAGE),
+            &s,
+        ),
+        (
+            "typescript",
+            tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+            &ts_src,
+        ),
     ] {
         let mut p = Parser::new();
         p.set_language(&lang).unwrap();
@@ -360,7 +376,10 @@ fn root_reparse_cost() {
         let mut line = format!("{name}: full {full:?};");
         for frac in [0.1, 0.5, 0.9] {
             let mut at = (text.len() as f64 * frac) as usize;
-            while !text.is_char_boundary(at) || text.as_bytes()[at].is_ascii_whitespace() || !text.as_bytes()[at].is_ascii_alphabetic() {
+            while !text.is_char_boundary(at)
+                || text.as_bytes()[at].is_ascii_whitespace()
+                || !text.as_bytes()[at].is_ascii_alphabetic()
+            {
                 at += 1;
             }
             let mut new = text.clone();
@@ -369,7 +388,17 @@ fn root_reparse_cost() {
             let row = crate::source::Source::byte_to_line(&src, at);
             let col = at - crate::source::Source::line_to_byte(&src, row);
             let mut old = tree.clone();
-            old.edit(&InputEdit { start_byte: at, old_end_byte: at, new_end_byte: at + 1, start_position: Point { row, column: col }, old_end_position: Point { row, column: col }, new_end_position: Point { row, column: col + 1 } });
+            old.edit(&InputEdit {
+                start_byte: at,
+                old_end_byte: at,
+                new_end_byte: at + 1,
+                start_position: Point { row, column: col },
+                old_end_position: Point { row, column: col },
+                new_end_position: Point {
+                    row,
+                    column: col + 1,
+                },
+            });
             let t = Instant::now();
             let n = 20;
             for _ in 0..n {

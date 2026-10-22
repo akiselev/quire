@@ -3,6 +3,7 @@
 
 use std::collections::HashMap;
 use std::ops::{ControlFlow, Range};
+use std::sync::Arc;
 
 use streaming_iterator::StreamingIterator;
 use tree_sitter::{
@@ -27,18 +28,24 @@ pub(crate) struct EditRef<'a> {
 #[derive(Clone, Debug)]
 pub(crate) struct Layer {
     pub lang: Lang,
-    pub tree: Tree,
-    /// Included byte ranges; empty for the root (the whole text).
-    pub ranges: Vec<Range<usize>>,
-    /// The bounding byte range of `ranges` (the whole text for the root).
-    pub span: Range<usize>,
     pub depth: u32,
+    /// The bounding byte range of the included ranges (the whole text for the root); real.
+    pub span: Range<usize>,
     /// The parent layer's index (`u32::MAX` for the root).
     pub parent: u32,
-    /// Real position = position in `tree` + `shift`. Layers carried over past an edit's last
-    /// line move lazily instead of paying `Tree::edit`; the shift is materialised (one synthetic
-    /// edit) only when the layer is reparsed. Spans and ranges are always real.
+    /// Real position = position in `data` (tree and ranges) + `shift`. Layers carried over past
+    /// an edit's last line share their data and move lazily instead of paying `Tree::edit`;
+    /// the shift is materialised (one synthetic edit) only when the layer is reparsed.
     pub shift: Shift,
+    pub data: Arc<LayerData>,
+}
+
+/// The shared part of a layer.
+#[derive(Debug)]
+pub(crate) struct LayerData {
+    pub tree: Tree,
+    /// Included byte ranges in tree coordinates; empty for the root (the whole text).
+    pub ranges: Vec<Range<usize>>,
 }
 
 /// A lazy move of a whole tree: bytes and rows (columns never change, see [`Layer::shift`]).
@@ -63,9 +70,18 @@ impl Shift {
 }
 
 impl Layer {
+    /// The included ranges in real coordinates (empty for the root).
+    pub fn ranges(&self) -> impl Iterator<Item = Range<usize>> + '_ {
+        let sh = self.shift;
+        self.data
+            .ranges
+            .iter()
+            .map(move |r| sh.real(r.start)..sh.real(r.end))
+    }
+
     /// The tree in real coordinates (applies the lazy shift as one edit at the start).
     fn materialized(&self) -> Tree {
-        let mut t = self.tree.clone();
+        let mut t = self.data.tree.clone();
         let Shift { bytes: d, rows: r } = self.shift;
         if d != 0 || r != 0 {
             let (a, b) = ((-d).max(0) as usize, d.max(0) as usize);
@@ -323,17 +339,20 @@ pub(crate) fn parse<S: Source + ?Sized>(
     };
     let mut out = vec![Layer {
         lang,
-        tree: root,
-        ranges: Vec::new(),
         span: 0..len,
         depth: 0,
         parent: u32::MAX,
         shift: Shift::default(),
+        data: Arc::new(LayerData {
+            tree: root,
+            ranges: Vec::new(),
+        }),
     }];
     let mut queue: Vec<(usize, Origin)> = vec![(0, origin)];
 
     while let Some((idx, origin)) = queue.pop() {
-        let (plang, pdepth, pranges) = (out[idx].lang, out[idx].depth, out[idx].ranges.clone());
+        let (plang, pdepth) = (out[idx].lang, out[idx].depth);
+        let pranges: Vec<Range<usize>> = out[idx].ranges().collect();
         if pdepth + 1 > MAX_DEPTH {
             continue;
         }
@@ -341,18 +360,17 @@ pub(crate) fn parse<S: Source + ?Sized>(
         ctx.stats.searched += 1;
         match origin {
             Origin::Fresh => {
-                let found = find_injections(&out[idx].tree, plang, &pranges, &ctx, None);
+                let found = find_injections(&out[idx].data.tree, plang, &pranges, &ctx, None);
                 for f in found {
                     let tree = ctx.parse(f.lang, &f.ranges, None)?;
                     let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
                     out.push(Layer {
                         lang: f.lang,
-                        tree,
-                        ranges,
                         span: f.span,
                         depth,
                         parent: idx as u32,
                         shift: Shift::default(),
+                        data: Arc::new(LayerData { tree, ranges }),
                     });
                     queue.push((out.len() - 1, Origin::Fresh));
                 }
@@ -361,6 +379,7 @@ pub(crate) fn parse<S: Source + ?Sized>(
                 let p = prev.as_ref().expect("reparsed implies prev");
                 // Where the injections may have changed: what tree-sitter reports, plus the edits.
                 let mut changed: Vec<Range<usize>> = out[idx]
+                    .data
                     .tree
                     .changed_ranges(&before)
                     .map(|r| r.start_byte..r.end_byte)
@@ -375,7 +394,7 @@ pub(crate) fn parse<S: Source + ?Sized>(
                 let found = if changed.is_empty() {
                     Vec::new()
                 } else {
-                    find_injections(&out[idx].tree, plang, &pranges, &ctx, Some(&changed))
+                    find_injections(&out[idx].data.tree, plang, &pranges, &ctx, Some(&changed))
                 };
                 let hits = |r: &Range<usize>| {
                     changed.iter().any(|c| c.start <= r.end && c.end >= r.start)
@@ -441,12 +460,11 @@ pub(crate) fn parse<S: Source + ?Sized>(
                     let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
                     out.push(Layer {
                         lang: f.lang,
-                        tree,
-                        ranges,
                         span: f.span,
                         depth,
                         parent: idx as u32,
                         shift: Shift::default(),
+                        data: Arc::new(LayerData { tree, ranges }),
                     });
                     queue.push((out.len() - 1, origin));
                 }
@@ -501,39 +519,38 @@ fn carry<S: Source + ?Sized>(
     stats: &mut ParseStats,
 ) {
     let ol = &p.layers.layers[old];
-    let (tree, shift, d) = match idx.before(ol.span.start) {
-        None => (ol.tree.clone(), ol.shift, 0),
+    let (data, shift, d) = match idx.before(ol.span.start) {
+        None => (ol.data.clone(), ol.shift, 0),
         Some((d, r, end_row)) => {
             let new_start = (ol.span.start as isize + d) as usize;
             if end_row < src.byte_to_line(new_start) {
-                // Only whole lines moved: shift lazily.
-                (
-                    ol.tree.clone(),
-                    Shift {
-                        bytes: ol.shift.bytes + d,
-                        rows: ol.shift.rows + r,
-                    },
-                    d,
-                )
+                // Only whole lines moved: share the data, shift lazily.
+                let shift = Shift {
+                    bytes: ol.shift.bytes + d,
+                    rows: ol.shift.rows + r,
+                };
+                (ol.data.clone(), shift, d)
             } else {
-                let mut t = ol.materialized();
+                let mut tree = ol.materialized();
                 for e in p.input_edits {
-                    t.edit(e);
+                    tree.edit(e);
                 }
-                (t, Shift::default(), d)
+                let ranges = ol
+                    .ranges()
+                    .map(|r| map_pos(p.edits, r.start, false)..map_pos(p.edits, r.end, false))
+                    .collect();
+                (Arc::new(LayerData { tree, ranges }), Shift::default(), d)
             }
         }
     };
     let m = |b: usize| (b as isize + d) as usize;
-    let ranges = ol.ranges.iter().map(|r| m(r.start)..m(r.end)).collect();
     out.push(Layer {
         lang: ol.lang,
-        tree,
-        ranges,
         span: m(ol.span.start)..m(ol.span.end),
         depth: ol.depth,
         parent,
         shift,
+        data,
     });
     stats.reused += 1;
     let me = (out.len() - 1) as u32;
