@@ -28,5 +28,18 @@ tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-javascript = { version = "0.25.0", optional = true }
 tree-sitter-css = { version = "0.25.0", optional = true }
 
+[dev-dependencies]
+quire-core.workspace = true
+criterion = { version = "0.7", default-features = false }
+tree-sitter-htmlx-svelte = "0.1.16"
+
+[[bench]]
+name = "e5"
+harness = false
+
 [lints]
 workspace = true
+
+[[test]]
+name = "driver"
+required-features = ["unstable-driver"]

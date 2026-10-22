@@ -320,7 +320,7 @@ pub(crate) fn parse<S: Source + ?Sized>(
     });
     let eidx = prev
         .as_ref()
-        .map(|p| EditIndex::new(p.edits, p.input_edits))
+        .map(|p| EditIndex::new(p.edits, p.input_edits, &ctx.chunks))
         .unwrap_or(EditIndex {
             old_end: Vec::new(),
             cum: Vec::new(),
@@ -454,7 +454,6 @@ pub(crate) fn parse<S: Source + ?Sized>(
                         carry(
                             p,
                             &eidx,
-                            ctx.src,
                             c as usize,
                             idx as u32,
                             &old_children,
@@ -519,18 +518,31 @@ pub(crate) fn parse<S: Source + ?Sized>(
 /// row deltas and the new end row.
 pub(crate) struct EditIndex {
     old_end: Vec<usize>,
+    /// After each edit: cumulative byte and row deltas, and the first new byte on a line after
+    /// the edit's last line (a span starting there or later moved by whole lines).
     cum: Vec<(isize, isize, usize)>,
 }
 
 impl EditIndex {
-    fn new(edits: &[EditRef<'_>], input: &[InputEdit]) -> Self {
+    fn new(edits: &[EditRef<'_>], input: &[InputEdit], chunks: &Chunks<'_>) -> Self {
         let mut d = 0;
         let mut r = 0;
         let mut cum = Vec::with_capacity(edits.len());
         for (e, ie) in edits.iter().zip(input) {
             d += e.insert.len() as isize - e.range.len() as isize;
             r += ie.new_end_position.row as isize - ie.old_end_position.row as isize;
-            cum.push((d, r, ie.new_end_position.row));
+            let mut b = ie.new_end_byte;
+            let next_line = loop {
+                let piece = chunks.at(b);
+                if piece.is_empty() {
+                    break usize::MAX;
+                }
+                match piece.iter().position(|&c| c == b'\n') {
+                    Some(i) => break b + i + 1,
+                    None => b += piece.len(),
+                }
+            };
+            cum.push((d, r, next_line));
         }
         EditIndex {
             old_end: edits.iter().map(|e| e.range.end).collect(),
@@ -539,7 +551,7 @@ impl EditIndex {
     }
 
     /// For an untouched span starting at old byte `start`: the byte and row deltas of the
-    /// edits before it, and the row the last of them ends on (new coordinates).
+    /// edits before it, and where whole-line moves start (new coordinates).
     fn before(&self, start: usize) -> Option<(isize, isize, usize)> {
         let n = self.old_end.partition_point(|&e| e <= start);
         (n > 0).then(|| self.cum[n - 1])
@@ -548,10 +560,9 @@ impl EditIndex {
 
 /// Copies old layer `old` and its subtree (untouched by the edits) under new parent `parent`.
 #[allow(clippy::too_many_arguments)]
-fn carry<S: Source + ?Sized>(
+fn carry(
     p: &Prev<'_, '_>,
     idx: &EditIndex,
-    src: &S,
     old: usize,
     parent: u32,
     children: &[Vec<u32>],
@@ -561,9 +572,9 @@ fn carry<S: Source + ?Sized>(
     let ol = &p.layers.layers[old];
     let (data, shift, d) = match idx.before(ol.span.start) {
         None => (ol.data.clone(), ol.shift, 0),
-        Some((d, r, end_row)) => {
+        Some((d, r, next_line)) => {
             let new_start = (ol.span.start as isize + d) as usize;
-            if end_row < src.byte_to_line(new_start) {
+            if new_start >= next_line {
                 // Only whole lines moved: share the data, shift lazily.
                 let shift = Shift {
                     bytes: ol.shift.bytes + d,
@@ -603,7 +614,7 @@ fn carry<S: Source + ?Sized>(
     stats.reused += 1;
     let me = (out.len() - 1) as u32;
     for &c in &children[old] {
-        carry(p, idx, src, c as usize, me, children, out, stats);
+        carry(p, idx, c as usize, me, children, out, stats);
     }
 }
 
