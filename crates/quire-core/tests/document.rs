@@ -381,8 +381,11 @@ fn catastrophic_rule_regex_is_no_match() {
         let electric = t.elapsed();
         assert_eq!(d.text().line(0).to_string(), format!("{line}}}"), "{pat}");
         eprintln!("{pat}: enter {enter:?}, electric {electric:?}");
+        // Unbounded, these patterns take ~2^30 steps on this line (minutes in a debug build); the
+        // backtrack limit makes each call ~15 ms quiet. The bound is loose so a loaded machine
+        // (load 150-440 measured 236 ms) cannot fail it, while a missing limit still would.
         assert!(
-            enter.as_millis() < 50 && electric.as_millis() < 50,
+            enter.as_millis() < 2_000 && electric.as_millis() < 2_000,
             "{pat}: {enter:?} {electric:?}"
         );
     }
