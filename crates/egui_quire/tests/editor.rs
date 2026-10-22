@@ -629,20 +629,8 @@ fn keymap_resolves_against_core_commands() {
     let mut unresolved: Vec<&str> = map.unresolved().iter().map(|(id, _)| id.as_str()).collect();
     unresolved.sort_unstable();
     unresolved.dedup();
-    // Commands quire-core does not have yet (ED2 / later); not bound until they exist.
-    assert_eq!(
-        unresolved,
-        vec![
-            "deleteAllLeft",
-            "editor.action.addSelectionToNextFindMatch",
-            "editor.action.copyLinesDownAction",
-            "editor.action.copyLinesUpAction",
-            "editor.action.insertCursorAbove",
-            "editor.action.insertCursorBelow",
-            "editor.action.moveLinesDownAction",
-            "editor.action.moveLinesUpAction",
-        ]
-    );
+    // Every command in the default keymap resolves (quire-core gained the ED2 commands).
+    assert_eq!(unresolved, Vec::<&str>::new());
     let os = egui::os::OperatingSystem::Nix;
     let ctx = egui_quire::keymap::WhenContext::default();
     let b = map
