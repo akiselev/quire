@@ -81,23 +81,30 @@ pub fn check(text: &Text, policy: &LargeFilePolicy) -> Option<Degraded> {
     if lines > policy.max_lines {
         reasons.push(DegradedReason::LineCount { lines });
     }
-    // Lines can only be long if the text is.
+    // Lines can only be long if the text is. One pass over the chunks (a rope lookup per line
+    // costs about 0.5 µs, 50 ms at 100k lines; E1).
     if bytes > policy.max_line_len {
-        let mut start = 0;
-        for line in 0..lines {
-            let end = if line + 1 < lines {
-                text.line_to_byte(line + 1) - 1
-            } else {
-                bytes
-            };
-            if end - start > policy.max_line_len {
-                reasons.push(DegradedReason::LongLine {
-                    line,
-                    len: end - start,
-                });
-                break;
+        let (mut line, mut len) = (0usize, 0usize);
+        let mut found = None;
+        'chunks: for chunk in text.chunks() {
+            let mut rest = chunk;
+            while let Some(i) = rest.find('\n') {
+                len += i;
+                if len > policy.max_line_len {
+                    found = Some((line, len));
+                    break 'chunks;
+                }
+                line += 1;
+                len = 0;
+                rest = &rest[i + 1..];
             }
-            start = end + 1;
+            len += rest.len();
+        }
+        if found.is_none() && len > policy.max_line_len {
+            found = Some((line, len));
+        }
+        if let Some((line, len)) = found {
+            reasons.push(DegradedReason::LongLine { line, len });
         }
     }
     (!reasons.is_empty()).then_some(Degraded { reasons })
@@ -130,5 +137,34 @@ mod tests {
             d.reasons[0],
             DegradedReason::FileSize { bytes: 120 }
         ));
+    }
+
+    #[test]
+    fn long_line_across_chunks_is_found_and_measured() {
+        let p = LargeFilePolicy::default();
+        let mut src = "short line\n".repeat(5000);
+        let at = src.matches('\n').count();
+        src.push_str(&"é".repeat(6000)); // 12 000 bytes, spans rope chunks
+        src.push('\n');
+        src.push_str(&"y".repeat(20_000)); // a later, longer one is not reported
+        let d = check(&Text::from_file(&src), &p).unwrap();
+        assert_eq!(
+            d.reasons,
+            vec![DegradedReason::LongLine {
+                line: at,
+                len: 12_000
+            }]
+        );
+        // Exactly at the limit is fine; the last line (no break after it) counts too.
+        let ok = format!("a\n{}", "z".repeat(10_000));
+        assert_eq!(check(&Text::from_file(&ok), &p), None);
+        let long_last = format!("a\n{}", "z".repeat(10_001));
+        assert_eq!(
+            check(&Text::from_file(&long_last), &p).unwrap().reasons,
+            vec![DegradedReason::LongLine {
+                line: 1,
+                len: 10_001
+            }]
+        );
     }
 }

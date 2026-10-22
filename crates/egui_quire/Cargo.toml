@@ -21,6 +21,9 @@ egui_kittest.workspace = true
 # reads tokens and folds from the Document only.
 quire-syntax.workspace = true
 eframe.workspace = true
+criterion = { version = "0.7", default-features = false }
+# Counting global allocator for the E1 bench (wraps System; no unsafe in our code).
+stats_alloc = "0.1.10"
 
 # Snapshot images render through wgpu (Metal); they are recorded and compared on macOS only, as
 # other backends (lavapipe, GL) rasterise differently.
@@ -29,6 +32,10 @@ egui_kittest = { workspace = true, features = ["wgpu", "snapshot"] }
 
 [[example]]
 name = "playground"
+
+[[bench]]
+name = "e1"
+harness = false
 
 [lints]
 workspace = true

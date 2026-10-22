@@ -164,7 +164,15 @@ pub(crate) fn move_lines(st: &St, down: bool) -> Option<Out> {
             let moving_text = text.slice(moving.clone()).to_string();
             edits.push((block_start..block_start, format!("{moving_text}\n")));
             edits.push((block_end..moving.end, String::new()));
-            shifts.push((block_start, block_end + 1, moving_text.len() as isize + 1));
+            // A position just after the block's line break moves with the block, unless the
+            // line moving up is the last one: then the block ends the text, and that position
+            // (at the start of the moving line) maps through the edit to the new end.
+            let upper = if e + 1 < last_line {
+                block_end + 1
+            } else {
+                block_end
+            };
+            shifts.push((block_start, upper, moving_text.len() as isize + 1));
         } else {
             if s == 0 {
                 continue;

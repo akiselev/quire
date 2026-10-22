@@ -147,6 +147,13 @@ pub(crate) struct Mem {
     pub pending_chord: Option<crate::chord::Chord>,
     /// `theme.galley_hash()` of this frame.
     pub style_salt: u64,
+    /// Reused per frame so clean frames do not allocate (E1).
+    pub line_buf: String,
+    pub runs_buf: Vec<(usize, Color32)>,
+    pub vis_buf: Vec<crate::paint::VisLine>,
+    /// Monospace metrics with what they were measured for: font, pixels per point, and a cheap
+    /// probe (advance of 'M', row height) that changes when the font definitions do.
+    pub mono_cache: Option<(egui::FontId, f32, (f32, f32), layout::Mono)>,
 }
 
 #[derive(Clone, Debug)]
@@ -341,12 +348,12 @@ impl<'a> CodeEditor<'a> {
                 &owned_theme
             }
         };
-        let default_text;
         let text = match text {
             Some(t) => t,
             None => {
-                default_text = EditorText::default();
-                &default_text
+                // Built once: a clean frame allocates nothing for the default strings (E1).
+                static DEFAULT_TEXT: OnceLock<EditorText> = OnceLock::new();
+                DEFAULT_TEXT.get_or_init(EditorText::default)
             }
         };
         glue::sync(doc, view);
@@ -356,7 +363,16 @@ impl<'a> CodeEditor<'a> {
         let mut mem = shared.lock().unwrap_or_else(|e| e.into_inner());
 
         let row_h = layout::row_height(&ctx, &theme.font);
-        let mono = layout::mono(&ctx, &theme.font);
+        let ppp = ctx.pixels_per_point();
+        let probe = ctx.fonts_mut(|f| (f.glyph_width(&theme.font, 'M'), f.row_height(&theme.font)));
+        let mono = match &mem.mono_cache {
+            Some((font, p, pr, m)) if *font == theme.font && *p == ppp && *pr == probe => *m,
+            _ => {
+                let m = layout::mono(&ctx, &theme.font);
+                mem.mono_cache = Some((theme.font.clone(), ppp, probe, m));
+                m
+            }
+        };
         let adv = mono.advance();
         let n_lines = glue::text(doc).len_lines().max(1);
         let sig = crate::galley_cache::hash_one((n_lines, row_h.to_bits(), glue::folds(view)));
@@ -895,11 +911,21 @@ impl FrameCx<'_> {
         glue::text(self.doc).line_to_byte(line) + col
     }
 
-    /// Lay out line `line` through the cache.
+    /// Lay out line `line` through the cache. A cache hit allocates nothing: a line split across
+    /// rope chunks is joined in a reused buffer, and token runs go to a reused vector (E1).
     pub fn layout_line(&mut self, line: usize) -> LineLayout {
         let text = glue::text(self.doc);
-        let s = glue::line_str(text, line);
-        let mut runs = Vec::new();
+        let slice = text.line(line);
+        let mut buf = std::mem::take(&mut self.mem.line_buf);
+        let mut runs = std::mem::take(&mut self.mem.runs_buf);
+        let s = match slice.as_str() {
+            Some(s) => s,
+            None => {
+                buf.clear();
+                slice.chunks().for_each(|c| buf.push_str(c));
+                buf.as_str()
+            }
+        };
         let style_hash =
             glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.mem.style_salt;
         let mut shaper = LineShaper {
@@ -910,7 +936,10 @@ impl FrameCx<'_> {
             mono: self.geom.mono,
             tab_size: self.doc.config().tab_size,
         };
-        shaper.shape(&s, &runs, style_hash, self.theme.foreground)
+        let layout = shaper.shape(s, &runs, style_hash, self.theme.foreground);
+        self.mem.line_buf = buf;
+        self.mem.runs_buf = runs;
+        layout
     }
 
     /// The unit range around `pos` (char: empty; word and line: quire-core's double- and

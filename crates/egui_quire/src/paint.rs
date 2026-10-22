@@ -6,11 +6,13 @@ use egui::text::TextFormat;
 use egui::{Align2, Color32, Rect, Sense, Shape, Stroke, Ui, pos2, vec2};
 
 use crate::editor::FrameCx;
+use crate::galley_cache::{GalleyKey, hash_one};
 use crate::glue::{self, Severity};
 use crate::layout::{self, LineLayout};
 
 /// A visible line ready to paint.
-struct VisLine {
+#[derive(Debug)]
+pub(crate) struct VisLine {
     line: usize,
     start: usize,
     top: f32,
@@ -48,7 +50,8 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
     let preedit = glue::preedit(f.view).cloned();
 
     // Lay out visible lines.
-    let mut vis: Vec<VisLine> = Vec::new();
+    let mut vis = std::mem::take(&mut f.mem.vis_buf);
+    vis.clear();
     for line in f.visible_lines() {
         let text = glue::text(f.doc);
         if line >= text.len_lines() {
@@ -250,19 +253,30 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
     let num_x = g.gutter.right() - crate::editor::fold_w(g.adv) - g.adv * 0.5;
     let gutter_hovered = ui.rect_contains_pointer(g.gutter);
     let gutter_painter = painter.with_clip_rect(g.gutter.intersect(painter.clip_rect()));
-    for (v, sev) in vis.iter().zip(worst) {
+    let ppp = f.ctx.pixels_per_point();
+    for (i, v) in vis.iter().enumerate() {
+        let sev = worst.get(i).copied().flatten();
         let color = if v.line == head_line {
             theme.line_number_active
         } else {
             theme.line_number
         };
-        gutter_painter.text(
-            pos2(num_x, v.top),
-            Align2::RIGHT_TOP,
-            (v.line + 1).to_string(),
-            theme.font.clone(),
-            color,
+        // Line numbers go through the galley cache too, so a clean frame lays out (and
+        // allocates) nothing for them.
+        let key = GalleyKey::new(
+            hash_one(("quire.gutter", v.line + 1, color)),
+            f.mem.style_salt,
+            &theme.font,
+            ppp,
+            f32::INFINITY,
         );
+        let galley = f.mem.galleys.get_or_insert(key, || {
+            f.ctx.fonts_mut(|fo| {
+                fo.layout_no_wrap((v.line + 1).to_string(), theme.font.clone(), color)
+            })
+        });
+        let rect = Align2::RIGHT_TOP.anchor_size(pos2(num_x, v.top), galley.size());
+        gutter_painter.galley(rect.min, galley, color);
         if headers.binary_search(&v.line).is_ok() {
             let folded = folded_headers.contains(&v.line);
             if folded || gutter_hovered {
@@ -288,6 +302,8 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
         }
     }
 
+    vis.clear();
+    f.mem.vis_buf = vis;
     primary_caret
 }
 
@@ -326,6 +342,10 @@ fn fold_marker(p: &egui::Painter, c: egui::Pos2, r: f32, folded: bool, color: Co
 }
 
 fn worst_severity_per_line(f: &FrameCx<'_>, vis: &[VisLine]) -> Vec<Option<Severity>> {
+    // Empty (no allocation) when there are no diagnostics; callers read missing entries as None.
+    if glue::diagnostics(f.doc).next().is_none() {
+        return Vec::new();
+    }
     let mut out = vec![None; vis.len()];
     let Some(first) = vis.first() else { return out };
     let text = glue::text(f.doc);

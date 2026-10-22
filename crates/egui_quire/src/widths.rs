@@ -24,17 +24,22 @@ pub(crate) struct LineWidths {
 
 /// Visible columns of `chunks` (one line without its break) with tabs every `tab_size` columns.
 fn columns<'a>(chunks: impl Iterator<Item = &'a str>, tab_size: u32) -> u32 {
+    chunks.fold(0, |col, chunk| advance(col, chunk, tab_size))
+}
+
+/// The column after `s` (no line break inside), starting at column `col`.
+fn advance(mut col: u32, s: &str, tab_size: u32) -> u32 {
     let ts = tab_size.max(1);
-    let mut col = 0u32;
-    for chunk in chunks {
-        if chunk.is_ascii() {
-            for b in chunk.bytes() {
-                col += if b == b'\t' { ts - col % ts } else { 1 };
-            }
-        } else {
-            for c in chunk.chars() {
-                col += if c == '\t' { ts - col % ts } else { 1 };
-            }
+    if s.is_ascii() {
+        if !s.as_bytes().contains(&b'\t') {
+            return col + s.len() as u32;
+        }
+        for b in s.bytes() {
+            col += if b == b'\t' { ts - col % ts } else { 1 };
+        }
+    } else {
+        for c in s.chars() {
+            col += if c == '\t' { ts - col % ts } else { 1 };
         }
     }
     col
@@ -46,15 +51,28 @@ impl LineWidths {
         columns(doc.text().line(line).chunks(), self.tab_size)
     }
 
+    /// Measures every line in one pass over the text's chunks (looking each line up in the
+    /// rope instead costs about 1.3 µs per line, 130 ms at 100k lines; E1).
     fn rebuild(&mut self, doc: &Document) {
         self.tab_size = doc.config().tab_size;
         let n = doc.text().len_lines();
         self.cols.clear();
         self.cols.reserve(n);
-        for i in 0..n {
-            let c = self.measure(doc, i);
-            self.cols.push(c);
+        let mut col = 0u32;
+        for chunk in doc.text().chunks() {
+            for piece in chunk.split_inclusive('\n') {
+                match piece.strip_suffix('\n') {
+                    Some(body) => {
+                        self.cols.push(advance(col, body, self.tab_size));
+                        col = 0;
+                    }
+                    None => col = advance(col, piece, self.tab_size),
+                }
+            }
         }
+        self.cols.push(col);
+        debug_assert_eq!(self.cols.len(), n);
+        self.measured += n as u64;
         self.max = self.cols.iter().copied().max().unwrap_or(0);
         self.max_dirty = false;
         self.version = Some(doc.version());
@@ -176,6 +194,28 @@ mod tests {
         w.sync(&doc);
         check(&mut w, &doc);
         assert_eq!(w.max_cols(), 0);
+    }
+
+    #[test]
+    fn one_pass_rebuild_matches_per_line_measure() {
+        // Long enough that the rope splits lines across chunks; tabs and wide chars mixed in.
+        let mut src = String::new();
+        for i in 0..3000 {
+            match i % 5 {
+                0 => src.push_str("\tfn x() {}\n"),
+                1 => src.push_str("let s = \"grüße\t😀\";\n"),
+                2 => src.push('\n'),
+                3 => src.push_str(&"ab\t".repeat(i % 37)),
+                _ => src.push_str("plain ascii line\n"),
+            }
+        }
+        let doc = Document::new(&src, Default::default());
+        let mut w = LineWidths::default();
+        w.rebuild(&doc);
+        let per_line: Vec<u32> = (0..doc.text().len_lines())
+            .map(|i| w.measure(&doc, i))
+            .collect();
+        assert_eq!(w.cols, per_line);
     }
 
     #[test]

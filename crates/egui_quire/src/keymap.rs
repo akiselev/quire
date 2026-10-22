@@ -115,8 +115,9 @@ impl Binding {
 /// A keymap: chords → actions, in file order (later entries win, as in VS Code).
 #[derive(Clone, Debug, Default)]
 pub struct Keymap {
-    bindings: Vec<Binding>,
-    unresolved: Vec<(String, String)>,
+    // Shared, so the per-frame `KeyHandling` a widget is built with clones in O(1) (E1).
+    bindings: std::sync::Arc<Vec<Binding>>,
+    unresolved: std::sync::Arc<Vec<(String, String)>>,
 }
 
 impl Keymap {
@@ -145,7 +146,7 @@ impl Keymap {
         let win = parse(&r.win)?.or(key);
         let when = When::parse(r.when.as_deref())?;
         match KeyAction::resolve(&r.command, r.args.as_ref()) {
-            Ok(action) => self.bindings.push(Binding {
+            Ok(action) => std::sync::Arc::make_mut(&mut self.bindings).push(Binding {
                 linux,
                 win,
                 mac,
@@ -153,7 +154,7 @@ impl Keymap {
                 command_id: r.command,
                 action,
             }),
-            Err(e) => self.unresolved.push((r.command, e)),
+            Err(e) => std::sync::Arc::make_mut(&mut self.unresolved).push((r.command, e)),
         }
         Ok(())
     }

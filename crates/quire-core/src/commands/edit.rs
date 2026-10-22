@@ -550,7 +550,11 @@ fn overtype(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
             return None;
         }
         let line_end = text.line_range(text.byte_to_line(r.head)).end;
-        if r.head + ch.len() > line_end || text.slice(r.head..r.head + ch.len()) != ch {
+        // The next `ch.len()` bytes may end inside a character (e.g. `}` typed before `é`).
+        if r.head + ch.len() > line_end
+            || !text.is_char_boundary(r.head + ch.len())
+            || text.slice(r.head..r.head + ch.len()) != ch
+        {
             return None;
         }
         if is_quote(ch) && text.char_before(r.head) == Some('\\') {
@@ -594,7 +598,9 @@ fn auto_close(ctx: &Ctx, st: &St, ch: &str) -> Option<Out> {
         let prefix = &open[..open.len() - ch.len()];
         let ok = st.sel.ranges().iter().all(|r| {
             let ls = text.line_to_byte(text.byte_to_line(r.head));
-            r.head >= ls + prefix.len() && text.slice(r.head - prefix.len()..r.head) == prefix
+            r.head >= ls + prefix.len()
+                && text.is_char_boundary(r.head - prefix.len())
+                && text.slice(r.head - prefix.len()..r.head) == prefix
         });
         if ok && best.is_none_or(|b| open.len() > b.0.len()) {
             best = Some(pair);
@@ -1046,9 +1052,16 @@ fn apply_line_edits(
                 let p = changes.map_pos(r.start, Bias::Before) + s.len();
                 return SelRange::point(p);
             }
-            if stays && !orig.is_empty() {
-                // Keep the selection start where it was (we inserted after it).
-                let start = orig.from();
+            if stays
+                && !orig.is_empty()
+                && let Some((er, ins)) = edits.first()
+            {
+                // Keep the selection start where it was (we inserted after it): the same offset
+                // into this range's first edit, which earlier ranges' edits may have moved, and
+                // at most the replacement's length (it is ASCII indentation, so any offset in it
+                // is a char boundary).
+                let rel = orig.from().saturating_sub(er.start).min(ins.len());
+                let start = changes.map_pos(er.start, Bias::Before) + rel;
                 if t.from() > start {
                     return if t.is_backward() {
                         SelRange::new(t.to(), start)

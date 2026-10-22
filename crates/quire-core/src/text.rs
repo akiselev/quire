@@ -90,6 +90,10 @@ impl From<&str> for Text {
 /// Counts of line breaks in a string: (lone `\r`, lone `\n`, `\r\n`).
 fn count_eols(s: &str) -> (usize, usize, usize) {
     let b = s.as_bytes();
+    if !b.contains(&b'\r') {
+        // The common case, counted in a loop the compiler vectorises.
+        return (0, b.iter().filter(|&&c| c == b'\n').count(), 0);
+    }
     let (mut cr, mut lf, mut crlf) = (0, 0, 0);
     let mut i = 0;
     while i < b.len() {

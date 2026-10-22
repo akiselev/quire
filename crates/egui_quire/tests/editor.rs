@@ -844,6 +844,56 @@ fn caret_blink_stops_after_idle() {
     assert!(h.state().settled);
 }
 
+/// ARCH-QUIRE §3.9 "Idle: 0 frames after the blink stops": after typing, with the pointer
+/// resting over the text (so the hover timer ran too) and diagnostics shown, no frame of the
+/// next 5 s of idle asks for a repaint, at any delay.
+#[test]
+fn idle_requests_no_frames_after_the_blink_stops() {
+    let text: String = (0..200).map(|i| format!("let x{i} = {i};\n")).collect();
+    let mut st = St::new(&text);
+    st.doc
+        .set_diagnostics(
+            quire_core::SourceId::new("test"),
+            st.doc.version(),
+            vec![quire_core::Diagnostic::new(
+                4..6,
+                quire_core::Severity::Error,
+                "e",
+            )],
+        )
+        .unwrap();
+    let mut h = Harness::builder()
+        .with_size(Vec2::new(600.0, 300.0))
+        .with_step_dt(0.1)
+        .build_ui_state(app, st);
+    h.ctx.all_styles_mut(|s| s.visuals.text_cursor.blink = true);
+    h.run();
+    focus(&mut h);
+    for c in ["a", "b", "c"] {
+        h.event(Event::Text(c.into()));
+        h.step();
+    }
+    let r = h.state().rects[0];
+    h.event(Event::PointerMoved(pos2(r.center().x, r.top() + 30.0)));
+    // The blink stops 5 s after the last interaction; the hover fires after 0.5 s.
+    h.run_steps(60);
+    assert!(
+        h.state()
+            .events
+            .iter()
+            .any(|e| matches!(e, EditorEvent::HoverAt { .. }))
+    );
+    let mut requested = 0;
+    for _ in 0..50 {
+        h.step();
+        if root_repaint_delay(&h) != std::time::Duration::MAX {
+            requested += 1;
+        }
+    }
+    assert_eq!(requested, 0, "frames requested while idle");
+    assert!(h.state().settled);
+}
+
 #[test]
 fn mono_fast_path_matches_galley_positions() {
     for ppp in [1.0, 1.25, 1.5, 2.0] {
