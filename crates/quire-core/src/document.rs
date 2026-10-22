@@ -32,7 +32,7 @@ use crate::recent::{LineEdit, RecentChanges, Stale};
 use crate::selection::Selection;
 use crate::syntax::{FoldRange, PendingWork, TokenRuns, TokenStore};
 use crate::text::Text;
-use crate::transaction::{Effect, Origin, Transaction};
+use crate::transaction::{AuthorId, Effect, Origin, Transaction};
 use crate::version::Version;
 use crate::view::EditorView;
 use smallvec::SmallVec;
@@ -102,6 +102,8 @@ pub struct Applied {
     pub changes: ChangeSet,
     /// The origin.
     pub origin: Origin,
+    /// Who made it ([`Transaction::author`]).
+    pub author: AuthorId,
     /// Whether the acting view's selection changed.
     pub selection_changed: bool,
     /// Whether an effect changed the document's config ([`Effect::SetInsertSpaces`],
@@ -261,7 +263,7 @@ impl Document {
                     entries.first().map_or(self.version, |e| e.from),
                 );
                 for e in entries {
-                    r.push(e.changes, e.line_edits);
+                    r.push(e.changes, e.line_edits, e.author);
                 }
             }
             self.recent = r;
@@ -494,10 +496,25 @@ impl Document {
         cmd: &EditorCommand,
         time_ms: Option<u64>,
     ) -> Result<Executed, Refusal> {
+        self.execute_as(view, cmd, time_ms, AuthorId::USER)
+    }
+
+    /// [`Document::execute`] on behalf of `author`: the transaction carries it, except an undo
+    /// or redo, which keeps the author of the group it reverts.
+    pub fn execute_as(
+        &mut self,
+        view: &mut EditorView,
+        cmd: &EditorCommand,
+        time_ms: Option<u64>,
+        author: AuthorId,
+    ) -> Result<Executed, Refusal> {
         view.sync(self);
         match self.command(view, cmd)? {
             CommandOutput::Transaction(mut tr) => {
                 tr.time_ms = time_ms.or(tr.time_ms);
+                if !matches!(tr.origin, Origin::Undo | Origin::Redo) {
+                    tr.author = author;
+                }
                 Ok(Executed {
                     applied: Some(self.apply(tr, view)?),
                     request: None,
@@ -527,7 +544,20 @@ impl Document {
         changes: ChangeSet,
         origin: Origin,
     ) -> Result<Applied, Refusal> {
-        let tr = Transaction::new(base, changes).with_origin(origin);
+        self.apply_remote_by(base, changes, origin, AuthorId::USER)
+    }
+
+    /// [`Document::apply_remote`] made by `author` (a collaborator, a tool, a reload).
+    pub fn apply_remote_by(
+        &mut self,
+        base: Version,
+        changes: ChangeSet,
+        origin: Origin,
+        author: AuthorId,
+    ) -> Result<Applied, Refusal> {
+        let tr = Transaction::new(base, changes)
+            .with_origin(origin)
+            .with_author(author);
         self.apply_inner(tr, None)
     }
 
@@ -646,7 +676,7 @@ impl Document {
                 },
                 None => self.indent_folds = OnceLock::new(),
             }
-            self.recent.push(tr.changes.clone(), line_edits);
+            self.recent.push(tr.changes.clone(), line_edits, tr.author);
             self.diagnostics.map(&tr.changes);
             if matches!(tr.origin, Origin::Reload) {
                 self.degraded = crate::large::check(&self.text, &self.config.large_file);
@@ -684,6 +714,7 @@ impl Document {
                 };
                 closed.extend(self.history.record(Record {
                     origin: &origin,
+                    author: tr.author,
                     group: tr.group,
                     time_ms: tr.time_ms,
                     pause_ms: self.config.undo_pause_ms,
@@ -739,6 +770,7 @@ impl Document {
             version: self.version,
             changes: tr.changes,
             origin: tr.origin,
+            author: tr.author,
             selection_changed,
             config_changed,
             closed,

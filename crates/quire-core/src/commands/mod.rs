@@ -430,10 +430,10 @@ pub(crate) fn run(
                     HostRequest::Redo
                 }));
             }
-            let top = if undo {
-                doc.history().peek_undo()
+            let (top, author) = if undo {
+                (doc.history().peek_undo(), doc.history().undo_author())
             } else {
-                doc.history().peek_redo()
+                (doc.history().peek_redo(), doc.history().redo_author())
             };
             Ok(match top {
                 None => CommandOutput::Nothing,
@@ -443,6 +443,7 @@ pub(crate) fn run(
                             s.clamped(&changes.apply(text).unwrap_or_else(|_| text.clone())),
                         )
                         .with_origin(if undo { Origin::Undo } else { Origin::Redo })
+                        .with_author(author.unwrap_or_default())
                         .with_group(GroupHint::Isolated),
                 )
                 .with_reveal_primary(),

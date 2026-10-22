@@ -92,6 +92,8 @@ pub struct RecentChange {
     pub changes: ChangeSet,
     /// Its line edits.
     pub line_edits: Vec<LineEdit>,
+    /// Who made it.
+    pub author: crate::AuthorId,
 }
 
 /// The last `capacity` change sets.
@@ -127,13 +129,19 @@ impl RecentChanges {
         self.current
     }
 
-    pub(crate) fn push(&mut self, changes: ChangeSet, line_edits: Vec<LineEdit>) {
+    pub(crate) fn push(
+        &mut self,
+        changes: ChangeSet,
+        line_edits: Vec<LineEdit>,
+        author: crate::AuthorId,
+    ) {
         let from = self.current;
         self.current = from.next();
         self.entries.push_back(RecentChange {
             from,
             changes,
             line_edits,
+            author,
         });
         while self.entries.len() > self.capacity {
             self.entries.pop_front();

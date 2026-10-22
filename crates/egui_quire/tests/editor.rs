@@ -1972,3 +1972,56 @@ fn ime_commit_goes_through_the_typing_rules() {
     h.step();
     assert_eq!(h.state().text(), ")");
 }
+
+#[test]
+fn widget_input_carries_the_editor_author() {
+    struct A {
+        doc: quire_core::Document,
+        view: quire_core::EditorView,
+        authors: Vec<quire_core::AuthorId>,
+    }
+    let doc = quire_core::Document::new("", Default::default());
+    let view = quire_core::EditorView::new(&doc);
+    let mut h = Harness::builder()
+        .with_size(Vec2::new(300.0, 120.0))
+        .build_ui_state(
+            |ui, a: &mut A| {
+                let out = CodeEditor::new(&mut a.doc, &mut a.view, "author", "Source")
+                    .author(quire_core::AuthorId(5))
+                    .show(ui);
+                a.authors.extend(out.applied.iter().map(|x| x.author));
+            },
+            A {
+                doc,
+                view,
+                authors: Vec::new(),
+            },
+        );
+    h.run();
+    let r = h.state().view.selection().primary().head;
+    assert_eq!(r, 0);
+    let rect = h.ctx.content_rect();
+    h.event(Event::PointerMoved(rect.center()));
+    for pressed in [true, false] {
+        h.event(Event::PointerButton {
+            pos: rect.center(),
+            button: PointerButton::Primary,
+            pressed,
+            modifiers: Modifiers::NONE,
+        });
+    }
+    h.run();
+    h.event(Event::Text("hi".into()));
+    h.run();
+    assert_eq!(h.state().doc.text().to_string(), "hi");
+    let a = &h.state().authors;
+    assert!(
+        !a.is_empty() && a.iter().all(|&x| x == quire_core::AuthorId(5)),
+        "{a:?}"
+    );
+    // Undo of the group is still that author's.
+    assert_eq!(
+        h.state().doc.history().undo_author(),
+        Some(quire_core::AuthorId(5))
+    );
+}

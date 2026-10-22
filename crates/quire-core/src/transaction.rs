@@ -144,6 +144,19 @@ pub enum Effect {
     SetWordWrap(crate::config::WordWrap),
 }
 
+/// Who made a change, as the host names it: an opaque id that lets a host tell its own edits
+/// from the user's and from remote or tool edits (svelters ZED-LESSONS #8). Independent of
+/// [`Origin`], which says what kind of change it is. [`AuthorId::USER`] (0, the default) is the
+/// widget's user; other values mean whatever the host assigns.
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct AuthorId(pub u64);
+
+impl AuthorId {
+    /// The widget's user (the default).
+    pub const USER: AuthorId = AuthorId(0);
+}
+
 /// An edit (or a selection change) against one version of a document.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Transaction {
@@ -159,6 +172,8 @@ pub struct Transaction {
     pub effects: SmallVec<[Effect; 2]>,
     /// Where it came from.
     pub origin: Origin,
+    /// Who made it (default [`AuthorId::USER`]). Undo groups never mix authors.
+    pub author: AuthorId,
     /// Undo grouping.
     pub group: GroupHint,
     /// The host's monotonic clock in milliseconds when the input happened, for the pause rule.
@@ -175,6 +190,7 @@ impl Transaction {
             selection: None,
             effects: SmallVec::new(),
             origin: Origin::Input(InputKind::Other),
+            author: AuthorId::USER,
             group: GroupHint::Continue,
             time_ms: None,
         }
@@ -196,6 +212,13 @@ impl Transaction {
     #[must_use]
     pub fn with_origin(mut self, o: Origin) -> Self {
         self.origin = o;
+        self
+    }
+
+    /// Sets the author.
+    #[must_use]
+    pub fn with_author(mut self, a: AuthorId) -> Self {
+        self.author = a;
         self
     }
 

@@ -6,8 +6,9 @@ use std::ops::Range;
 
 use egui::Color32;
 use quire_core::{
-    Applied, ChangeSet, Document, EditorCommand, EditorView, FindQuery, GroupHint, HostRequest,
-    InputKind, Origin, Preedit, SelRange, Selection, Text, Transaction, UndoMode, Version,
+    Applied, AuthorId, ChangeSet, Document, EditorCommand, EditorView, FindQuery, GroupHint,
+    HostRequest, InputKind, Origin, Preedit, SelRange, Selection, Text, Transaction, UndoMode,
+    Version,
 };
 
 pub use quire_core::Severity;
@@ -60,9 +61,10 @@ pub fn run(
     view: &mut EditorView,
     cmd: &EditorCommand,
     time_ms: u64,
+    author: AuthorId,
 ) -> Result<Ran, String> {
     let ex = doc
-        .execute(view, cmd, Some(time_ms))
+        .execute_as(view, cmd, Some(time_ms), author)
         .map_err(|e| e.to_string())?;
     Ok(Ran {
         applied: ex.applied,
@@ -77,6 +79,7 @@ pub fn replace(
     range: Range<usize>,
     text: &str,
     ime: bool,
+    author: AuthorId,
 ) -> Option<Applied> {
     let len = doc.text().len_bytes();
     let changes = ChangeSet::replace(len, [(range.clone(), text)]).ok()?;
@@ -88,14 +91,21 @@ pub fn replace(
         } else {
             InputKind::Other
         }))
-        .with_group(GroupHint::Close);
+        .with_group(GroupHint::Close)
+        .with_author(author);
     doc.apply(tr, view).ok()
 }
 
 /// Apply a selection-only transaction.
-pub fn select(doc: &mut Document, view: &mut EditorView, sel: Selection) -> Option<Applied> {
+pub fn select(
+    doc: &mut Document,
+    view: &mut EditorView,
+    sel: Selection,
+    author: AuthorId,
+) -> Option<Applied> {
     let tr = Transaction::select(doc.version(), doc.text().len_bytes(), sel)
-        .with_origin(Origin::Command("setSelection".into()));
+        .with_origin(Origin::Command("setSelection".into()))
+        .with_author(author);
     doc.apply(tr, view).ok()
 }
 
@@ -453,6 +463,7 @@ pub fn toggle_fold_at_line(
     doc: &mut Document,
     view: &mut EditorView,
     line: usize,
+    author: AuthorId,
 ) -> Option<Applied> {
     let text = doc.text();
     let r = doc
@@ -483,6 +494,7 @@ pub fn toggle_fold_at_line(
         .transform(|r| SelRange::new(hide(r.anchor), hide(r.head)));
     let tr = Transaction::select(doc.version(), text.len_bytes(), sel)
         .with_origin(Origin::Command("editor.toggleFold".into()))
-        .with_effect(quire_core::Effect::SetFolds(folds));
+        .with_effect(quire_core::Effect::SetFolds(folds))
+        .with_author(author);
     doc.apply(tr, view).ok()
 }

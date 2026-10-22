@@ -47,7 +47,7 @@ pub use large::{Degraded, DegradedReason, LargeFilePolicy};
 pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};
-pub use transaction::{Effect, GroupHint, InputKind, Origin, Transaction};
+pub use transaction::{AuthorId, Effect, GroupHint, InputKind, Origin, Transaction};
 pub use version::Version;
 pub use view::{AutoClosed, EditorView, Preedit, Reveal, Scroll, SyncOutcome};
 

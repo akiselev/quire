@@ -114,6 +114,7 @@ pub struct CodeEditor<'a> {
     keys: KeyHandling,
     a11y_name: &'a str,
     read_only: bool,
+    author: quire_core::AuthorId,
 }
 
 /// Widget-side state kept in egui memory under the editor id.
@@ -278,6 +279,7 @@ impl<'a> CodeEditor<'a> {
             keys: KeyHandling::default(),
             a11y_name,
             read_only: false,
+            author: quire_core::AuthorId::USER,
         }
     }
 
@@ -299,6 +301,13 @@ impl<'a> CodeEditor<'a> {
 
     pub fn key_handling(mut self, keys: KeyHandling) -> Self {
         self.keys = keys;
+        self
+    }
+
+    /// Who this editor's input is made by (default [`quire_core::AuthorId::USER`]): every
+    /// transaction the widget applies carries it, so the host can tell its users apart.
+    pub fn author(mut self, author: quire_core::AuthorId) -> Self {
+        self.author = author;
         self
     }
 
@@ -446,6 +455,7 @@ impl<'a> CodeEditor<'a> {
             keys,
             a11y_name,
             read_only,
+            author,
         } = self;
         let ctx = ui.ctx().clone();
         let owned_theme;
@@ -574,6 +584,7 @@ impl<'a> CodeEditor<'a> {
             mem: &mut mem,
             out: Out::default(),
             read_only,
+            author,
         };
 
         // Focus.
@@ -831,6 +842,8 @@ pub(crate) struct FrameCx<'f> {
     pub mem: &'f mut Mem,
     pub out: Out,
     pub read_only: bool,
+    /// Who the widget's transactions are made by.
+    pub author: quire_core::AuthorId,
 }
 
 impl FrameCx<'_> {
@@ -873,7 +886,7 @@ impl FrameCx<'_> {
             return;
         }
         let time_ms = (self.now() * 1000.0) as u64;
-        match glue::run(self.doc, self.view, &cmd, time_ms) {
+        match glue::run(self.doc, self.view, &cmd, time_ms, self.author) {
             Ok(ran) => {
                 if let Some(a) = ran.applied {
                     self.push_applied(a);
@@ -1530,7 +1543,7 @@ impl FrameCx<'_> {
                 let len = glue::text(self.doc).len_bytes();
                 let sel = glue::selection(self.view).primary();
                 let range = if sel.is_empty() { 0..len } else { sel.range() };
-                if let Some(a) = glue::replace(self.doc, self.view, range, &v, false) {
+                if let Some(a) = glue::replace(self.doc, self.view, range, &v, false, self.author) {
                     self.push_applied(a);
                 }
             }
@@ -1821,7 +1834,9 @@ impl FrameCx<'_> {
             if self.geom.fold_col().contains(ptr) {
                 let line = self.line_at_y(ptr.y);
                 if !glue::fold_headers(self.doc, line..line + 1).is_empty() {
-                    if let Some(a) = glue::toggle_fold_at_line(self.doc, self.view, line) {
+                    if let Some(a) =
+                        glue::toggle_fold_at_line(self.doc, self.view, line, self.author)
+                    {
                         self.push_applied(a);
                     }
                     self.mem.last_press = None;
@@ -2031,7 +2046,7 @@ impl FrameCx<'_> {
     fn set_selection(&mut self, sel: Selection) {
         self.touch();
         self.out.commands.push(glue::set_selection_cmd(sel.clone()));
-        if let Some(a) = glue::select(self.doc, self.view, sel) {
+        if let Some(a) = glue::select(self.doc, self.view, sel, self.author) {
             self.push_applied(a);
         }
     }

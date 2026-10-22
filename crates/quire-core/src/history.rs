@@ -26,7 +26,7 @@
 use crate::change::{Bias, ChangeSet};
 use crate::selection::Selection;
 use crate::text::Text;
-use crate::transaction::{GroupHint, InputKind, Origin};
+use crate::transaction::{AuthorId, GroupHint, InputKind, Origin};
 use crate::version::Version;
 use smallvec::SmallVec;
 
@@ -57,6 +57,8 @@ pub struct UndoGroupClosed {
     pub selection_before: Selection,
     /// The acting view's selection after the group.
     pub selection_after: Selection,
+    /// Who made the group's edits (a group never mixes authors).
+    pub author: AuthorId,
 }
 
 /// An entry of the local undo or redo stack.
@@ -69,6 +71,8 @@ pub struct UndoGroup {
     pub selection: Selection,
     /// The selection that was current before applying (the other end of the group).
     pub selection_other: Selection,
+    /// Who made the group; its undo and redo keep that author.
+    pub author: AuthorId,
 }
 
 #[derive(Clone, Debug)]
@@ -81,6 +85,7 @@ struct OpenGroup {
     selection_after: Selection,
     last_kind: Option<InputKind>,
     last_time: Option<u64>,
+    author: AuthorId,
 }
 
 /// The document's history.
@@ -95,6 +100,7 @@ pub struct History {
 /// What one local edit brings to the history.
 pub(crate) struct Record<'a> {
     pub origin: &'a Origin,
+    pub author: AuthorId,
     pub group: GroupHint,
     pub time_ms: Option<u64>,
     pub pause_ms: u64,
@@ -174,6 +180,25 @@ impl History {
         self.undo.last().map(|g| (&g.change, &g.selection))
     }
 
+    /// The author of the group the next undo reverts (local mode).
+    pub fn undo_author(&self) -> Option<AuthorId> {
+        if self.mode != UndoMode::Local {
+            return None;
+        }
+        if let Some(g) = &self.open {
+            return Some(g.author);
+        }
+        self.undo.last().map(|g| g.author)
+    }
+
+    /// The author of the group the next redo re-applies (local mode).
+    pub fn redo_author(&self) -> Option<AuthorId> {
+        if self.mode != UndoMode::Local || self.open.is_some() {
+            return None;
+        }
+        self.redo.last().map(|g| g.author)
+    }
+
     /// The change and selection the next redo applies (local mode).
     pub fn peek_redo(&self) -> Option<(&ChangeSet, &Selection)> {
         if self.mode != UndoMode::Local || self.open.is_some() {
@@ -198,6 +223,7 @@ impl History {
                 change: g.inverse.clone(),
                 selection: g.selection_before.clone(),
                 selection_other: g.selection_after.clone(),
+                author: g.author,
             });
         }
         Some(UndoGroupClosed {
@@ -207,6 +233,7 @@ impl History {
             inverse: g.inverse,
             selection_before: g.selection_before,
             selection_after: g.selection_after,
+            author: g.author,
         })
     }
 
@@ -235,6 +262,7 @@ impl History {
                     (Some(prev), Some(k)) => prev.stop_between(k),
                     _ => true,
                 }
+                || open.author != r.author
                 || !same_ranges(&open.selection_after, r.selection_before)
                 || match (open.last_time, r.time_ms) {
                     (Some(a), Some(b)) => b.saturating_sub(a) > r.pause_ms,
@@ -264,6 +292,7 @@ impl History {
                     selection_after: r.selection_after.clone(),
                     last_kind: kind,
                     last_time: r.time_ms,
+                    author: r.author,
                 });
             }
         }
@@ -284,6 +313,7 @@ impl History {
                     change: top.change.invert(text_before),
                     selection: top.selection_other,
                     selection_other: top.selection,
+                    author: top.author,
                 });
                 true
             }
@@ -301,6 +331,7 @@ impl History {
                     change: top.change.invert(text_before),
                     selection: top.selection_other,
                     selection_other: top.selection,
+                    author: top.author,
                 });
                 true
             }
