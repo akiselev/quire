@@ -46,23 +46,23 @@ pub fn hash_one(v: impl Hash) -> u64 {
     h.finish()
 }
 
-/// LRU-bounded map from [`GalleyKey`] to galley.
+/// LRU-bounded map from [`GalleyKey`] to a galley (or, for wrapped lines, to the line's rows).
 #[derive(Debug)]
-pub struct GalleyCache {
-    map: HashMap<GalleyKey, (Arc<Galley>, u64)>,
+pub struct GalleyCache<V = Arc<Galley>> {
+    map: HashMap<GalleyKey, (V, u64)>,
     tick: u64,
     capacity: usize,
     /// Number of galleys laid out (cache misses) since creation; tests read it.
     pub misses: u64,
 }
 
-impl Default for GalleyCache {
+impl<V: Clone> Default for GalleyCache<V> {
     fn default() -> Self {
         Self::with_capacity(4096)
     }
 }
 
-impl GalleyCache {
+impl<V: Clone> GalleyCache<V> {
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
             map: HashMap::new(),
@@ -80,12 +80,8 @@ impl GalleyCache {
         self.map.is_empty()
     }
 
-    /// Get the galley for `key`, laying it out with `make` on a miss.
-    pub fn get_or_insert(
-        &mut self,
-        key: GalleyKey,
-        make: impl FnOnce() -> Arc<Galley>,
-    ) -> Arc<Galley> {
+    /// Get the value for `key`, laying it out with `make` on a miss.
+    pub fn get_or_insert(&mut self, key: GalleyKey, make: impl FnOnce() -> V) -> V {
         self.tick += 1;
         let tick = self.tick;
         if let Some((g, used)) = self.map.get_mut(&key) {

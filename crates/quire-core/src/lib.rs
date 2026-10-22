@@ -37,7 +37,7 @@ pub use change::{Bias, ChangeError, ChangeSet, Edit, Operation};
 pub use command::{CommandOutput, EditorCommand, HostRequest, Motion};
 pub use config::{
     AutoClosingStrategy, CommentOptions, EditorConfig, EnterAction, IndentAction, IndentationRules,
-    OnEnterRule, OvertypeStrategy,
+    OnEnterRule, OvertypeStrategy, WordWrap, WrappingIndent,
 };
 pub use diagnostics::{DiagAction, DiagTags, Diagnostic, Diagnostics, Severity, SourceId};
 pub use document::{Anchor, Applied, Document, Executed, Refusal, SettledProbe, Snapshot};

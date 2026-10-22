@@ -228,6 +228,14 @@ pub struct EditorConfig {
     pub empty_selection_clipboard: bool,
     /// The large-file thresholds ([`LargeFilePolicy`](crate::LargeFilePolicy)).
     pub large_file: crate::large::LargeFilePolicy,
+    /// Soft wrap (VS Code `editor.wordWrap`).
+    pub word_wrap: WordWrap,
+    /// Indentation of wrapped rows (VS Code `editor.wrappingIndent`).
+    pub wrapping_indent: WrappingIndent,
+    /// A line with more characters than this renders only its first this many, followed by a
+    /// marker (VS Code `editor.stopRenderingLineAfter`, 10 000). Editing the whole line still
+    /// works. `usize::MAX` renders every line in full.
+    pub stop_rendering_line_after: usize,
 }
 
 impl Default for EditorConfig {
@@ -283,6 +291,9 @@ impl Default for EditorConfig {
             undo_pause_ms: 1000,
             empty_selection_clipboard: true,
             large_file: crate::large::LargeFilePolicy::default(),
+            word_wrap: WordWrap::Off,
+            wrapping_indent: WrappingIndent::Same,
+            stop_rendering_line_after: 10_000,
         }
     }
 }
@@ -296,4 +307,34 @@ impl EditorConfig {
             "\t".to_string()
         }
     }
+}
+
+/// Soft wrap (VS Code `editor.wordWrap`). Only `off` and `on` are implemented.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub enum WordWrap {
+    /// Lines never wrap.
+    #[default]
+    Off,
+    /// Lines wrap at the viewport width.
+    On,
+}
+
+/// Indentation of a wrapped line's continuation rows (VS Code `editor.wrappingIndent`).
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+pub enum WrappingIndent {
+    /// Continuation rows start at column 0.
+    None,
+    /// Continuation rows get the line's indentation.
+    #[default]
+    Same,
+    /// The line's indentation plus one tab stop.
+    Indent,
+    /// The line's indentation plus two tab stops.
+    DeepIndent,
 }

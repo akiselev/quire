@@ -93,6 +93,9 @@ pub(crate) struct TabStops {
     pub(crate) column: f32,
     /// egui's own advance of a tab character in points (`FontTweak::tab_size` spaces).
     pub(crate) egui_tab: f32,
+    /// x (points, in the unwrapped line) where this text starts: 0 for a whole line, the row's
+    /// start for a wrapped row, so its tabs still stop at the line's tab stops.
+    pub(crate) origin: f32,
 }
 
 impl TabStops {
@@ -107,6 +110,20 @@ impl TabStops {
     pub(crate) fn next_stop(&self, x: f32) -> f32 {
         let stop = self.stop();
         ((x / stop + 0.25 / self.tab_size.max(1) as f32).floor() + 1.0) * stop
+    }
+
+    /// Visual column where the text starts (the fast path counts columns from it).
+    pub(crate) fn origin_col(&self) -> u32 {
+        if self.column > 0.0 {
+            (self.origin / self.column).round() as u32
+        } else {
+            0
+        }
+    }
+
+    /// Like [`Self::next_stop`] for a tab at text-relative `x`, returning text-relative x.
+    pub(crate) fn next_stop_rel(&self, x: f32) -> f32 {
+        self.next_stop(x + self.origin) - self.origin
     }
 }
 
@@ -129,7 +146,7 @@ pub(crate) fn layout_line_job(
     let mut extra = Vec::with_capacity(n_tabs);
     if text.is_ascii() {
         let adv = mono.advance();
-        let mut col = 0u32;
+        let mut col = tabs.origin_col();
         let ts = tabs.tab_size.max(1);
         for b in text.bytes() {
             if b == b'\t' {
@@ -146,7 +163,7 @@ pub(crate) fn layout_line_job(
         if let Some(row) = first.rows.first() {
             for g in row.glyphs.iter().filter(|g| g.chr == '\t') {
                 let x0 = g.pos.x + shift;
-                let e = tabs.next_stop(x0) - x0 - tabs.egui_tab;
+                let e = tabs.next_stop_rel(x0) - x0 - tabs.egui_tab;
                 extra.push(e);
                 shift += e;
             }
@@ -203,6 +220,7 @@ impl Mono {
             tab_size: tab_size.max(1),
             column: self.advance(),
             egui_tab: self.tab_px / self.pixels_per_point,
+            origin: 0.0,
         }
     }
 }
@@ -213,7 +231,7 @@ impl LineLayout {
     pub(crate) fn new(galley: Arc<Galley>, mono: Mono, tabs: TabStops) -> Self {
         let mono = galley.text().is_ascii().then_some(mono);
         let end_x = match galley.rows.first().and_then(|r| r.glyphs.last()) {
-            Some(g) if g.chr == '\t' => tabs.next_stop(g.pos.x),
+            Some(g) if g.chr == '\t' => tabs.next_stop_rel(g.pos.x),
             Some(g) => g.pos.x + g.advance_width,
             None => 0.0,
         };
@@ -234,7 +252,7 @@ impl LineLayout {
         let mut s = self.clone();
         s.mono = None;
         s.end_x = match s.galley.rows.first().and_then(|r| r.glyphs.last()) {
-            Some(g) if g.chr == '\t' => s.tabs.next_stop(g.pos.x),
+            Some(g) if g.chr == '\t' => s.tabs.next_stop_rel(g.pos.x),
             Some(g) => g.pos.x + g.advance_width,
             None => 0.0,
         };
@@ -248,7 +266,8 @@ impl LineLayout {
         if !text.as_bytes()[..col].contains(&b'\t') {
             return m.x_of(col);
         }
-        m.x_of(visual_col(&text.as_bytes()[..col], self.tabs.tab_size) as usize)
+        let o = self.tabs.origin_col();
+        m.x_of((visual_col(o, &text.as_bytes()[..col], self.tabs.tab_size) - o) as usize)
     }
 
     /// x offset of byte column `col` from the start of the line.
@@ -290,9 +309,10 @@ impl LineLayout {
         let mut v = Vec::with_capacity(text.len() + 1);
         if let Some(m) = self.mono {
             let ts = self.tabs.tab_size.max(1) as usize;
-            let mut col = 0usize;
+            let o = self.tabs.origin_col() as usize;
+            let mut col = o;
             for b in text.bytes() {
-                v.push(m.x_of(col));
+                v.push(m.x_of(col - o));
                 col += if b == b'\t' { ts - col % ts } else { 1 };
             }
         } else {
@@ -317,9 +337,9 @@ impl LineLayout {
 
 /// Visible column after `bytes` with tabs at stops every `tab_size` columns, one column per
 /// other byte (callers pass ASCII).
-fn visual_col(bytes: &[u8], tab_size: u32) -> u32 {
+fn visual_col(start: u32, bytes: &[u8], tab_size: u32) -> u32 {
     let ts = tab_size.max(1);
-    bytes.iter().fold(0u32, |col, &b| {
+    bytes.iter().fold(start, |col, &b| {
         if b == b'\t' {
             col + ts - col % ts
         } else {
