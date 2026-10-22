@@ -2805,6 +2805,7 @@ dependencies = [
 name = "quire-text"
 version = "0.1.0"
 dependencies = [
+ "criterion",
  "imara-diff",
  "proptest",
  "quire-text",

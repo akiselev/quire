@@ -508,15 +508,11 @@ impl TextDocument {
                     r.requests.push(HostRequest::SetClipboard(s));
                 }
                 if cut {
-                    if let Resolved { tr: Some(tr), .. } = self.edit_tr(
-                        ops::cut(text, sel, rules.empty_selection_clipboard).map(|mut o| {
-                            o.kind = InputKind::Cut;
-                            o
-                        }),
-                        GroupHint::Continue,
-                    ) {
-                        r.tr = Some(tr);
-                    }
+                    let o = ops::cut(text, sel, rules.empty_selection_clipboard).map(|mut o| {
+                        o.kind = InputKind::Cut;
+                        o
+                    });
+                    r.tr = self.edit_tr(o, GroupHint::Continue).tr;
                 }
                 r
             }

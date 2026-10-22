@@ -6,6 +6,20 @@ recommended, with the review notes folded in below). TC-EVAL results folded in (
 against quire master `056133c` and svelters ARCH-WIDGETS §4.1–§4.7 (`c5c34599`). Scope: `TC0.md`.
 Approved amendments 1–7 of main-cadatomic's §4 sign-off are marked (A1)–(A7); TC-EVAL items (T1)–(T7).
 
+**As built (TC0 lane, branch `tc0`).** This document now describes what landed. Where the build
+differs from the approved draft it says so in place, marked *(built)*:
+- the FX1 and FX3 ports are one file each, `words/native.rs` and `history/native.rs` (not
+  `{pango,qt}.rs` and `{gtk,qt}.rs`), and their quire-text tests are `tests/native.rs`;
+- `DocRules::track_line_edits` (quire-core's tokens and folds need line edits; fields skip them);
+- the hex-entry flag is `TextView::preedit_kind()`, not a `Preedit::kind` field (so quire-core's
+  and egui_quire's `Preedit` literals stay unchanged);
+- `replace_all` returns `Result<Applied, Refusal>` (a read-only or stale document refuses it);
+- `TextDocument::recent()` returns `&RecentChanges` (the ring is a plain field that allocates on
+  its first push, so no `Option<Box<_>>` is needed);
+- the step-3 differential proptest (old `commands::run` against the lowered path) was not
+  written: the old code was deleted in the same change, so the unchanged quire-core suite, the
+  VS Code fixtures and the byte-identical VSCODE-MAP are the check on the lowering.
+
 **Sources from svelters** (MIT; the user decided svelters keeps MIT). Each ported file carries only a
 provenance line, `// ported from svelters <path> @ <sha>`, with no licence header. svelters' MIT
 copyright and permission notice is copied verbatim from svelters' `LICENSE` at the source sha into
@@ -42,9 +56,14 @@ clock, threads, I/O, egui, regex, find or diff library in quire-text (T5).
 
 ### 2.1 Text and changes (moved from quire-core unchanged, plus §4.3's gaps)
 
-- `Text`: backend-neutral text. **Backend (T1):** a copy-on-write `Arc<str>`/`String` below
+- `Text`: backend-neutral text. **Backend (T1):** a copy-on-write `Arc<String>` below
   64 KiB, ropey 1.6 above, behind the unchanged `Text` API. A text is promoted to ropey once it
-  passes 64 KiB and demoted only by `replace_all` to under 32 KiB (no flapping). Existing API kept (`len_bytes`, `len_chars`,
+  passes 64 KiB and demoted only by `replace_all` to under 32 KiB (no flapping). *(built)* The
+  thresholds are `text::SMALL_MAX` and `text::DEMOTE_BELOW`. The string backend builds a line-feed
+  index on the first line query of each version (none for a text without line feeds), and edits it
+  in place when nobody else holds it (a snapshot holder makes the next edit copy it).
+  `ChangeSet` keeps up to three operations inline (one edit), so building, cloning and recording a
+  typed character allocates only its `Arc<str>`. Existing API kept (`len_bytes`, `len_chars`,
   `len_lines`, `line`, `line_range`, `slice`, `byte_to_line`, `line_to_byte`, `byte_to_char`,
   `char_to_byte`, `byte_to_utf16`, `utf16_to_byte`, `char_at`, `chars_at`, `chunks`, `from_file`,
   `line_ending`, BOM, …). Added: `as_str() -> Option<&str>` (Some when contiguous),
@@ -81,20 +100,21 @@ clock, threads, I/O, egui, regex, find or diff library in quire-text (T5).
 
 ```rust
 pub struct TextDocument { /* text, version, history: Option<Box<History>>,
-                              recent: Option<Box<RecentChanges>>, rules: Arc<DocRules> */ }
+                              recent: RecentChanges (allocates on its first push), rules: Arc<DocRules> */ }
 impl TextDocument {
     pub fn new(text: &str, rules: Arc<DocRules>) -> Self; // no history/ring allocation (§4.7.4, T2)
     pub fn from_text(text: Text, rules: Arc<DocRules>) -> Self;
     pub fn text(&self) -> &Text;  pub fn version(&self) -> Version;  pub fn snapshot(&self) -> Snapshot;
     pub fn rules(&self) -> &Arc<DocRules>;  pub fn set_rules(&mut self, r: Arc<DocRules>);
-    pub fn history(&self) -> &History;  pub fn recent(&self) -> Option<&RecentChanges>;
+    pub fn history(&self) -> &History;  pub fn recent(&self) -> &RecentChanges;
     pub fn apply(&mut self, tr: Transaction, view: &mut TextView) -> Result<Applied, Refusal>;
     /// For wrappers with their own effects: applies text, selection and history, hands effects back.
     pub fn apply_with<E>(&mut self, tr: Transaction<E>, view: &mut TextView)
         -> Result<(Applied, SmallVec<[E; 2]>), Refusal>;
     pub fn apply_remote(&mut self, base: Version, changes: ChangeSet, origin: Origin,
                         author: AuthorId) -> Result<Applied, Refusal>;           // (A1)
-    pub fn replace_all(&mut self, text: &str, mode: ExternalSet, view: Option<&mut TextView>) -> Applied;
+    pub fn replace_all(&mut self, text: &str, mode: ExternalSet, view: Option<&mut TextView>)
+        -> Result<Applied, Refusal>;                                         // (built) Result
     pub fn resolve(&self, view: &TextView, cmd: &EditCommand, rules: &EditRules,
                    layout: &dyn VisualLines) -> Resolved;                        // pure
     pub fn execute(&mut self, view: &mut TextView, cmd: EditCommand, rules: &EditRules,
@@ -119,6 +139,8 @@ impl TextView {
     pub fn map_through(&mut self, applied: &Applied) -> bool;
     pub fn focused(&self) -> bool;  pub fn set_focused(&mut self, f: bool) -> bool; // blur clears preedit
     pub fn preedit(&self) -> Option<&Preedit>;  pub fn set_preedit(&mut self, p: Option<Preedit>);
+    pub fn preedit_kind(&self) -> PreeditKind;                     // (built) Ime | Hex
+    pub fn set_preedit_of(&mut self, p: Option<Preedit>, kind: PreeditKind);
     pub fn composing(&self) -> bool;
     pub fn upstream(&self) -> &[usize];   // heads drawn at the end of a wrapped row (affinity)
 }
@@ -129,7 +151,8 @@ impl TextView {
 - `Refusal`: `Stale`, `LengthMismatch`, `NotCharBoundary`, `CarriageReturn`, `ReadOnly`, `Rebase`,
   `LineBreak` (single-line, §2.5), `MaxChars`.
 - `SyncOutcome` (`UpToDate | Mapped | Clamped`), `SyncStep<'a>` (`Mapped(&ChangeSet) | Clamped(&Text)`).
-- `Preedit`: `text`, `active: Option<Range<usize>>`, `kind: PreeditKind` (`Ime | Hex`).
+- `Preedit`: `text`, `active: Option<Range<usize>>`. *(built)* The kind (`PreeditKind::Ime | Hex`)
+  is view state, `TextView::preedit_kind()`, so `Preedit` keeps its two fields.
 - `ExternalSet`: `ResetHistory` (GTK `set_text`, Qt `setText`: FX3), `Foreign` (quire's reload:
   diff applied as `Origin::Reload`, stacks rebased), `Undoable` (an app-level revert: its own undo
   group).
@@ -153,7 +176,9 @@ pub struct DocRules {          // what text is valid; enforced by apply(); share
     pub max_chars: Option<u32>, // code points (GTK max-length); HTML maxlength counts UTF-16 units (A4)
     pub read_only: bool,        // foreign changes still apply
     pub recent_window: usize,   // ring capacity, allocated on the first edit (T2);
-}                               // DocRules::field(): 4, quire's editor: 64 (EditorConfig)
+                                // DocRules::field(): 4, quire's editor: 64 (EditorConfig)
+    pub track_line_edits: bool, // (built) line edits recorded with each recent change: quire-core
+}                               // on (tokens, folds), DocRules::field() off
 pub enum LineBreaks { Strip, Spaces, Keep }   // how inserted '\n' is treated in Single; Strip default
 pub struct EditRules {         // how commands behave; passed by reference per call, built once and
                                // cached by the caller (svelters: from props and Policy; T3)
@@ -231,15 +256,15 @@ operations). Documented as "for editors built on quire-text".
 
 | quire-text module | Source |
 |---|---|
-| `text.rs` (+ `text/{small,rope}.rs` in step 6) | quire-core `text.rs` (+ `as_str`, `grapheme_next/prev`); the two backends (T1) |
+| `text.rs` (*built:* both backends in this one file) | quire-core `text.rs` (+ `as_str`, `grapheme_next/prev`); the two backends (T1) |
 | `change.rs`, `version.rs`, `selection.rs`, `recent.rs`, `columns.rs` | quire-core, unchanged |
 | `transaction.rs` | quire-core `transaction.rs` minus `Effect` (stays in quire-core); `Transaction<E>`, `AuthorId` |
 | `document.rs` | from quire-core `document.rs`: `Snapshot`, `Anchor`, `Refusal` (minus `InvalidQuery`), `Applied`, rebase, validate, history and recent bookkeeping of `apply_inner` |
 | `view.rs` | from quire-core `view.rs`: selection, `selection_version`, `synced_at`, focus, `Preedit`, `sync`/`map_through` core |
-| `history/{mod,monaco}.rs` | quire-core `history.rs` |
-| `history/{gtk,qt}.rs` | svelters FX3 `native/undo.rs` @ `e17ebbff` (+ its tests; provenance line) |
+| `history/mod.rs` | quire-core `history.rs` (Monaco grouping) and the GTK/Qt glue |
+| `history/native.rs` *(built: one file)* | svelters FX3 `native/undo.rs` @ `e17ebbff` (+ its tests; provenance line) |
 | `words/{mod,vscode}.rs` | quire-core `words.rs` + `commands/words.rs` (Microsoft notice kept) |
-| `words/{pango,qt}.rs` | svelters FX1 `native/words.rs` @ `4365d5a9` (+ its 2 tests; provenance line) |
+| `words/native.rs` *(built: one file)* | svelters FX1 `native/words.rs` @ `4365d5a9` (+ its 2 tests; provenance line) |
 | `ops/model.rs` | quire-core `commands/model.rs` |
 | `ops/{mod,motion,edit}.rs` | quire-core `commands/mod.rs` (`build`, `track`, `RangeEdit`), `motion.rs` (horizontal, word, line-edge, doc-edge; `vertical` generalised over `VisualLines`), `edit.rs` (`delete_right`, plain `delete_left`, `delete_word`, `paste`, `cut`, the plain-insert step of `simple_type`), `lines.rs` (`delete_all_left/right`) |
 | `command.rs`, `rules.rs`, `visual.rs` | new (§2.5–§2.7) |
@@ -330,15 +355,16 @@ in `quire-text/src/text.rs` resp. nowhere).
 | §4.7 | Test |
 |---|---|
 | 1. quire-core builds on quire-text, tests unchanged | full quire-core, egui_quire, quire-syntax suites at baseline counts; empty test diff; VSCODE-MAP identical |
-| 2. FX1 word tests | `quire-text/tests/words_native.rs`: `fx1_words_match_gtk_golden`, `fx1_words_match_qt_golden` (golden char offsets kept literal, converted at the boundary), and `fx1_pango_snake_case` (the model-level part of `native_focus.rs::fx1_gtk_focus_policy_and_words`) |
-| 2. FX3 undo replays | `quire-text/src/history/{gtk,qt}.rs` unit ports of `fx3_undo_typing/edits/paste_against_both_goldens`, plus the same three in `tests/undo_native.rs` driven through `TextDocument::execute` (typing, BackSpace, Ctrl+BackSpace, paste, selection moves), plus `fx3_undo_grouping` (the model-level part of `native_edit.rs::fx3_undo_grouping`, with `replace_all(ResetHistory)` starting a new history). `fx3_splice_places_repeats_at_the_caret` is retired: change sets make the before/after diff unnecessary (open question 6) |
+| 2. FX1 word tests | *(built)* `quire-text/src/words/native.rs` unit tests `fx1_words_match_gtk_golden`, `fx1_words_match_qt_golden` (golden char offsets kept literal, converted at the boundary), and `tests/native.rs::fx1_pango_snake_case` (the model-level part of `native_focus.rs::fx1_gtk_focus_policy_and_words`) |
+| 2. FX3 undo replays | `quire-text/src/history/native.rs` unit ports of `fx3_undo_typing/edits/paste_against_both_goldens`, plus the same three in `tests/native.rs` driven through `TextDocument::execute` (typing, BackSpace, Ctrl+BackSpace, paste, selection moves), plus `fx3_undo_grouping` (the model-level part of `native_edit.rs::fx3_undo_grouping`, with `replace_all(ResetHistory)` starting a new history). `fx3_splice_places_repeats_at_the_caret` is retired: change sets make the before/after diff unnecessary (open question 6) |
 | 3. wasm32, dependency tree | `scripts/cargo.sh check -p quire-text --target wasm32-unknown-unknown` in check.sh; `cargo tree -p quire-text -e normal` has no egui/svelters; grep for public ropey and `std::time` |
 | 4. `TextDocument::new("short")` allocates no history or ring | `tests/alloc.rs`: allocations of `TextDocument::new("short", rules.clone())` equal those of `Text::from("short")`; `TextView::new` allocates nothing (`stats_alloc`) |
-| T6: idle field ≤ 512 B | `tests/alloc.rs::idle_field_fits_512_bytes`: `TextDocument` + `TextView`, single-line, empty, shared `Arc<DocRules>`: bytes live (stats_alloc) plus `size_of` of both ≤ 512 |
-| T6: one inserted character ≤ 8 allocations | `tests/alloc.rs::insert_char_allocates_at_most_8`: `execute(Insert "a")` on a warm field (history and ring already allocated) |
+| T6: idle field ≤ 512 B | *(built: the four checks are one test function, `tests/alloc.rs::field_allocation_budget`, so no other test thread allocates during a measured region)* idle field: `TextDocument` + `TextView`, single-line, empty, shared `Arc<DocRules>`: bytes live (stats_alloc) plus `size_of` of both ≤ 512 |
+| T6: one inserted character ≤ 8 allocations | same test: `execute(Insert "d")` on a warm field, for each of GTK, Qt and Monaco grouping (history and ring already allocated) |
 | T6: creation ≤ 1 µs, insert of one character ≤ 2 µs | criterion bench `quire-text/benches/field.rs`, run once at the end with no other builder running (the report says so); not a unit test |
 | T7: large files unchanged | E2 bench (`quire-core/benches/e2.rs`) rerun after step 6, compared with the QE2 numbers |
-| extra: views sync themselves (SEAM-CHANGES 6) | `tests/views.rs` proptest: two `TextView`s, interleaved edits, both selections valid after every step |
+| extra: views sync themselves (SEAM-CHANGES 6) | *(built)* `tests/rules.rs::two_views_stay_valid` proptest: two `TextView`s, interleaved edits, both selections valid after every step |
+| extra: backends | *(built)* `text.rs` unit tests: `backends_agree` (proptest: every `Text` query and in-place edit gives the same answer on both backends), `backend_hysteresis` (promotion past 64 KiB, no demotion by edits, demotion by `replace_all` under 32 KiB) |
 | extra: rules | `tests/rules.rs`: single-line paste per `LineBreaks`; `max_chars` truncation in code points; `secret` emits no `SetClipboard`/`SetPrimary` and word motions go to the ends; read-only rejects edits, allows motion and copy |
 
 ## 7. Questions (all decided as recommended, register `ae16d45`)

@@ -227,13 +227,6 @@ impl TextDocument {
         }
     }
 
-    fn history_mut(&mut self) -> &mut History {
-        let r = &self.rules;
-        let (mode, rules, limit) = (r.undo_mode, r.undo, r.undo_limit);
-        self.history
-            .get_or_insert_with(|| Box::new(History::with_rules(mode, rules, limit)))
-    }
-
     /// The recent changes.
     pub fn recent(&self) -> &RecentChanges {
         &self.recent
@@ -346,9 +339,25 @@ impl TextDocument {
             _ => ChangeSet::between_trimmed(&self.text, &new),
         };
         let base = self.version;
+        let r = self.replace_all_inner(changes, base, mode, view);
+        if r.is_ok() {
+            // The one place a rope text returns to the string backend (TC-EVAL T1 hysteresis).
+            self.text.demote_if_short();
+        }
+        r
+    }
+
+    fn replace_all_inner(
+        &mut self,
+        changes: ChangeSet,
+        base: Version,
+        mode: ExternalSet,
+        view: Option<&mut TextView>,
+    ) -> Result<Applied, Refusal> {
         match mode {
             ExternalSet::ResetHistory | ExternalSet::Foreign => {
-                let tr: Transaction<NoEffect> = Transaction::new(base, changes).with_origin(Origin::Reload);
+                let tr: Transaction<NoEffect> =
+                    Transaction::new(base, changes).with_origin(Origin::Reload);
                 let r = self.apply_inner(tr, view).map(|(a, _)| a);
                 if mode == ExternalSet::ResetHistory
                     && let Some(h) = &mut self.history
@@ -409,8 +418,8 @@ impl TextDocument {
             crate::rules::LineMode::Single { breaks } if breaks != crate::rules::LineBreaks::Keep
         );
         let mut inserted_chars = 0usize;
-        let mut deleted_bytes = Vec::new();
-        for e in tr.changes.edits() {
+        let mut deleted_chars = 0usize;
+        for e in tr.changes.edit_iter() {
             for p in [e.range.start, e.range.end] {
                 if !self.text.is_char_boundary(p) {
                     return Err(Refusal::NotCharBoundary(p));
@@ -425,21 +434,17 @@ impl TextDocument {
                 }
                 if self.rules.max_chars.is_some() {
                     inserted_chars += e.insert.chars().count();
-                    deleted_bytes.push(e.range.clone());
+                    deleted_chars +=
+                        self.text.byte_to_char(e.range.end) - self.text.byte_to_char(e.range.start);
                 }
             }
         }
         if let Some(max) = self.rules.max_chars
             && !foreign
             && inserted_chars > 0
+            && self.text.len_chars() - deleted_chars + inserted_chars > max as usize
         {
-            let deleted: usize = deleted_bytes
-                .iter()
-                .map(|r| self.text.byte_to_char(r.end) - self.text.byte_to_char(r.start))
-                .sum();
-            if self.text.len_chars() - deleted + inserted_chars > max as usize {
-                return Err(Refusal::MaxChars);
-            }
+            return Err(Refusal::MaxChars);
         }
         Ok(())
     }
@@ -458,18 +463,12 @@ impl TextDocument {
         }
         self.rebase(&mut tr)?;
         self.validate(&tr)?;
-        let new_text = if tr.changes.is_empty() {
-            None
-        } else {
-            let mut t = self.text.clone();
-            tr.changes.apply_to(&mut t);
-            Some(t)
-        };
-        let check_text = new_text.as_ref().unwrap_or(&self.text);
+        // The selection must lie on char boundaries of the text after the change; checked
+        // against the change set, so nothing is copied and a refusal leaves everything as is.
         if let Some(sel) = &tr.selection {
             for r in sel.ranges() {
                 for p in [r.anchor, r.head] {
-                    if !check_text.is_char_boundary(p) {
+                    if !tr.changes.is_char_boundary_after(&self.text, p) {
                         return Err(Refusal::NotCharBoundary(p));
                     }
                 }
@@ -480,20 +479,34 @@ impl TextDocument {
         let prev_version = self.version;
         let mut closed: SmallVec<[UndoGroupClosed; 1]> = SmallVec::new();
         let selection_before = view.as_ref().map(|v| v.selection().clone());
-        if let Some(new_text) = new_text {
-            let inverse = tr.changes.invert(&self.text);
+        if !tr.changes.is_empty() {
+            let native = match &self.history {
+                Some(h) => h.is_native(),
+                None => History::rules_are_native(self.rules.undo_mode, self.rules.undo),
+            };
+            let sel_before = selection_before
+                .clone()
+                .unwrap_or_else(|| Selection::point(0));
+            // What the history needs from the text before the change, taken before the text is
+            // changed in place: Monaco's inverse; GTK/Qt's splice; the old text for an undo or
+            // redo (rare, so the copy-on-write copy it causes does not matter).
+            let inverse = (!native).then(|| tr.changes.invert(&self.text));
+            let undo_redo = matches!(tr.origin, Origin::Undo | Origin::Redo);
+            let old_text = undo_redo.then(|| self.text.clone());
+            let native_edit = (native
+                && !undo_redo
+                && matches!(tr.origin, Origin::Input(_) | Origin::Command(_)))
+            .then(|| History::native_edit(&self.text, &tr.changes, &sel_before))
+            .flatten();
             let line_edits = if self.rules.track_line_edits {
                 LineEdit::compute(&tr.changes, &self.text)
             } else {
                 Vec::new()
             };
-            let old_text = std::mem::replace(&mut self.text, new_text);
+            tr.changes.apply_to(&mut self.text);
             self.version = self.version.next();
             self.recent.push(tr.changes.clone(), line_edits, tr.author);
 
-            let sel_before = selection_before
-                .clone()
-                .unwrap_or_else(|| Selection::point(0));
             let sel_after = match (&tr.selection, &view) {
                 (Some(s), _) => s.clone(),
                 (None, Some(v)) => v.selection().map(&tr.changes, Bias::After),
@@ -501,32 +514,39 @@ impl TextDocument {
             };
             let pause_ms = self.rules.undo_pause_ms.unwrap_or(u64::MAX);
             let version = self.version;
-            let new_text = self.text.clone();
-            let history = self.history_mut();
+            let r = &self.rules;
+            let (mode, rules, limit) = (r.undo_mode, r.undo, r.undo_limit);
+            let history = self
+                .history
+                .get_or_insert_with(|| Box::new(History::with_rules(mode, rules, limit)));
+            let new_text = &self.text;
             let local = history.mode() == UndoMode::Local;
-            let native = history.is_native();
-            let recorded_specially = match &tr.origin {
-                Origin::Undo | Origin::Redo if native => {
+            let recorded_specially = match (&tr.origin, old_text) {
+                (Origin::Undo | Origin::Redo, Some(old_text)) if native => {
                     let undo = matches!(tr.origin, Origin::Undo);
-                    let own = history.applied_native_step(&old_text, &sel_before, &new_text, undo);
-                    if !own {
-                        history.record_native(&tr.origin, &old_text, &new_text, &tr.changes, &sel_before);
+                    let own = history.applied_native_step(&old_text, &sel_before, new_text, undo);
+                    if !own
+                        && let Some(e) = History::native_edit(&old_text, &tr.changes, &sel_before)
+                    {
+                        history.record_native(&tr.origin, e, new_text);
                     }
                     true
                 }
-                Origin::Input(_) | Origin::Command(_) if native => {
-                    history.record_native(&tr.origin, &old_text, &new_text, &tr.changes, &sel_before);
+                (Origin::Input(_) | Origin::Command(_), _) if native => {
+                    if let Some(e) = native_edit {
+                        history.record_native(&tr.origin, e, new_text);
+                    }
                     true
                 }
-                Origin::Undo => {
+                (Origin::Undo, Some(old_text)) => {
                     closed.extend(history.close());
                     !local || history.applied_undo(&tr.changes, &old_text)
                 }
-                Origin::Redo => {
+                (Origin::Redo, Some(old_text)) => {
                     closed.extend(history.close());
                     !local || history.applied_redo(&tr.changes, &old_text)
                 }
-                Origin::Remote | Origin::Reload => {
+                (Origin::Remote | Origin::Reload, _) => {
                     closed.extend(history.applied_foreign(&tr.changes));
                     true
                 }
@@ -538,6 +558,7 @@ impl TextDocument {
                     Origin::Redo => Origin::Command("redo".into()),
                     o => o.clone(),
                 };
+                let inverse = inverse.expect("Monaco grouping takes the inverse before the change");
                 closed.extend(history.record(Record {
                     origin: &origin,
                     author: tr.author,

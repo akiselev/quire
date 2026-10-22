@@ -29,7 +29,12 @@ schemars = { workspace = true, optional = true }
 [dev-dependencies]
 proptest.workspace = true
 stats_alloc.workspace = true
+criterion.workspace = true
 quire-text = { path = ".", features = ["serde", "diff"] }
+
+[[bench]]
+name = "field"
+harness = false
 
 [lints]
 workspace = true

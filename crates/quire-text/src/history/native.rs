@@ -69,7 +69,11 @@ impl Snap {
     /// A snapshot (offsets clamped to the text).
     pub fn new(text: &str, anchor: usize, caret: usize) -> Snap {
         let len = text.chars().count();
-        Snap { text: text.to_string(), anchor: anchor.min(len), caret: caret.min(len) }
+        Snap {
+            text: text.to_string(),
+            anchor: anchor.min(len),
+            caret: caret.min(len),
+        }
     }
 
     fn lo(&self) -> usize {
@@ -120,11 +124,22 @@ impl NativeHistory {
     }
 
     /// The text of `before` changed because of `kind`: at char `at`, `removed` became `inserted`.
-    pub fn edit(&mut self, before: &Snap, at: usize, removed: Vec<char>, inserted: Vec<char>, kind: EditKind) {
+    pub fn edit(
+        &mut self,
+        before: &Snap,
+        at: usize,
+        removed: Vec<char>,
+        inserted: Vec<char>,
+        kind: EditKind,
+    ) {
         if removed == inserted {
             return;
         }
-        let s = Splice { at, removed, inserted };
+        let s = Splice {
+            at,
+            removed,
+            inserted,
+        };
         match self {
             NativeHistory::Gtk(h) => h.edit(before, s),
             NativeHistory::Qt(h) => h.edit(before, s, kind),
@@ -134,7 +149,9 @@ impl NativeHistory {
     /// The caret or selection changed without an edit.
     pub fn moved(&mut self, before: &Snap, after: &Snap) {
         match self {
-            NativeHistory::Gtk(h) => h.merge &= before.caret == after.caret && before.anchor == after.anchor,
+            NativeHistory::Gtk(h) => {
+                h.merge &= before.caret == after.caret && before.anchor == after.anchor
+            }
             NativeHistory::Qt(h) => h.separator |= before.caret != after.caret,
         }
     }
@@ -150,7 +167,9 @@ impl NativeHistory {
             }
             NativeHistory::Qt(h) => {
                 // Steps start at separators; drop whole steps from the front.
-                let seps: Vec<usize> = (0..h.state).filter(|&i| h.cmds[i].ty == Q::Separator).collect();
+                let seps: Vec<usize> = (0..h.state)
+                    .filter(|&i| h.cmds[i].ty == Q::Separator)
+                    .collect();
                 if seps.len() > n {
                     let cut = seps[seps.len() - n];
                     h.cmds.drain(..cut);
@@ -220,9 +239,20 @@ fn remove(text: &mut Vec<char>, at: usize, n: usize) -> Option<()> {
 
 #[derive(Clone, Debug)]
 enum G {
-    Insert { at: usize, text: Vec<char> },
-    Delete { at: usize, text: Vec<char>, selected: bool },
-    Replace { at: usize, removed: Vec<char>, inserted: Vec<char> },
+    Insert {
+        at: usize,
+        text: Vec<char>,
+    },
+    Delete {
+        at: usize,
+        text: Vec<char>,
+        selected: bool,
+    },
+    Replace {
+        at: usize,
+        removed: Vec<char>,
+        inserted: Vec<char>,
+    },
 }
 
 /// `NativeRules::Gtk`.
@@ -246,16 +276,29 @@ impl GtkHistory {
             {
                 text.extend(s.inserted);
             } else {
-                self.undo.push(G::Insert { at: s.at, text: s.inserted });
+                self.undo.push(G::Insert {
+                    at: s.at,
+                    text: s.inserted,
+                });
             }
             self.merge = true;
             return;
         }
-        let selected = before.selected() && s.at == before.lo() && s.removed.len() == before.hi() - before.lo();
+        let selected = before.selected()
+            && s.at == before.lo()
+            && s.removed.len() == before.hi() - before.lo();
         if s.inserted.is_empty() {
-            self.undo.push(G::Delete { at: s.at, text: s.removed, selected });
+            self.undo.push(G::Delete {
+                at: s.at,
+                text: s.removed,
+                selected,
+            });
         } else {
-            self.undo.push(G::Replace { at: s.at, removed: s.removed, inserted: s.inserted });
+            self.undo.push(G::Replace {
+                at: s.at,
+                removed: s.removed,
+                inserted: s.inserted,
+            });
         }
         self.merge = false;
     }
@@ -271,16 +314,28 @@ impl GtkHistory {
             }
             G::Delete { at, text, selected } => {
                 insert(&mut t, *at, text)?;
-                if *selected { (at + text.len(), *at) } else { (at + text.len(), at + text.len()) }
+                if *selected {
+                    (at + text.len(), *at)
+                } else {
+                    (at + text.len(), at + text.len())
+                }
             }
-            G::Replace { at, removed, inserted } => {
+            G::Replace {
+                at,
+                removed,
+                inserted,
+            } => {
                 remove(&mut t, *at, inserted.len())?;
                 insert(&mut t, *at, removed)?;
                 (at + removed.len(), *at)
             }
         };
         self.redo.push(a);
-        Some(Snap { text: t.into_iter().collect(), anchor, caret })
+        Some(Snap {
+            text: t.into_iter().collect(),
+            anchor,
+            caret,
+        })
     }
 
     fn redo(&mut self, now: &Snap) -> Option<Snap> {
@@ -296,14 +351,22 @@ impl GtkHistory {
                 remove(&mut t, *at, text.len())?;
                 *at
             }
-            G::Replace { at, removed, inserted } => {
+            G::Replace {
+                at,
+                removed,
+                inserted,
+            } => {
                 remove(&mut t, *at, removed.len())?;
                 insert(&mut t, *at, inserted)?;
                 at + inserted.len()
             }
         };
         self.undo.push(a);
-        Some(Snap { text: t.into_iter().collect(), anchor: caret, caret })
+        Some(Snap {
+            text: t.into_iter().collect(),
+            anchor: caret,
+            caret,
+        })
     }
 }
 
@@ -337,7 +400,11 @@ struct Line {
 
 impl Line {
     fn of(s: &Snap) -> Line {
-        Line { text: s.text.chars().collect(), cursor: s.caret, sel: s.selected().then(|| (s.lo(), s.hi())) }
+        Line {
+            text: s.text.chars().collect(),
+            cursor: s.caret,
+            sel: s.selected().then(|| (s.lo(), s.hi())),
+        }
     }
 
     fn snap(self) -> Snap {
@@ -347,7 +414,11 @@ impl Line {
             Some((s, e)) if s < e && e <= len => (if cursor == s { e } else { s }, cursor),
             _ => (cursor, cursor),
         };
-        Snap { text: self.text.into_iter().collect(), anchor, caret }
+        Snap {
+            text: self.text.into_iter().collect(),
+            anchor,
+            caret,
+        }
     }
 }
 
@@ -363,10 +434,23 @@ pub struct QtHistory {
 
 impl QtHistory {
     /// `addCommand`; `cursor` and `sel` are the line's at that moment (a pending separator takes them).
-    fn add(&mut self, ty: Q, pos: usize, ch: char, sel: Option<(usize, usize)>, cursor: usize, line_sel: Option<(usize, usize)>) {
+    fn add(
+        &mut self,
+        ty: Q,
+        pos: usize,
+        ch: char,
+        sel: Option<(usize, usize)>,
+        cursor: usize,
+        line_sel: Option<(usize, usize)>,
+    ) {
         self.cmds.truncate(self.state);
         if self.separator && ty != Q::Separator {
-            self.cmds.push(Cmd { ty: Q::Separator, pos: cursor, ch: '\0', sel: line_sel });
+            self.cmds.push(Cmd {
+                ty: Q::Separator,
+                pos: cursor,
+                ch: '\0',
+                sel: line_sel,
+            });
         }
         self.separator = false;
         self.cmds.push(Cmd { ty, pos, ch, sel });
@@ -376,14 +460,28 @@ impl QtHistory {
     /// `removeSelectedText` on `text` with `cursor` and the selection `[s, e)`.
     fn remove_selected(&mut self, text: &[char], cursor: usize, s: usize, e: usize) {
         self.separator = true;
-        self.add(Q::SetSelection, cursor, '\0', Some((s, e)), cursor, Some((s, e)));
+        self.add(
+            Q::SetSelection,
+            cursor,
+            '\0',
+            Some((s, e)),
+            cursor,
+            Some((s, e)),
+        );
         if s <= cursor && cursor < e {
             // the cursor is inside: split the commands so that undo puts it back
             for i in (s..=cursor).rev() {
                 self.add(Q::DeleteSelection, i, text[i], None, cursor, None);
             }
             for i in (cursor + 1..e).rev() {
-                self.add(Q::DeleteSelection, i - cursor + s - 1, text[i], None, cursor, None);
+                self.add(
+                    Q::DeleteSelection,
+                    i - cursor + s - 1,
+                    text[i],
+                    None,
+                    cursor,
+                    None,
+                );
             }
         } else {
             for i in (s..e).rev() {
@@ -404,7 +502,11 @@ impl QtHistory {
             match kind {
                 _ if is_sel => self.remove_selected(&line.text, line.cursor, s.at, s.at + r),
                 // `cursorWordBackward(true)`/`cursorWordForward(true)` then `del()`
-                EditKind::WordBack | EditKind::Cut | EditKind::Other | EditKind::Paste | EditKind::Typing => {
+                EditKind::WordBack
+                | EditKind::Cut
+                | EditKind::Other
+                | EditKind::Paste
+                | EditKind::Typing => {
                     self.separator = true;
                     self.remove_selected(&line.text, s.at, s.at, s.at + r)
                 }
@@ -464,7 +566,10 @@ impl QtHistory {
             }
             if self.state > 0 {
                 let next = self.cmds[self.state - 1].ty;
-                if next != cmd.ty && next < Q::RemoveSelection && (cmd.ty < Q::RemoveSelection || next == Q::Separator) {
+                if next != cmd.ty
+                    && next < Q::RemoveSelection
+                    && (cmd.ty < Q::RemoveSelection || next == Q::Separator)
+                {
                     break;
                 }
             }
@@ -524,9 +629,19 @@ mod tests {
 
     impl F {
         fn new(rules: NativeRules, text: &str, at: usize) -> F {
-            F { h: NativeHistory::new(rules), s: Snap::new(text, at, at) }
+            F {
+                h: NativeHistory::new(rules),
+                s: Snap::new(text, at, at),
+            }
         }
-        fn set(&mut self, next: Snap, at: usize, removed: Vec<char>, inserted: &[char], kind: EditKind) {
+        fn set(
+            &mut self,
+            next: Snap,
+            at: usize,
+            removed: Vec<char>,
+            inserted: &[char],
+            kind: EditKind,
+        ) {
             self.h.edit(&self.s, at, removed, inserted.to_vec(), kind);
             self.s = next;
         }
@@ -535,19 +650,49 @@ mod tests {
                 let mut x: Vec<char> = self.s.text.chars().collect();
                 let (lo, hi) = (self.s.lo(), self.s.hi());
                 let removed: Vec<char> = x.splice(lo..hi, [c]).collect();
-                self.set(Snap { text: x.into_iter().collect(), anchor: lo + 1, caret: lo + 1 }, lo, removed, &[c], EditKind::Typing);
+                self.set(
+                    Snap {
+                        text: x.into_iter().collect(),
+                        anchor: lo + 1,
+                        caret: lo + 1,
+                    },
+                    lo,
+                    removed,
+                    &[c],
+                    EditKind::Typing,
+                );
             }
         }
         fn backspace(&mut self) {
             let mut x: Vec<char> = self.s.text.chars().collect();
             let c = self.s.caret;
             let r = x.remove(c - 1);
-            self.set(Snap { text: x.into_iter().collect(), anchor: c - 1, caret: c - 1 }, c - 1, vec![r], &[], EditKind::Backspace);
+            self.set(
+                Snap {
+                    text: x.into_iter().collect(),
+                    anchor: c - 1,
+                    caret: c - 1,
+                },
+                c - 1,
+                vec![r],
+                &[],
+                EditKind::Backspace,
+            );
         }
         fn word_back(&mut self, to: usize) {
             let mut x: Vec<char> = self.s.text.chars().collect();
             let removed: Vec<char> = x.drain(to..self.s.caret).collect();
-            self.set(Snap { text: x.into_iter().collect(), anchor: to, caret: to }, to, removed, &[], EditKind::WordBack);
+            self.set(
+                Snap {
+                    text: x.into_iter().collect(),
+                    anchor: to,
+                    caret: to,
+                },
+                to,
+                removed,
+                &[],
+                EditKind::WordBack,
+            );
         }
         fn paste(&mut self, t: &str) {
             let mut x: Vec<char> = self.s.text.chars().collect();
@@ -555,10 +700,24 @@ mod tests {
             let ins: Vec<char> = t.chars().collect();
             let removed: Vec<char> = x.splice(lo..self.s.hi(), ins.iter().copied()).collect();
             let at = lo + ins.len();
-            self.set(Snap { text: x.into_iter().collect(), anchor: at, caret: at }, lo, removed, &ins, EditKind::Paste);
+            self.set(
+                Snap {
+                    text: x.into_iter().collect(),
+                    anchor: at,
+                    caret: at,
+                },
+                lo,
+                removed,
+                &ins,
+                EditKind::Paste,
+            );
         }
         fn select(&mut self, anchor: usize, caret: usize) {
-            let next = Snap { anchor, caret, ..self.s.clone() };
+            let next = Snap {
+                anchor,
+                caret,
+                ..self.s.clone()
+            };
             self.h.moved(&self.s, &next);
             self.s = next;
         }
@@ -650,7 +809,11 @@ mod tests {
             f.paste("PASTED");
             f.typ(" four");
             assert_eq!(f.undo(), t("one two three PASTED", 20, 20));
-            let (three, four) = if rules == NativeRules::Gtk { (13, "one two three") } else { (14, "one two three ") };
+            let (three, four) = if rules == NativeRules::Gtk {
+                (13, "one two three")
+            } else {
+                (14, "one two three ")
+            };
             assert_eq!(f.undo(), t(four, three, three));
             assert_eq!(f.undo(), t("one two", 7, 7));
             assert_eq!(f.undo(), t("one two", 7, 7));

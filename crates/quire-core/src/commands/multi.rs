@@ -74,7 +74,7 @@ pub(crate) fn insert_cursor(ctx: &Ctx, text: &Text, sel: &Selection, down: bool)
 
 fn configured_word(ctx: &Ctx, text: &Text, pos: usize) -> Option<std::ops::Range<usize>> {
     let m = Model::new(text);
-    let (a, b) = super::words::word_at(&m, &ctx.cls, m.pos(pos));
+    let (a, b) = super::words::word_at(&m, ctx.cls, m.pos(pos));
     (a != b).then(|| m.off(a)..m.off(b))
 }
 

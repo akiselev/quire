@@ -4,7 +4,7 @@
 use proptest::prelude::*;
 use quire_text::{
     ChangeSet, DocRules, EditCommand, EditRules, HostRequest, InputKind, LineBreaks, LineMode,
-    NoWrap, PrimaryRule, Refusal, Rejected, Selection, Transaction, TextDocument, TextView,
+    NoWrap, PrimaryRule, Refusal, Rejected, Selection, TextDocument, TextView, Transaction,
     UndoRules, WordRules,
 };
 use std::sync::Arc;
@@ -31,14 +31,24 @@ fn single_line_breaks() {
         (LineBreaks::Spaces, "ab c d"),
         (LineBreaks::Keep, "ab\nc\nd"),
     ] {
-        let (mut doc, mut view) = field("ab", DocRules::field(LineMode::Single { breaks }, UndoRules::Gtk));
+        let (mut doc, mut view) = field(
+            "ab",
+            DocRules::field(LineMode::Single { breaks }, UndoRules::Gtk),
+        );
         let rules = EditRules::field(WordRules::Pango);
-        doc.execute(&mut view, paste("\nc\r\nd"), &rules, &NoWrap::default(), None);
+        doc.execute(
+            &mut view,
+            paste("\nc\r\nd"),
+            &rules,
+            &NoWrap::default(),
+            None,
+        );
         assert_eq!(doc.text().to_string(), want, "{breaks:?}");
     }
     // apply refuses a local break in a stripping single-line document; foreign changes apply
     let (mut doc, mut view) = field("ab", DocRules::field(LineMode::SINGLE, UndoRules::Gtk));
-    let tr: Transaction = Transaction::new(doc.version(), ChangeSet::insert_at(2, 2, "\n").unwrap());
+    let tr: Transaction =
+        Transaction::new(doc.version(), ChangeSet::insert_at(2, 2, "\n").unwrap());
     assert_eq!(doc.apply(tr, &mut view), Err(Refusal::LineBreak));
 }
 
@@ -59,13 +69,20 @@ fn max_chars_counts_code_points() {
 
 #[test]
 fn secret_fields_never_copy() {
-    let (mut doc, mut view) = field("pass word", DocRules::field(LineMode::SINGLE, UndoRules::Gtk));
+    let (mut doc, mut view) = field(
+        "pass word",
+        DocRules::field(LineMode::SINGLE, UndoRules::Gtk),
+    );
     let mut edit = EditRules::field(WordRules::Pango);
     edit.secret = true;
     edit.primary = PrimaryRule::SetAndClear;
     let layout = NoWrap::default();
     let ex = doc.execute(&mut view, EditCommand::SelectAll, &edit, &layout, None);
-    assert!(ex.requests.is_empty(), "no SetPrimary in a secret field: {:?}", ex.requests);
+    assert!(
+        ex.requests.is_empty(),
+        "no SetPrimary in a secret field: {:?}",
+        ex.requests
+    );
     for cmd in [EditCommand::Copy, EditCommand::Cut] {
         let ex = doc.execute(&mut view, cmd, &edit, &layout, None);
         assert_eq!(ex.rejected, Some(Rejected::Secret));
@@ -95,8 +112,17 @@ fn primary_follows_the_selection() {
     edit.primary = PrimaryRule::SetAndClear;
     let layout = NoWrap::default();
     let ex = doc.execute(&mut view, EditCommand::SelectAll, &edit, &layout, None);
-    assert_eq!(ex.requests.as_slice(), [HostRequest::SetPrimary("hello".into())]);
-    let ex = doc.execute(&mut view, EditCommand::SetSelection(Selection::point(2)), &edit, &layout, None);
+    assert_eq!(
+        ex.requests.as_slice(),
+        [HostRequest::SetPrimary("hello".into())]
+    );
+    let ex = doc.execute(
+        &mut view,
+        EditCommand::SetSelection(Selection::point(2)),
+        &edit,
+        &layout,
+        None,
+    );
     assert_eq!(ex.requests.as_slice(), [HostRequest::ClearPrimary]);
 }
 
@@ -111,7 +137,10 @@ fn read_only_allows_motion_and_copy() {
     assert_eq!(ex.rejected, Some(Rejected::ReadOnly));
     doc.execute(&mut view, EditCommand::SelectAll, &edit, &layout, None);
     let ex = doc.execute(&mut view, EditCommand::Copy, &edit, &layout, None);
-    assert_eq!(ex.requests.as_slice(), [HostRequest::SetClipboard("text".into())]);
+    assert_eq!(
+        ex.requests.as_slice(),
+        [HostRequest::SetClipboard("text".into())]
+    );
     assert_eq!(doc.text().to_string(), "text");
 }
 

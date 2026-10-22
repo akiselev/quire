@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# The local CI (R12): format, clippy with warnings denied, tests, and a wasm32 check of
-# quire-core. Run once at the end of a milestone, never on unchanged code.
+# The local CI (R12): format, clippy with warnings denied, tests, and wasm32 checks of
+# quire-core and quire-text. Run once at the end of a milestone, never on unchanged code.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 # The whole run holds one machine build slot (svelters' cargo-slot protocol). cargo-slot sets
@@ -28,6 +28,20 @@ $c test --workspace --all-features
 
 step "wasm32: quire-core"
 $c check -p quire-core --target wasm32-unknown-unknown
+
+step "wasm32: quire-text"
+$c check -p quire-text --target wasm32-unknown-unknown
+
+step "quire-text has no egui, svelters or tokio; ropey only in text.rs; no clock"
+if $c tree -p quire-text -e normal --prefix none 2>/dev/null | grep -E '^(egui|eframe|epaint|winit|wgpu|tokio|svelters[a-z_-]*) ' ; then
+  echo "quire-text depends on a forbidden crate" >&2; exit 1
+fi
+if grep -rln 'ropey' crates/quire-text/src | grep -v '^crates/quire-text/src/text.rs$' ; then
+  echo "ropey is used outside quire-text/src/text.rs" >&2; exit 1
+fi
+if grep -rn 'std::time' crates/quire-text/src ; then
+  echo "quire-text reads no clock" >&2; exit 1
+fi
 
 step "quire-core has no egui, tokio or thread spawning"
 if $c tree -p quire-core -e normal --prefix none 2>/dev/null | grep -E '^(egui|eframe|epaint|winit|wgpu|tokio) ' ; then

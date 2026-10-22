@@ -36,8 +36,13 @@ fn field_allocation_budget() {
     let r = Region::new(GLOBAL);
     let view = TextView::new(&doc);
     let view_allocs = r.change().allocations;
-    eprintln!("new(\"short\"): text {text_allocs} allocations, document {doc_allocs}, view {view_allocs}");
-    assert_eq!(doc_allocs, text_allocs, "TextDocument::new allocates more than its text");
+    eprintln!(
+        "new(\"short\"): text {text_allocs} allocations, document {doc_allocs}, view {view_allocs}"
+    );
+    assert_eq!(
+        doc_allocs, text_allocs,
+        "TextDocument::new allocates more than its text"
+    );
     assert_eq!(view_allocs, 0, "TextView::new allocates");
     drop((doc, view));
 
@@ -54,10 +59,10 @@ fn field_allocation_budget() {
         std::mem::size_of::<TextDocument>(),
         std::mem::size_of::<TextView>()
     );
-    assert!(idle <= 512, "idle field {idle} B > 512 B");
     drop((doc, view));
 
     // TC-EVAL: one inserted character on a warm field makes at most 8 allocations.
+    let mut inserts = Vec::new();
     for undo in [UndoRules::Gtk, UndoRules::Qt, UndoRules::Monaco] {
         let rules = Arc::new(DocRules::field(LineMode::SINGLE, undo));
         let edit = EditRules::field(WordRules::Pango);
@@ -74,6 +79,11 @@ fn field_allocation_budget() {
         drop(ex);
         eprintln!("insert one character ({undo:?} undo): {n} allocations");
         assert_eq!(doc.text().to_string(), "abcd");
+        inserts.push((undo, n));
+    }
+    // Asserted last, so a run prints every number.
+    assert!(idle <= 512, "idle field {idle} B > 512 B");
+    for (undo, n) in inserts {
         assert!(n <= 8, "{undo:?}: {n} allocations > 8");
     }
 }

@@ -47,6 +47,10 @@ pub fn build(
     sel: &Selection,
     edits: Vec<Option<RangeEdit>>,
 ) -> (ChangeSet, Selection) {
+    // One range, one edit (a field's every edit): no merging, no index tables.
+    if let ([_], [Some(e)]) = (sel.ranges(), edits.as_slice()) {
+        return build_one(text, sel, e);
+    }
     let mut idx: Vec<usize> = (0..edits.len()).filter(|&i| edits[i].is_some()).collect();
     idx.sort_by_key(|&i| edits[i].as_ref().map(|e| (e.range.start, e.range.end)));
     // Merge overlapping edits (keep the first's insert, union the ranges).
@@ -101,6 +105,43 @@ pub fn build(
         })
         .collect();
     (changes, Selection::new(ranges, sel.primary_index()))
+}
+
+/// [`build`] for one range and one edit.
+fn build_one(text: &Text, sel: &Selection, e: &RangeEdit) -> (ChangeSet, Selection) {
+    let changes = ChangeSet::replace(text.len_bytes(), [(e.range.clone(), e.insert.as_str())])
+        .expect("command edits are sorted and in bounds");
+    (
+        changes,
+        one_range(sel, e.range.start, e.insert.len(), e.anchor, e.head),
+    )
+}
+
+/// The selection after one edit at `start` inserting `n` bytes, with `anchor`/`head` relative to
+/// `start` (as [`build`] places them).
+fn one_range(sel: &Selection, start: usize, n: usize, anchor: usize, head: usize) -> Selection {
+    Selection::new(
+        [SelRange::new(start + anchor.min(n), start + head.min(n))],
+        sel.primary_index(),
+    )
+}
+
+/// [`build`] for replacing every range with `insert`, cursor after it, without building
+/// [`RangeEdit`]s for the one-range case (typing).
+pub fn build_replace_each(text: &Text, sel: &Selection, insert: &str) -> (ChangeSet, Selection) {
+    if let [r] = sel.ranges() {
+        let range = r.range();
+        let changes = ChangeSet::replace(text.len_bytes(), [(range.clone(), insert)])
+            .expect("command edits are sorted and in bounds");
+        let n = insert.len();
+        return (changes, one_range(sel, range.start, n, n, n));
+    }
+    let edits = sel
+        .ranges()
+        .iter()
+        .map(|r| Some(RangeEdit::replace(r.range(), insert)))
+        .collect();
+    build(text, sel, edits)
 }
 
 /// Maps a selection the way VS Code's `trackSelection` does: a cursor at a line end stays before

@@ -459,6 +459,18 @@ fn rebase_stack(stack: &mut Vec<UndoGroup>, remote: &ChangeSet) {
     });
 }
 
+/// What a GTK/Qt local edit takes from the text before it ([`History::native_edit`]).
+pub(crate) struct NativeEdit {
+    /// The first edit's start (chars, old text).
+    at: usize,
+    /// The changed range's start (bytes).
+    start: usize,
+    /// The changed range's end in the new text (bytes).
+    end_after: usize,
+    removed: Vec<char>,
+    snap: native::Snap,
+}
+
 /// A GTK/Qt snapshot of `text` with the primary range of `sel` (char offsets).
 fn snap(text: &Text, sel: &Selection) -> native::Snap {
     let p = sel.primary();
@@ -495,33 +507,46 @@ impl History {
         self.native.is_some()
     }
 
-    /// GTK/Qt: a local edit from `before` to `after` (texts), what made it, and the acting
-    /// view's selection before it.
-    pub(crate) fn record_native(
-        &mut self,
-        origin: &Origin,
+    /// Whether these rules use the GTK/Qt models (as [`History::with_rules`] decides).
+    pub(crate) fn rules_are_native(mode: UndoMode, rules: UndoRules) -> bool {
+        mode == UndoMode::Local && matches!(rules, UndoRules::Gtk | UndoRules::Qt)
+    }
+
+    /// GTK/Qt: what a local edit takes from the text `before` it (the removed chars, the
+    /// selection; the text itself only when something is removed, which Qt's model reads).
+    pub(crate) fn native_edit(
         before: &Text,
-        after: &Text,
         changes: &ChangeSet,
         sel_before: &Selection,
-    ) {
-        let Some(n) = &mut self.native else { return };
-        let edits = changes.edits();
-        let (Some(first), Some(last)) = (edits.first(), edits.last()) else {
-            return;
+    ) -> Option<NativeEdit> {
+        let r = changes.changed_range()?;
+        let removed: Vec<char> = before.slice(r.clone()).chars().collect();
+        let p = sel_before.primary();
+        let snap = native::Snap {
+            text: if removed.is_empty() {
+                String::new()
+            } else {
+                before.to_string()
+            },
+            anchor: before.byte_to_char(p.anchor.min(before.len_bytes())),
+            caret: before.byte_to_char(p.head.min(before.len_bytes())),
         };
-        let (s, e) = (first.range.start, last.range.end);
-        let e_new = (e as isize + changes.len_after() as isize - changes.len() as isize) as usize;
-        let removed: Vec<char> = before.slice(s..e).chars().collect();
-        let inserted: Vec<char> = after.slice(s..e_new).chars().collect();
-        let at = before.byte_to_char(s);
-        n.edit(
-            &snap(before, sel_before),
-            at,
+        let end_after =
+            (r.end as isize + changes.len_after() as isize - changes.len() as isize) as usize;
+        Some(NativeEdit {
+            at: before.byte_to_char(r.start),
+            start: r.start,
+            end_after,
             removed,
-            inserted,
-            input_edit_kind(origin),
-        );
+            snap,
+        })
+    }
+
+    /// GTK/Qt: records a local edit (from [`History::native_edit`]); `after` is the new text.
+    pub(crate) fn record_native(&mut self, origin: &Origin, e: NativeEdit, after: &Text) {
+        let Some(n) = &mut self.native else { return };
+        let inserted: Vec<char> = after.slice(e.start..e.end_after).chars().collect();
+        n.edit(&e.snap, e.at, e.removed, inserted, input_edit_kind(origin));
         if let Some(l) = self.limit {
             n.limit(l);
         }
@@ -530,12 +555,26 @@ impl History {
     /// GTK/Qt: the caret or selection moved without an edit.
     pub(crate) fn moved_native(&mut self, text: &Text, before: &Selection, after: &Selection) {
         if let Some(n) = &mut self.native {
-            n.moved(&snap(text, before), &snap(text, after));
+            // The model reads only the carets here.
+            let caret = |sel: &Selection| {
+                let p = sel.primary();
+                native::Snap {
+                    text: String::new(),
+                    anchor: text.byte_to_char(p.anchor.min(text.len_bytes())),
+                    caret: text.byte_to_char(p.head.min(text.len_bytes())),
+                }
+            };
+            n.moved(&caret(before), &caret(after));
         }
     }
 
     /// GTK/Qt: the change and selection the next undo (or redo) applies to `text` with `sel`.
-    pub fn native_step(&self, text: &Text, sel: &Selection, undo: bool) -> Option<(ChangeSet, Selection)> {
+    pub fn native_step(
+        &self,
+        text: &Text,
+        sel: &Selection,
+        undo: bool,
+    ) -> Option<(ChangeSet, Selection)> {
         let mut n = self.native.clone()?;
         let now = snap(text, sel);
         let to = if undo { n.undo(&now)? } else { n.redo(&now)? };
@@ -554,10 +593,16 @@ impl History {
         after: &Text,
         undo: bool,
     ) -> bool {
-        let Some(n) = &mut self.native else { return false };
+        let Some(n) = &mut self.native else {
+            return false;
+        };
         let now = snap(text, sel);
         let mut probe = n.clone();
-        let to = if undo { probe.undo(&now) } else { probe.redo(&now) };
+        let to = if undo {
+            probe.undo(&now)
+        } else {
+            probe.redo(&now)
+        };
         match to {
             Some(to) if to.text == after.to_string() => {
                 *n = probe;

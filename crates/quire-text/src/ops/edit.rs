@@ -37,8 +37,7 @@ fn out(text: &Text, changes: ChangeSet, sel: Selection, kind: InputKind) -> Opti
     // VS Code pushes an undo stop before a delete that joins lines.
     let close_before = matches!(kind, InputKind::DeletingLeft | InputKind::DeletingRight)
         && changes
-            .edits()
-            .iter()
+            .edit_iter()
             .any(|e| text.byte_to_line(e.range.start) != text.byte_to_line(e.range.end));
     Some(OpEdit {
         changes,
@@ -67,12 +66,7 @@ pub fn insert_typed(
     } else {
         InputKind::Typing
     };
-    let edits = sel
-        .ranges()
-        .iter()
-        .map(|r| Some(RangeEdit::replace(r.range(), typed)))
-        .collect();
-    let (changes, sel) = build(text, sel, edits);
+    let (changes, sel) = super::build_replace_each(text, sel, typed);
     OpEdit {
         changes,
         sel,
@@ -92,6 +86,10 @@ pub fn paste(text: &Text, sel: &Selection, t: &str, per_cursor: bool) -> Option<
     } else {
         None
     };
+    if lines.is_none() {
+        let (changes, sel) = super::build_replace_each(text, sel, t);
+        return out(text, changes, sel, InputKind::Paste);
+    }
     let edits = sel
         .ranges()
         .iter()

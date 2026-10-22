@@ -15,6 +15,7 @@
 //!   ties (the transform used for remote changes and history rebasing).
 
 use crate::text::Text;
+use smallvec::SmallVec;
 use std::ops::Range;
 use std::sync::Arc;
 
@@ -100,9 +101,12 @@ pub struct Edit<'a> {
 }
 
 /// Sorted, non-overlapping edits against one base length. See the module docs for the laws.
+///
+/// One edit (retain, insert or delete, retain) is stored inline, so building, cloning and
+/// recording a typed character allocates only the inserted text (shared as `Arc<str>`).
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ChangeSet {
-    ops: Vec<Operation>,
+    ops: SmallVec<[Operation; 3]>,
     len: usize,
     len_after: usize,
 }
@@ -117,7 +121,7 @@ impl ChangeSet {
 
     fn with_len(len: usize) -> Self {
         ChangeSet {
-            ops: Vec::new(),
+            ops: SmallVec::new(),
             len,
             len_after: 0,
         }
@@ -132,7 +136,7 @@ impl ChangeSet {
         base_len: usize,
         edits: impl IntoIterator<Item = (Range<usize>, S)>,
     ) -> Result<Self, ChangeError> {
-        let mut edits: Vec<(Range<usize>, S)> = edits.into_iter().collect();
+        let mut edits: SmallVec<[(Range<usize>, S); 1]> = edits.into_iter().collect();
         edits.sort_by_key(|(r, _)| r.start);
         let mut c = ChangeSet::with_len(base_len);
         let mut pos = 0;
@@ -253,37 +257,92 @@ impl ChangeSet {
     /// The edits in base coordinates, in order. An insertion followed by a deletion at the same
     /// place is one replacing edit.
     pub fn edits(&self) -> Vec<Edit<'_>> {
-        let mut out = Vec::new();
+        self.edit_iter().collect()
+    }
+
+    /// [`ChangeSet::edits`] without collecting them.
+    pub(crate) fn edit_iter(&self) -> impl Iterator<Item = Edit<'_>> + '_ {
         let mut pos = 0;
         let mut i = 0;
-        while i < self.ops.len() {
-            match &self.ops[i] {
-                Operation::Retain(n) => pos += n,
-                Operation::Delete(n) => {
-                    out.push(Edit {
-                        range: pos..pos + n,
-                        insert: "",
-                    });
-                    pos += n;
-                }
-                Operation::Insert(s) => {
-                    let del = match self.ops.get(i + 1) {
-                        Some(Operation::Delete(n)) => {
-                            i += 1;
-                            *n
-                        }
-                        _ => 0,
-                    };
-                    out.push(Edit {
-                        range: pos..pos + del,
-                        insert: s,
-                    });
-                    pos += del;
+        std::iter::from_fn(move || {
+            while i < self.ops.len() {
+                let op = &self.ops[i];
+                i += 1;
+                match op {
+                    Operation::Retain(n) => pos += n,
+                    Operation::Delete(n) => {
+                        let e = Edit {
+                            range: pos..pos + n,
+                            insert: "",
+                        };
+                        pos += n;
+                        return Some(e);
+                    }
+                    Operation::Insert(s) => {
+                        let del = match self.ops.get(i) {
+                            Some(Operation::Delete(n)) => {
+                                i += 1;
+                                *n
+                            }
+                            _ => 0,
+                        };
+                        let e = Edit {
+                            range: pos..pos + del,
+                            insert: s,
+                        };
+                        pos += del;
+                        return Some(e);
+                    }
                 }
             }
-            i += 1;
+            None
+        })
+    }
+
+    /// The old-text range from the first edit's start to the last edit's end (`None`: no edit).
+    pub(crate) fn changed_range(&self) -> Option<Range<usize>> {
+        let mut pos = 0;
+        let mut range: Option<Range<usize>> = None;
+        for op in &self.ops {
+            match op {
+                Operation::Retain(n) => pos += n,
+                Operation::Delete(n) => {
+                    let start = range.as_ref().map_or(pos, |r| r.start);
+                    pos += n;
+                    range = Some(start..pos);
+                }
+                Operation::Insert(_) => {
+                    let start = range.as_ref().map_or(pos, |r| r.start);
+                    range = Some(start..pos);
+                }
+            }
         }
-        out
+        range
+    }
+
+    /// Whether `p` (an offset in the text after applying) is a char boundary there, given the
+    /// text `before` the change set applies to (whose edit boundaries are char boundaries).
+    pub(crate) fn is_char_boundary_after(&self, before: &Text, p: usize) -> bool {
+        let (mut old, mut new) = (0, 0);
+        for op in &self.ops {
+            match op {
+                Operation::Retain(n) => {
+                    if p < new + n {
+                        return before.is_char_boundary(old + (p - new));
+                    }
+                    old += n;
+                    new += n;
+                }
+                Operation::Delete(n) => old += n,
+                Operation::Insert(s) => {
+                    if p < new + s.len() {
+                        return s.is_char_boundary(p - new);
+                    }
+                    new += s.len();
+                }
+            }
+        }
+        p == new
     }
 
     // ---- algebra ----
@@ -537,14 +596,13 @@ impl ChangeSet {
             .take(max_suf)
             .take_while(|(x, y)| x == y)
             .count();
-        while suf > 0 && !(a.is_char_boundary(ab.len() - suf) && new.is_char_boundary(bb.len() - suf)) {
+        while suf > 0
+            && !(a.is_char_boundary(ab.len() - suf) && new.is_char_boundary(bb.len() - suf))
+        {
             suf -= 1;
         }
-        ChangeSet::replace(
-            ab.len(),
-            [(pre..ab.len() - suf, &new[pre..bb.len() - suf])],
-        )
-        .expect("in bounds")
+        ChangeSet::replace(ab.len(), [(pre..ab.len() - suf, &new[pre..bb.len() - suf])])
+            .expect("in bounds")
     }
 
     /// The change set that turns `old` into `new`, computed with imara-diff (histogram, by line),
@@ -610,11 +668,20 @@ impl ChangeSet {
     }
 }
 
+/// `a` then `b` as one `Arc<str>`: one allocation (short texts are joined on the stack).
 fn concat(a: &str, b: &str) -> Arc<str> {
-    let mut s = String::with_capacity(a.len() + b.len());
-    s.push_str(a);
-    s.push_str(b);
-    Arc::from(s)
+    let n = a.len() + b.len();
+    if n <= 128 {
+        let mut buf = [0u8; 128];
+        buf[..a.len()].copy_from_slice(a.as_bytes());
+        buf[a.len()..n].copy_from_slice(b.as_bytes());
+        Arc::from(std::str::from_utf8(&buf[..n]).expect("two strs joined"))
+    } else {
+        let mut s = String::with_capacity(n);
+        s.push_str(a);
+        s.push_str(b);
+        Arc::from(s)
+    }
 }
 
 #[derive(Clone, Copy)]
