@@ -2,7 +2,8 @@
 //! `Document` and two `EditorView`s. After every step both views (synced) must hold:
 //! - every selection range inside the text and on char boundaries, sorted and non-overlapping,
 //!   with a valid primary index;
-//! - folds and fresh find matches inside the text;
+//! - folds and fresh find matches inside the text, and the document's (incremental) indentation
+//!   fold ranges equal to a fresh computation;
 //! - the document version never goes back, and moves whenever the text changes;
 //! - `is_dirty()` is true whenever the text differs from the saved (original) text.
 //!
@@ -89,6 +90,10 @@ fn command() -> impl Strategy<Value = Step> {
         IndentLines,
         OutdentLines,
         CommentLine,
+        AddCommentLine,
+        RemoveCommentLine,
+        BlockComment,
+        DeleteAllRight,
         InsertLineAfter,
         InsertLineBefore,
         DeleteLines,
@@ -241,6 +246,13 @@ fn run(original: &str, steps: &[(u8, Step, u64)]) -> Result<(), TestCaseError> {
                 after
             );
         }
+        // The incrementally kept indentation folds equal a fresh computation.
+        prop_assert_eq!(
+            doc.fold_ranges(),
+            &quire_core::folding::indent_fold_ranges(doc.text(), doc.config().tab_size)[..],
+            "fold ranges after {:?}",
+            cmd
+        );
         for (i, v) in views.iter().enumerate() {
             check_view(&doc, v, i)?;
         }

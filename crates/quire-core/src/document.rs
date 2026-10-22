@@ -168,6 +168,8 @@ pub struct Document {
     open_group: Arc<AtomicBool>,
     syntax_folds: Option<Vec<FoldRange>>,
     indent_folds: OnceLock<Vec<FoldRange>>,
+    /// Indentation levels behind `indent_folds`, followed incrementally once computed.
+    indent_levels: OnceLock<crate::folding::IndentLevels>,
     degraded: Option<Degraded>,
 }
 
@@ -194,6 +196,7 @@ impl Document {
             open_group: Arc::new(AtomicBool::new(false)),
             syntax_folds: None,
             indent_folds: OnceLock::new(),
+            indent_levels: OnceLock::new(),
             degraded: crate::large::check(&text, &config.large_file),
             text,
             config,
@@ -264,6 +267,7 @@ impl Document {
         }
         if config.tab_size != self.config.tab_size {
             self.indent_folds = OnceLock::new();
+            self.indent_levels = OnceLock::new();
         }
         self.config = config;
     }
@@ -306,8 +310,13 @@ impl Document {
         if let Some(r) = &self.syntax_folds {
             return r;
         }
-        self.indent_folds
-            .get_or_init(|| crate::folding::indent_fold_ranges(&self.text, self.config.tab_size))
+        self.indent_folds.get_or_init(|| {
+            self.indent_levels
+                .get_or_init(|| {
+                    crate::folding::IndentLevels::compute(&self.text, self.config.tab_size)
+                })
+                .ranges()
+        })
     }
 
     /// The history.
@@ -612,7 +621,16 @@ impl Document {
             if let Some(f) = &mut self.syntax_folds {
                 crate::folding::map_fold_ranges(f, &line_edits);
             }
-            self.indent_folds = OnceLock::new();
+            // Indentation folds: follow the levels incrementally; the ranges are rebuilt (from
+            // the levels, not the text) only when a level or the line count changed.
+            match self.indent_levels.get_mut() {
+                Some(lv) => {
+                    if lv.update(&self.text, &line_edits) {
+                        self.indent_folds = OnceLock::new();
+                    }
+                }
+                None => self.indent_folds = OnceLock::new(),
+            }
             self.recent.push(tr.changes.clone(), line_edits);
             self.diagnostics.map(&tr.changes);
             if matches!(tr.origin, Origin::Reload) {
