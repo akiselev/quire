@@ -1,0 +1,378 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/comment/test/browser/lineCommentCommand.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Contrib - Line Comment Command > comment single line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "some text\n\tsome more text"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@# some text\n\tsome more text"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Comment Command > case insensitive
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"rem","blockComment":null}
+text: "REM some text"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "some text"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Comment Command > comment with token column fixed
+status: fail-ours needs comments.lineComment.noIndent
+# features: comments.lineComment.noIndent
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "some text\n\tsome more text"
+setSelections 2 1 2 1
+cmd editor.action.commentLine
+expectText "some text\n!@# \tsome more text"
+expectSel 2 5 2 5
+
+=== Editor Contrib - Line Comment Command > detects indentation
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\tsome text\n\tsome more text"
+setSelections 2 2 1 1
+cmd editor.action.commentLine
+expectText "\t!@# some text\n\t!@# some more text"
+expectSel 2 2 1 1
+
+=== Editor Contrib - Line Comment Command > detects mixed indentation
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\tsome text\n    some more text"
+setSelections 2 2 1 1
+cmd editor.action.commentLine
+expectText "\t!@# some text\n    !@# some more text"
+expectSel 2 2 1 1
+
+=== Editor Contrib - Line Comment Command > ignores whitespace lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\tsome text\n\t   \n\n\tsome more text"
+setSelections 4 2 1 1
+cmd editor.action.commentLine
+expectText "\t!@# some text\n\t   \n\n\t!@# some more text"
+expectSel 4 2 1 1
+
+=== Editor Contrib - Line Comment Command > removes its own
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\t!@# some text\n\t   \n\t\t!@# some more text"
+setSelections 3 2 1 1
+cmd editor.action.commentLine
+expectText "\tsome text\n\t   \n\t\tsome more text"
+expectSel 3 2 1 1
+
+=== Editor Contrib - Line Comment Command > works in only whitespace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\t    \n\t\n\t\tsome more text"
+setSelections 3 1 1 1
+cmd editor.action.commentLine
+expectText "\t!@#     \n\t!@# \n\t\tsome more text"
+expectSel 3 1 1 1
+
+=== Editor Contrib - Line Comment Command > bug 9697 - whitespace before comment token
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\t !@#first\n\tsecond line"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "\t first\n\tsecond line"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Comment Command > bug 10162 - line comment before caret
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first!@#\n\tsecond line"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@# first!@#\n\tsecond line"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Comment Command > comment single line - leading whitespace
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first!@#\n\tsecond line"
+setSelections 2 3 2 1
+cmd editor.action.commentLine
+expectText "first!@#\n\t!@# second line"
+expectSel 2 7 2 1
+
+=== Editor Contrib - Line Comment Command > ignores invisible selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 1 1
+cmd editor.action.commentLine
+expectText "!@# first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 1 1 5
+
+=== Editor Contrib - Line Comment Command > multiple lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 1
+cmd editor.action.commentLine
+expectText "!@# first\n!@# \tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 8 1 5
+
+=== Editor Contrib - Line Comment Command > multiple modes on multiple lines
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 4 4 3 1
+cmd editor.action.commentLine
+expectText "first\n\tsecond line\n!@# third line\n!@# fourth line\nfifth"
+expectSel 4 8 3 5
+
+=== Editor Contrib - Line Comment Command > toggle single line #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@# first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Comment Command > toggle single line #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "!@# first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 4 1 4
+cmd editor.action.commentLine
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Comment Command > toggle multiple lines #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 1
+cmd editor.action.commentLine
+expectText "!@# first\n!@# \tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 8 1 5
+
+=== Editor Contrib - Line Comment Command > toggle multiple lines #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "!@# first\n!@# \tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 7 1 4
+cmd editor.action.commentLine
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 3 1 1
+
+=== Editor Contrib - Line Comment Command > issue #5964: Ctrl+/ to create comment when cursor is at the beginning of the line puts the cursor in a strange position
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@# first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 5 1 5
+
+=== Editor Contrib - Line Comment Command > issue #35673: Comment hotkeys throws the cursor before the comment #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 2 1
+cmd editor.action.commentLine
+expectText "first\n!@# \n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 5 2 5
+
+=== Editor Contrib - Line Comment Command > issue #35673: Comment hotkeys throws the cursor before the comment #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "first\n\t\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 2 2 2
+cmd editor.action.commentLine
+expectText "first\n\t!@# \n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 2 6 2 6
+
+=== Editor Contrib - Line Comment Command > issue #2837 "Add Line Comment" fault when blank lines involved
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "    if displayName == \"\":\n        displayName = groupName\n    description = getAttr(attributes, \"description\")\n    mailAddress = getAttr(attributes, \"mail\")\n\n    print \"||Group name|%s|\" % displayName\n    print \"||Description|%s|\" % description\n    print \"||Email address|[mailto:%s]|\" % mailAddress`"
+setSelections 1 1 8 56
+cmd editor.action.addCommentLine
+expectText "    !@# if displayName == \"\":\n    !@#     displayName = groupName\n    !@# description = getAttr(attributes, \"description\")\n    !@# mailAddress = getAttr(attributes, \"mail\")\n\n    !@# print \"||Group name|%s|\" % displayName\n    !@# print \"||Description|%s|\" % description\n    !@# print \"||Email address|[mailto:%s]|\" % mailAddress`"
+expectSel 1 1 8 60
+
+=== Editor Contrib - Line Comment Command > issue #47004: Toggle comments shouldn't move cursor
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "    A line\n    Another line"
+setSelections 2 7 1 1
+cmd editor.action.addCommentLine
+expectText "    !@# A line\n    !@# Another line"
+expectSel 2 11 1 1
+
+=== Editor Contrib - Line Comment Command > insertSpace false
+status: fail-ours needs editor option comments.insertSpace false
+# features: editor option comments.insertSpace false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null}
+text: "some text"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@#some text"
+expectSel 1 4 1 4
+
+=== Editor Contrib - Line Comment Command > insertSpace false does not remove space
+status: fail-ours needs editor option comments.insertSpace false
+# features: editor option comments.insertSpace false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":null}
+text: "!@#    some text"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "    some text"
+expectSel 1 1 1 1
+
+=== ignoreEmptyLines false > does not ignore whitespace lines
+status: fail-ours needs editor option comments.ignoreEmptyLines false
+# features: editor option comments.ignoreEmptyLines false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\tsome text\n\t   \n\n\tsome more text"
+setSelections 4 2 1 1
+cmd editor.action.commentLine
+expectText "!@# \tsome text\n!@# \t   \n!@# \n!@# \tsome more text"
+expectSel 4 6 1 5
+
+=== ignoreEmptyLines false > removes its own
+# features: editor option comments.ignoreEmptyLines false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\t!@# some text\n\t   \n\t\t!@# some more text"
+setSelections 3 2 1 1
+cmd editor.action.commentLine
+expectText "\tsome text\n\t   \n\t\tsome more text"
+expectSel 3 2 1 1
+
+=== ignoreEmptyLines false > works in only whitespace
+# features: editor option comments.ignoreEmptyLines false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\t    \n\t\n\t\tsome more text"
+setSelections 3 1 1 1
+cmd editor.action.commentLine
+expectText "\t!@#     \n\t!@# \n\t\tsome more text"
+expectSel 3 1 1 1
+
+=== ignoreEmptyLines false > comments single line
+# features: editor option comments.ignoreEmptyLines false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "some text\n\tsome more text"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "!@# some text\n\tsome more text"
+expectSel 1 5 1 5
+
+=== ignoreEmptyLines false > detects indentation
+# features: editor option comments.ignoreEmptyLines false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<!@#","#@!>"]}
+text: "\tsome text\n\tsome more text"
+setSelections 2 2 1 1
+cmd editor.action.commentLine
+expectText "\t!@# some text\n\t!@# some more text"
+expectSel 2 2 1 1
+
+=== Editor Contrib - Line Comment As Block Comment > fall back to block comment command
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"","blockComment":["(",")"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "( first )\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 3 1 3
+
+=== Editor Contrib - Line Comment As Block Comment > fall back to block comment command - toggle
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"","blockComment":["(",")"]}
+text: "(first)\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 7 1 2
+cmd editor.action.commentLine
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 6 1 1
+
+=== Editor Contrib - Line Comment As Block Comment > bug 9513 - expand single line to uncomment auto block
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"","blockComment":["(",")"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "( first )\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 3 1 3
+
+=== Editor Contrib - Line Comment As Block Comment > bug 9691 - always expand selection to line boundaries #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"","blockComment":["(",")"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 3 2 1 3
+cmd editor.action.commentLine
+expectText "( first\n\tsecond line\nthird line )\nfourth line\nfifth"
+expectSel 3 2 1 5
+
+=== Editor Contrib - Line Comment As Block Comment > bug 9691 - always expand selection to line boundaries #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"","blockComment":["(",")"]}
+text: "(first\n\tsecond line\nthird line)\nfourth line\nfifth"
+setSelections 3 11 1 2
+cmd editor.action.commentLine
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 3 11 1 1
+
+=== Editor Contrib - Line Comment As Block Comment 2 > no selection => uses indentation #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "\t\t<!@# first\t     #@!>\n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Comment As Block Comment 2 > no selection => uses indentation #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\t<!@#first\t    #@!>\n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 1 1 1 1
+cmd editor.action.commentLine
+expectText "\t\tfirst\t   \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 1 5 1
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 1 5 1
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 3 5 3
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 3 5 3
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 4 5 4
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 3 5 3
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 16 5 3
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 8 5 3
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #5
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 12 5 7
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 8 5 3
+
+=== Editor Contrib - Line Comment As Block Comment 2 > can remove #6
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\t<!@#fifth#@!>\t\t"
+setSelections 5 18 5 18
+cmd editor.action.commentLine
+expectText "\t\tfirst\t    \n\t\tsecond line\n\tthird line\nfourth line\n\t\tfifth\t\t"
+expectSel 5 10 5 10
+
+=== Editor Contrib - Line Comment As Block Comment 2 > issue #993: Remove comment does not work consistently in HTML #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "     asd qwe\n     asd qwe\n"
+setSelections 1 1 3 1
+cmd editor.action.commentLine
+expectText "     <!@# asd qwe\n     asd qwe #@!>\n"
+expectSel 1 1 3 1
+
+=== Editor Contrib - Line Comment As Block Comment 2 > issue #993: Remove comment does not work consistently in HTML #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":["<!@#","#@!>"]}
+text: "     <!@#asd qwe\n     asd qwe#@!>\n"
+setSelections 1 1 3 1
+cmd editor.action.commentLine
+expectText "     asd qwe\n     asd qwe\n"
+expectSel 1 1 3 1
+

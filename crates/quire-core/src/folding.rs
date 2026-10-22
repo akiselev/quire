@@ -75,29 +75,29 @@ pub fn indent_fold_ranges(text: &Text, tab_size: u32) -> Vec<FoldRange> {
     out
 }
 
-/// Maps fold ranges through line edits (old-text lines to new-text lines). A range whose header
-/// line was replaced is dropped; an end inside the replaced lines moves to the last new line of
-/// the edit.
+/// Maps fold ranges through line edits (old-text lines to new-text lines), the way VS Code's
+/// folding model tracks a region with a decoration from the end of its header line to the end of
+/// its last line (`NeverGrowsWhenTypingAtEdges`): the header is the line that ends up holding the
+/// old header line's end. Splitting the header line moves the fold to the second half, joining it
+/// to the line above moves the fold up; a range dropped only when it becomes empty.
 pub fn map_fold_ranges(ranges: &mut Vec<FoldRange>, edits: &[LineEdit]) {
     for e in edits.iter().rev() {
         let removed = e.end_line - e.start_line;
         let delta = e.inserted_lines as isize - removed as isize;
         let shift = |l: usize| (l as isize + delta).max(0) as usize;
+        let last_new = e.start_line + e.inserted_lines;
         ranges.retain_mut(|r| {
-            // Lines inserted at the very start of the header line push it down whole.
-            let pushed = removed == 0 && e.start_col == 0 && r.start_line == e.start_line;
-            if r.start_line > e.end_line || pushed {
+            if r.start_line > e.end_line {
                 r.start_line = shift(r.start_line);
-            } else if r.start_line >= e.start_line && (removed > 0 || e.inserted_lines > 0) {
-                // The header line itself was split or joined.
-                if r.start_line > e.start_line || removed > 0 {
-                    return false;
-                }
+            } else if r.start_line >= e.start_line {
+                // The header line's end is at or after the edit (its own line), or inside the
+                // replaced text: either way it lands on the edit's last new line.
+                r.start_line = last_new;
             }
             if r.end_line > e.end_line {
                 r.end_line = shift(r.end_line);
             } else if r.end_line >= e.start_line {
-                r.end_line = e.start_line + e.inserted_lines;
+                r.end_line = last_new;
             }
             r.end_line > r.start_line
         });
@@ -138,5 +138,39 @@ mod tests {
         let c = crate::ChangeSet::insert_at(t.len_bytes(), 0, "new\n").unwrap();
         map_fold_ranges(&mut r, &LineEdit::compute(&c, &t));
         assert_eq!(lines(&r), vec![(1, 3), (4, 6)]);
+    }
+
+    #[test]
+    fn header_split_and_join_keep_the_fold() {
+        let t = Text::from_file("a\nhead {\n  b\n  c\n}\n");
+        let r0 = vec![FoldRange {
+            start_line: 1,
+            end_line: 3,
+            kind: crate::syntax::FoldKind::Other,
+        }];
+        // Enter in the middle of the header: the fold follows the header's end to line 2.
+        let mut r = r0.clone();
+        let c = crate::ChangeSet::insert_at(t.len_bytes(), t.line_to_byte(1) + 2, "\n").unwrap();
+        map_fold_ranges(&mut r, &LineEdit::compute(&c, &t));
+        assert_eq!(lines(&r), vec![(2, 4)]);
+        // Backspace at the header's start joins it to line 0: the fold moves up.
+        let mut r = r0.clone();
+        let at = t.line_to_byte(1);
+        let c = crate::ChangeSet::replace(t.len_bytes(), [(at - 1..at, "")]).unwrap();
+        map_fold_ranges(&mut r, &LineEdit::compute(&c, &t));
+        assert_eq!(lines(&r), vec![(0, 2)]);
+        // Typing inside the header changes nothing; deleting the folded lines drops it.
+        let mut r = r0.clone();
+        let c = crate::ChangeSet::insert_at(t.len_bytes(), at, "x").unwrap();
+        map_fold_ranges(&mut r, &LineEdit::compute(&c, &t));
+        assert_eq!(lines(&r), vec![(1, 3)]);
+        let mut r = r0;
+        let c = crate::ChangeSet::replace(
+            t.len_bytes(),
+            [(t.line_range(1).end..t.line_range(3).end, "")],
+        )
+        .unwrap();
+        map_fold_ranges(&mut r, &LineEdit::compute(&c, &t));
+        assert!(r.is_empty());
     }
 }

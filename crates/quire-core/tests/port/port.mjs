@@ -17,7 +17,23 @@ const known = new Set(['assert', 'Position', 'Range', 'Selection', 'CoreNavigati
   'DisposableStore', 'ILanguageConfigurationService', 'ILanguageService', 'ensureNoDisposablesAreLeakedInTestSuite',
   'EndOfLinePreference', 'instantiateTestCodeEditor', 'TextModel', 'assertCursor', 'testCommand']);
 const names = new Set();
-const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m, spec) => {
+// VS Code's test language definitions (test/common/modes/supports/*.ts) are inlined: their
+// exports become top-level constants of the translated test.
+let inlined = '';
+const inlinedNames = new Set();
+const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'([^']+)';\s*$/gm, (_m, spec, from) => {
+  const sup = from.match(/test\/common\/modes\/supports\/(\w+)\.js$/);
+  if (sup) {
+    const file = join(root, 'src/vs/editor/test/common/modes/supports', `${sup[1]}.ts`);
+    let code = readFileSync(file, 'utf8');
+    code = code.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m2, spec2) => {
+      for (const n of (spec2.match(/\{([\s\S]*)\}/)?.[1] || '').split(',').map((x) => x.trim().replace(/^type\s+/, '')).filter(Boolean)) names.add(n);
+      return '';
+    }).replace(/^export\s+/gm, '');
+    inlined += `// inlined from ${from}\n${code}\n`;
+    for (const n of (spec.match(/\{([\s\S]*)\}/)?.[1] || '').split(',').map((x) => x.trim()).filter(Boolean)) inlinedNames.add(n);
+    return '';
+  }
   spec = spec.replace(/^type\s+/, '');
   const star = spec.match(/\*\s+as\s+(\w+)/);
   if (star) names.add(star[1]);
@@ -37,8 +53,9 @@ const body = src.replace(/^import\s+([\s\S]*?)\s+from\s+'[^']+';\s*$/gm, (_m, sp
   .replace(/^(\s*)function testApplyEditsFails\(/m, '$1const testApplyEditsFails = globalThis.__testApplyEditsFails;\n$1function __upstream_testApplyEditsFails(');
 let header = '';
 for (const n of names) {
-  if (!known.has(n)) header += `const ${n} = globalThis.__resolve(${JSON.stringify(n)});\n`;
+  if (!known.has(n) && !inlinedNames.has(n)) header += `const ${n} = globalThis.__resolve(${JSON.stringify(n)});\n`;
 }
+header += inlined;
 const tmp = mkdtempSync(join(tmpdir(), 'quire-port-'));
 const tsPath = join(tmp, basename(rel));
 writeFileSync(tsPath, header + body + `\nprocess.on('exit', () => { require_fs().writeFileSync(${JSON.stringify(join(tmp, 'out.json'))}, JSON.stringify(globalThis.__results)); });\nfunction require_fs() { return process.getBuiltinModule('node:fs'); }\n`);
@@ -69,7 +86,11 @@ function mapConfig(t) {
       } else if (k === 'brackets') {
         cfg.brackets = v.map((p) => [p[0], p[1]]);
       } else if (k === 'comments') {
-        cfg.lineComment = v.lineComment ?? null;
+        const lc = v.lineComment;
+        if (lc && typeof lc === 'object') {
+          cfg.lineComment = lc.comment ?? null;
+          if (lc.noIndent) features.push('comments.lineComment.noIndent');
+        } else cfg.lineComment = lc ?? null;
         cfg.blockComment = v.blockComment ? [v.blockComment[0], v.blockComment[1]] : null;
       } else if (k === 'autoCloseBefore') {
         cfg.autoCloseBefore = v;
@@ -103,6 +124,7 @@ function mapConfig(t) {
     // brackets.
     if (!lc.brackets && (lc.onEnterRules || lc.indentationRules)) cfg.brackets = [['(', ')'], ['{', '}'], ['[', ']']];
   }
+  for (const f of t.extraFeatures || []) features.push(f);
   const mo = t.modelOpts || {};
   for (const [k, v] of Object.entries(mo)) {
     if (k === 'tabSize') cfg.tabSize = v;

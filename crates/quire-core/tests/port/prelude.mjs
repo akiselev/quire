@@ -270,6 +270,7 @@ function startCase(model, opts) {
   }
   cur.text = model.__text;
   cur.languageId = model.__languageId;
+  cur.languageConfig = model.__languageId ? (langConfigs.get(model.__languageId) || undefined) : undefined;
   cur.modelOpts = model.__modelOpts;
   cur.editorOpts = opts || {};
   cur.editorStarted = true;
@@ -363,6 +364,7 @@ for (const [name, id] of Object.entries({
   InsertCursorBelow: 'editor.action.insertCursorBelow',
   AddSelectionToNextFindMatchAction: 'editor.action.addSelectionToNextFindMatch',
   DeleteAllLeftAction: 'deleteAllLeft',
+  DeleteAllRightAction: 'deleteAllRight',
   DeleteLinesAction: 'editor.action.deleteLines',
   IndentLinesAction: 'editor.action.indentLines',
   InsertLineAfterAction: 'editor.action.insertLineAfter',
@@ -376,7 +378,8 @@ STUBS.set('CopyLinesCommand', class { constructor(_sel, down) { this.__cmd = dow
 STUBS.set('MoveLinesCommand', class { constructor(_sel, down, autoIndent) { this.__cmd = down ? 'editor.action.moveLinesDownAction' : 'editor.action.moveLinesUpAction'; this.__autoIndent = autoIndent; } });
 STUBS.set('IndentAction', { None: 0, Indent: 1, IndentOutdent: 2, Outdent: 3 });
 STUBS.set('EditorAutoIndentStrategy', { None: 0, Keep: 1, Brackets: 2, Advanced: 3, Full: 4 });
-STUBS.set('TestLanguageConfigurationService', class { register() { return { dispose() {} }; } dispose() {} });
+STUBS.set('TestLanguageConfigurationService', class { register(id, conf) { return languageConfigurationService.register(id, conf); } dispose() {} });
+STUBS.set('LanguageService', class { registerLanguage() { return { dispose() {} }; } dispose() {} });
 STUBS.set('ServiceCollection', class { constructor() {} set() {} });
 STUBS.set('InMemoryStorageService', class { dispose() {} });
 STUBS.set('IStorageService', Symbol('IStorageService'));
@@ -485,19 +488,40 @@ globalThis.__testApplyEditsFails = (original, edits) => {
 };
 globalThis.__resolve = (name) => STUBS.has(name) ? STUBS.get(name) : unsupported(name);
 
-// testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection)
-globalThis.testCommand = (lines, languageId, selection, factory, expectedLines, expectedSelection) => {
-  if (languageId) throw new Unsupported('testCommand with a language');
-  const model = makeModel(lines.join('\n'), null, {});
+// testCommand(lines, languageId, selection, commandFactory, expectedLines, expectedSelection,
+// forceTokenization, prepare): `prepare` registers the language configuration.
+globalThis.testCommand = (lines, languageId, selection, factory, expectedLines, expectedSelection, _forceTok, prepare) => {
+  if (languageId && !prepare) throw new Unsupported('testCommand with a language');
+  if (prepare) prepare(accessor, new DisposableStore());
+  const model = makeModel(lines.join('\n'), languageId || null, {});
   makeEditor(model, {});
   step(`setSelections ${selArgs(selection)}`);
-  const c = factory(null, selection);
+  const c = factory(accessor, selection);
   if (!c || !c.__cmd) throw new Unsupported('testCommand(other command)');
   if (c.__autoIndent === 4) throw new Unsupported('move lines with indentation rules (autoIndent full)');
+  if (c.__features) cur.extraFeatures = [...(cur.extraFeatures || []), ...c.__features];
   step(`cmd ${c.__cmd}`);
   step(`expectText ${JSON.stringify(expectedLines.join('\n'))}`);
   step(`expectSel ${selArgs(expectedSelection)}`);
 };
+// lineCommentCommand.ts / blockCommentCommand.ts
+STUBS.set('Type', { Toggle: 0, ForceAdd: 1, ForceRemove: 2 });
+STUBS.set('LineCommentCommand', class {
+  constructor(_svc, _sel, indentSize, type, insertSpace, ignoreEmptyLines, ignoreFirstLine) {
+    this.__cmd = ['editor.action.commentLine', 'editor.action.addCommentLine', 'editor.action.removeCommentLine'][type];
+    this.__features = [];
+    if (indentSize !== 4) this.__features.push(`comment indentSize ${indentSize}`);
+    if (!insertSpace) this.__features.push('editor option comments.insertSpace false');
+    if (!ignoreEmptyLines) this.__features.push('editor option comments.ignoreEmptyLines false');
+    if (ignoreFirstLine) this.__features.push('ignoreFirstLine');
+  }
+});
+STUBS.set('BlockCommentCommand', class {
+  constructor(_sel, insertSpace) {
+    this.__cmd = 'editor.action.blockComment';
+    this.__features = insertSpace ? [] : ['editor option comments.insertSpace false'];
+  }
+});
 
 // ---- services ----
 class DisposableStore { add(x) { return x; } dispose() {} clear() {} }
@@ -523,6 +547,13 @@ const languageConfigurationService = {
   register(id, conf) { langConfigs.set(id, plainRegexps(conf)); return disposable; },
 };
 const languageService = { registerLanguage() { return disposable; } };
+const accessor = {
+  get(id) {
+    if (id === globalThis.ILanguageConfigurationService) return languageConfigurationService;
+    if (id === globalThis.ILanguageService) return languageService;
+    throw new Unsupported('accessor.get(other service)');
+  },
+};
 globalThis.createCodeEditorServices = () => ({
   get(id) {
     if (id === globalThis.ILanguageConfigurationService) return languageConfigurationService;
@@ -559,11 +590,11 @@ function runTest(name, fn, skip) {
     if (e instanceof Unsupported) cur.unsupported = e.message;
     else cur.unsupported = `error: ${e && e.message}`;
   }
-  if (cur.languageId) cur.languageConfig = langConfigs.get(cur.languageId) || null;
+  if (cur.languageId && !cur.languageConfig) cur.languageConfig = langConfigs.get(cur.languageId) || null;
   if (cur.parts && !cur.unsupported) {
     const parts = [...cur.parts, { ...cur, parts: undefined }];
     parts.forEach((p, i) => {
-      if (p.languageId) p.languageConfig = langConfigs.get(p.languageId) || null;
+      if (p.languageId && !p.languageConfig) p.languageConfig = langConfigs.get(p.languageId) || null;
       results.push({ ...p, name: `${name} #${i + 1}` });
     });
     cur = null;

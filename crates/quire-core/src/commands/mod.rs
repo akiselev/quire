@@ -13,6 +13,7 @@
 //! - auto-closing has no tokenizer: quotes never auto-close after a word character, brackets
 //!   only before whitespace, a closing character or `auto_close_before`; no bracket-balance check.
 
+mod comment;
 mod edit;
 mod find;
 mod fold;
@@ -286,7 +287,21 @@ pub(crate) fn run(
         C::Tab => edit_out(edit::tab(&ctx, &st()), cmd_origin(cmd)),
         C::Outdent | C::OutdentLines => edit_out(edit::shift(&ctx, &st(), true), cmd_origin(cmd)),
         C::IndentLines => edit_out(edit::shift(&ctx, &st(), false), cmd_origin(cmd)),
-        C::CommentLine => edit_out(edit::comment_line(&ctx, &st()), cmd_origin(cmd)),
+        C::CommentLine | C::AddCommentLine | C::RemoveCommentLine => {
+            let ty = match cmd {
+                C::CommentLine => comment::LineCommentType::Toggle,
+                C::AddCommentLine => comment::LineCommentType::ForceAdd,
+                _ => comment::LineCommentType::ForceRemove,
+            };
+            isolated(edit_out(
+                comment::line_comment(&ctx, &st(), ty),
+                cmd_origin(cmd),
+            ))
+        }
+        C::BlockComment => isolated(edit_out(
+            comment::block_comment(&ctx, &st()),
+            cmd_origin(cmd),
+        )),
         C::InsertLineAfter => edit_out(edit::insert_line(&ctx, &st(), true), cmd_origin(cmd)),
         C::InsertLineBefore => edit_out(edit::insert_line(&ctx, &st(), false), cmd_origin(cmd)),
         C::DeleteLines => edit_out(edit::delete_lines(&st()), cmd_origin(cmd)),
@@ -340,6 +355,7 @@ pub(crate) fn run(
             cmd_origin(cmd),
         )),
         C::DeleteAllLeft => isolated(edit_out(lines::delete_all_left(&st()), cmd_origin(cmd))),
+        C::DeleteAllRight => isolated(edit_out(lines::delete_all_right(&st()), cmd_origin(cmd))),
         C::Fold | C::Unfold | C::ToggleFold | C::FoldAll | C::UnfoldAll => {
             let op = match cmd {
                 C::Fold => fold::Op::Fold,

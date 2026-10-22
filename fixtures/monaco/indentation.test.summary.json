@@ -1,0 +1,412 @@
+[
+ {
+  "name": "Change Indentation to Spaces - TypeScript/Javascript > single tabs only at start of line",
+  "na": "new IndentationToSpacesCommand"
+ },
+ {
+  "name": "Change Indentation to Spaces - TypeScript/Javascript > multiple tabs at start of line",
+  "na": "new IndentationToSpacesCommand"
+ },
+ {
+  "name": "Change Indentation to Spaces - TypeScript/Javascript > multiple tabs",
+  "na": "new IndentationToSpacesCommand"
+ },
+ {
+  "name": "Change Indentation to Spaces - TypeScript/Javascript > empty lines",
+  "na": "new IndentationToSpacesCommand"
+ },
+ {
+  "name": "Change Indentation to Tabs -  TypeScript/Javascript > spaces only at start of line",
+  "na": "new IndentationToTabsCommand"
+ },
+ {
+  "name": "Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces at start of line",
+  "na": "new IndentationToTabsCommand"
+ },
+ {
+  "name": "Change Indentation to Tabs -  TypeScript/Javascript > multiple spaces",
+  "na": "new IndentationToTabsCommand"
+ },
+ {
+  "name": "Change Indentation to Tabs -  TypeScript/Javascript > issue #45996",
+  "na": "new IndentationToSpacesCommand"
+ },
+ {
+  "name": "Indent With Tab - TypeScript/JavaScript > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Indent With Tab - TypeScript/JavaScript > issue #63388: perserve correct indentation on tab 1",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Indent With Tab - TypeScript/JavaScript > issue #63388: perserve correct indentation on tab 2",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #119225: Do not add extra leading space when pasting JSDoc",
+  "na": "StandardTokenType.Comment"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #167299: Blank line removes indent",
+  "na": "AutoIndentOnPaste.ID"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #29803: do not indent when pasting text with only one line",
+  "na": "paste on new line"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #29753: incorrect indentation after comment",
+  "na": "paste on new line"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #29753: incorrect indentation of header comment",
+  "na": "paste on new line"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #209859: do not do change indentation when pasted inside of a string",
+  "na": "StandardTokenType.Other"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #181065: Incorrect paste of object within comment",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #86301: preserve cursor at inserted indentation level",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #85781: indent line with extra white space",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #29589: incorrect indentation of closing brace on paste",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Paste - TypeScript/JavaScript > issue #201420: incorrect indentation when first line is comment",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #208215: indent after arrow function",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #208215: indent after arrow function 2",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #116843: indent after arrow function",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #29755: do not add indentation on enter if indentation is already valid",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #36090",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #115304: indent block comment onEnter",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: indent when lambda arrow function is detected, outdent when end is reached",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: incorrect indentation after if/for/while without braces",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #208232: incorrect indentation inside of comments",
+  "na": "StandardTokenType.Comment"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #209802: allman style braces in JavaScript",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #225916: surrounding with brackets works after arrow function #1",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #225916: surrounding with brackets works after arrow function #2",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #225916: surrounding with brackets works after arrow function #3",
+  "fixture": "indentation.test.fixture",
+  "features": [
+   "autoClosingPairs.notIn (needs tokens)"
+  ]
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: indent after equal sign is detected",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: indent after dot detected after object/array signifying a method call",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: indent after dot detected on a subsequent line after object/array signifying a method call",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: keep indentation when methods called on object/array",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: keep indentation when chained methods called on object/array",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #43244: outdent when a semi-color is detected indicating the end of the assignment",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #40115: keep indentation when added",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #193875: incorrect indentation on enter",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #67678: indent on typing curly brace",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #46401: outdent when encountering bracket on line - allman style indentation",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - TypeScript/JavaScript > issue #125261: typing closing brace does not keep the current indentation",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - Ruby > issue #198350: in or when incorrectly match non keywords for Ruby",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Ruby > issue #199846: in or when incorrectly match non keywords for Ruby",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - PHP > issue #199050: should not indent after { detected in a string",
+  "na": "StandardTokenType.Other"
+ },
+ {
+  "name": "Auto Indent On Paste - Go > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Paste - Go > issue #199050: should not indent after { detected in a string",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - CPP > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Type - CPP > issue #178334: incorrect outdent of } when signature spans multiple lines",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - CPP > issue #118929: incorrect indent when // follows curly brace",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - CPP > issue #111265: auto indentation set to \"none\" still changes the indentation",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - HTML > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Type - HTML > issue #61510: incorrect indentation after // in html file",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: no indentation in visual basic files",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Module declaration",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Sub declaration",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Sub",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Module",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Function declaration",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Function",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after If Then",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after ElseIf Then",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent and indent on Else",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after While",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End While",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after For",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on Next",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Do",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on Loop",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Select Case",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Select",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Try",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent and indent on Catch",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent and indent on Finally",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Try",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: indent after Class",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: dedent on End Class",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Visual Basic > issue #118932: full program indentation flow",
+  "fixture": "indentation.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Auto Indent On Type - Latex > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Type - Latex > issue #178075: no auto closing pair when indentation done",
+  "na": "skipped upstream (test.skip)"
+ },
+ {
+  "name": "Auto Indent On Type - Lua > temp issue because there should be at least one passing test in a suite",
+  "na": "no editor in test"
+ },
+ {
+  "name": "Auto Indent On Type - Lua > issue #178075: no auto closing pair when indentation done",
+  "na": "skipped upstream (test.skip)"
+ }
+]

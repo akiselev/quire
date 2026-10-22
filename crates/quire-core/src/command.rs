@@ -146,6 +146,15 @@ pub enum EditorCommand {
     /// Toggle line comments with the configured token.
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.commentLine"))]
     CommentLine,
+    /// Add line comments to the selected lines (lines that are already comments get another).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.addCommentLine"))]
+    AddCommentLine,
+    /// Remove line comments from the selected lines that have one.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.removeCommentLine"))]
+    RemoveCommentLine,
+    /// Toggle a block comment around each selection (an empty selection gets an empty comment).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.blockComment"))]
+    BlockComment,
     /// Insert a line below and move there (Ctrl+Enter).
     #[cfg_attr(feature = "serde", serde(rename = "editor.action.insertLineAfter"))]
     InsertLineAfter,
@@ -183,6 +192,9 @@ pub enum EditorCommand {
     /// Delete from each cursor to its line start.
     #[cfg_attr(feature = "serde", serde(rename = "deleteAllLeft"))]
     DeleteAllLeft,
+    /// Delete from each cursor to its line end (at the line end: join with the next line).
+    #[cfg_attr(feature = "serde", serde(rename = "deleteAllRight"))]
+    DeleteAllRight,
     /// Column selection: extend the head one visual column left.
     #[cfg_attr(feature = "serde", serde(rename = "cursorColumnSelectLeft"))]
     ColumnSelectLeft,
@@ -323,6 +335,9 @@ impl EditorCommand {
             IndentLines => "editor.action.indentLines",
             OutdentLines => "editor.action.outdentLines",
             CommentLine => "editor.action.commentLine",
+            AddCommentLine => "editor.action.addCommentLine",
+            RemoveCommentLine => "editor.action.removeCommentLine",
+            BlockComment => "editor.action.blockComment",
             InsertLineAfter => "editor.action.insertLineAfter",
             InsertLineBefore => "editor.action.insertLineBefore",
             DeleteLines => "editor.action.deleteLines",
@@ -334,6 +349,7 @@ impl EditorCommand {
             CopyLinesUp => "editor.action.copyLinesUpAction",
             CopyLinesDown => "editor.action.copyLinesDownAction",
             DeleteAllLeft => "deleteAllLeft",
+            DeleteAllRight => "deleteAllRight",
             ColumnSelectLeft => "cursorColumnSelectLeft",
             ColumnSelectRight => "cursorColumnSelectRight",
             ColumnSelectUp => "cursorColumnSelectUp",
@@ -408,6 +424,9 @@ impl EditorCommand {
             "editor.action.indentLines" => IndentLines,
             "editor.action.outdentLines" => OutdentLines,
             "editor.action.commentLine" => CommentLine,
+            "editor.action.addCommentLine" => AddCommentLine,
+            "editor.action.removeCommentLine" => RemoveCommentLine,
+            "editor.action.blockComment" => BlockComment,
             "editor.action.insertLineAfter" => InsertLineAfter,
             "editor.action.insertLineBefore" => InsertLineBefore,
             "editor.action.deleteLines" => DeleteLines,
@@ -419,6 +438,7 @@ impl EditorCommand {
             "editor.action.copyLinesUpAction" => CopyLinesUp,
             "editor.action.copyLinesDownAction" => CopyLinesDown,
             "deleteAllLeft" => DeleteAllLeft,
+            "deleteAllRight" => DeleteAllRight,
             "cursorColumnSelectLeft" => ColumnSelectLeft,
             "cursorColumnSelectRight" => ColumnSelectRight,
             "cursorColumnSelectUp" => ColumnSelectUp,

@@ -1507,7 +1507,7 @@ type "\n"
 expectText "    let a,\n\t b,\n\t c;"
 
 === Editor Controller > issue #122714: tabSize=1 prevent typing a string matching decreaseIndentPattern in an empty file
-status: fail-ours see triage.json
+status: fail-ours the test's language has indentationRules only (no brackets, no autoClosingPairs), so by VS Code's CharacterPairSupport nothing auto-closes `{`; the expected `}` comes from somewhere in VS Code's test services that the port does not reproduce (unverified upstream)
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[["(",")"],["{","}"],["[","]"]],"lineComment":null,"blockComment":null,"indentationRules":{"increaseIndentPattern":"\\\\begin{(?!document)([^}]*)}(?!.*\\\\end{\\1})","decreaseIndentPattern":"^\\s*\\\\end{(?!document)"},"tabSize":1,"indentSize":1}
 text: "\\end"
 moveTo 1 5

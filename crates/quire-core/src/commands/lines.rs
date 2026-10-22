@@ -232,3 +232,63 @@ pub(crate) fn delete_all_left(st: &St) -> Option<Out> {
     let (changes, sel) = build(text, &st.sel, edits);
     out(changes, sel)
 }
+
+/// `DeleteAllRightAction`: delete from each cursor to its line end (at the line end: join with
+/// the next line) and each selection; overlapping ranges merge; the cursors end at the starts,
+/// the primary one first.
+pub(crate) fn delete_all_right(st: &St) -> Option<Out> {
+    let text = &st.text;
+    let primary = st.sel.primary();
+    let mut ranges: Vec<std::ops::Range<usize>> = st
+        .sel
+        .ranges()
+        .iter()
+        .map(|r| {
+            if r.is_empty() {
+                let lr = text.line_range(text.byte_to_line(r.head));
+                if r.head == lr.end {
+                    r.head..(lr.end + 1).min(text.len_bytes())
+                } else {
+                    r.head..lr.end
+                }
+            } else {
+                r.range()
+            }
+        })
+        .collect();
+    ranges.sort_by_key(|r| (r.start, r.end));
+    // Merge ranges that intersect (touching counts, as in VS Code's `Range.intersectRanges`).
+    let mut merged: Vec<std::ops::Range<usize>> = Vec::new();
+    for r in ranges {
+        if let Some(last) = merged.last_mut()
+            && r.start <= last.end
+        {
+            last.end = last.end.max(r.end);
+            continue;
+        }
+        merged.push(r);
+    }
+    let changes =
+        ChangeSet::replace(text.len_bytes(), merged.iter().map(|r| (r.clone(), ""))).ok()?;
+    if changes.is_empty() {
+        return None;
+    }
+    let mut cursors: Vec<SelRange> = Vec::new();
+    let mut primary_cursor: Option<SelRange> = None;
+    let mut removed = 0;
+    for r in &merged {
+        let c = SelRange::point(r.start - removed);
+        removed += r.end - r.start;
+        let p = primary.range();
+        let intersects = r.start <= p.end && p.start <= r.end;
+        if intersects && primary_cursor.is_none() {
+            primary_cursor = Some(c);
+        } else {
+            cursors.push(c);
+        }
+    }
+    if let Some(p) = primary_cursor {
+        cursors.insert(0, p);
+    }
+    out(changes, Selection::new(cursors, 0))
+}

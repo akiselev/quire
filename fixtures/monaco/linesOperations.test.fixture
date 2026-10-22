@@ -77,6 +77,97 @@ cmd undo
 expectLine 1 "Typing some text here on line one"
 expectPrimarySel 1 31 1 31
 
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should be noop on empty
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: ""
+cmd deleteAllRight
+expectText ""
+expectSel 1 1 1 1
+setSelections 1 1 1 1
+cmd deleteAllRight
+expectText ""
+expectSel 1 1 1 1
+setSelections 1 1 1 1; 1 1 1 1; 1 1 1 1
+cmd deleteAllRight
+expectText ""
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should delete selected range
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nworld"
+setSelections 1 2 1 5
+cmd deleteAllRight
+expectText "ho\nworld"
+expectSel 1 2 1 2
+setSelections 1 1 2 4
+cmd deleteAllRight
+expectText "ld"
+expectSel 1 1 1 1
+setSelections 1 1 1 3
+cmd deleteAllRight
+expectText ""
+expectSel 1 1 1 1
+
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should delete to the right of the cursor
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nworld"
+setSelections 1 3 1 3
+cmd deleteAllRight
+expectText "he\nworld"
+expectSel 1 3 1 3
+setSelections 2 1 2 1
+cmd deleteAllRight
+expectText "he\n"
+expectSel 2 1 2 1
+
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should join two lines, if at the end of the line
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nworld"
+setSelections 1 6 1 6
+cmd deleteAllRight
+expectText "helloworld"
+expectSel 1 6 1 6
+setSelections 1 6 1 6
+cmd deleteAllRight
+expectText "hello"
+expectSel 1 6 1 6
+setSelections 1 6 1 6
+cmd deleteAllRight
+expectText "hello"
+expectSel 1 6 1 6
+
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should work with multiple cursors
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nthere\nworld"
+setSelections 1 3 1 3; 1 6 1 6; 3 4 3 4
+cmd deleteAllRight
+expectText "hethere\nwor"
+expectSel 1 3 1 3; 2 4 2 4
+cmd deleteAllRight
+expectText "he\nwor"
+expectSel 1 3 1 3; 2 4 2 4
+cmd deleteAllRight
+expectText "hewor"
+expectSel 1 3 1 3; 1 6 1 6
+cmd deleteAllRight
+expectText "he"
+expectSel 1 3 1 3
+cmd deleteAllRight
+expectText "he"
+expectSel 1 3 1 3
+
+=== Editor Contrib - Line Operations > DeleteAllRightAction > should work with undo/redo
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
+text: "hello\nthere\nworld"
+setSelections 1 3 1 3; 1 6 1 6; 3 4 3 4
+cmd deleteAllRight
+expectText "hethere\nwor"
+expectSel 1 3 1 3; 2 4 2 4
+cmd undo
+expectSel 1 3 1 3; 1 6 1 6; 3 4 3 4
+cmd redo
+expectSel 1 3 1 3; 2 4 2 4
+
 === Editor Contrib - Line Operations > InsertLineBeforeAction #1
 config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":null,"blockComment":null}
 text: "First line\nSecond line\nThird line"

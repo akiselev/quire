@@ -1,0 +1,234 @@
+# Translated from Visual Studio Code, src/vs/editor/contrib/comment/test/browser/blockCommentCommand.test.ts
+# (microsoft/vscode @ bdce63db587665a91d1f1237b807d43471f0d9bc) by tests/port/port.mjs.
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+# Licensed under the MIT License (see THIRD_PARTY_NOTICES.md for the full text).
+
+=== Editor Contrib - Block Comment Command > empty selection wraps itself
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 3 1 3
+cmd editor.action.blockComment
+expectText "fi<0  0>rst\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 6 1 6
+
+=== Editor Contrib - Block Comment Command > invisible selection ignored
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 1 1 1
+cmd editor.action.blockComment
+expectText "<0 first\n 0>\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 4 2 1
+
+=== Editor Contrib - Block Comment Command > bug9511 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 6 1 1
+cmd editor.action.blockComment
+expectText "<0 first 0>\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 4 1 9
+
+=== Editor Contrib - Block Comment Command > bug9511 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0first0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 8 1 3
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 6
+
+=== Editor Contrib - Block Comment Command > one line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 6 1 3
+cmd editor.action.blockComment
+expectText "fi<0 rst 0>\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 6 1 9
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 6 1 3
+cmd editor.action.blockComment
+expectText "fi<0 rst 0>\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 6 1 9
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "fi<0rst0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 8 1 5
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 3 1 6
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 first 0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 10 1 1
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 6
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 first0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 9 1 1
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 6
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #5
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0first 0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 9 1 1
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 1 6
+
+=== Editor Contrib - Block Comment Command > one line selection toggle #6
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "fi<0rst0>\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 1 8 1 5
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 3 1 6
+
+=== Editor Contrib - Block Comment Command > multi line selection
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 1
+cmd editor.action.blockComment
+expectText "<0 first\n\tse 0>cond line\nthird line\nfourth line\nfifth"
+expectSel 1 4 2 4
+
+=== Editor Contrib - Block Comment Command > multi line selection toggle #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "first\n\tsecond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 1
+cmd editor.action.blockComment
+expectText "<0 first\n\tse 0>cond line\nthird line\nfourth line\nfifth"
+expectSel 1 4 2 4
+
+=== Editor Contrib - Block Comment Command > multi line selection toggle #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0first\n\tse0>cond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 3
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 2 4
+
+=== Editor Contrib - Block Comment Command > multi line selection toggle #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 first\n\tse0>cond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 3
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 2 4
+
+=== Editor Contrib - Block Comment Command > multi line selection toggle #4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0first\n\tse 0>cond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 3
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 2 4
+
+=== Editor Contrib - Block Comment Command > multi line selection toggle #5
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 first\n\tse 0>cond line\nthird line\nfourth line\nfifth"
+setSelections 2 4 1 3
+cmd editor.action.blockComment
+expectText "first\n\tsecond line\nthird line\nfourth line\nfifth"
+expectSel 1 1 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 5 1 7
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 5 1 6
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #3
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 5 1 5
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #4
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 5 1 11
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #5
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 1 1 11
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > fuzzy removes #6
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "asd <0 qwe\nasd 0> qwe"
+setSelections 2 7 1 11
+cmd editor.action.blockComment
+expectText "asd qwe\nasd qwe"
+expectSel 1 5 2 4
+
+=== Editor Contrib - Block Comment Command > bug #30358 #1
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 start 0> middle end"
+setSelections 1 20 1 23
+cmd editor.action.blockComment
+expectText "<0 start 0> middle <0 end 0>"
+expectSel 1 23 1 26
+
+=== Editor Contrib - Block Comment Command > bug #30358 #2
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 start 0> middle <0 end 0>"
+setSelections 1 13 1 19
+cmd editor.action.blockComment
+expectText "<0 start 0> <0 middle 0> <0 end 0>"
+expectSel 1 16 1 22
+
+=== Editor Contrib - Block Comment Command > issue #34618
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0  0> middle end"
+setSelections 1 4 1 4
+cmd editor.action.blockComment
+expectText " middle end"
+expectSel 1 1 1 1
+
+=== Editor Contrib - Block Comment Command > insertSpace false
+status: fail-ours needs editor option comments.insertSpace false
+# features: editor option comments.insertSpace false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "some text"
+setSelections 1 1 1 5
+cmd editor.action.blockComment
+expectText "<0some0> text"
+expectSel 1 3 1 7
+
+=== Editor Contrib - Block Comment Command > insertSpace false does not remove space
+status: fail-ours needs editor option comments.insertSpace false
+# features: editor option comments.insertSpace false
+config: {"autoClosingPairs":[],"surroundingPairs":[],"brackets":[],"lineComment":"!@#","blockComment":["<0","0>"]}
+text: "<0 some 0> text"
+setSelections 1 4 1 8
+cmd editor.action.blockComment
+expectText " some  text"
+expectSel 1 1 1 7
+

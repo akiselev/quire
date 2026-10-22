@@ -1,0 +1,263 @@
+[
+ {
+  "name": "Editor Contrib - Line Comment Command > comment single line",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > case insensitive",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > comment with token column fixed",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "comments.lineComment.noIndent"
+  ]
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > _analyzeLines",
+  "na": "error: LineCommentCommand._analyzeLines is not a function"
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > _normalizeInsertionPoint",
+  "na": "error: LineCommentCommand._normalizeInsertionPoint is not a function"
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > detects indentation",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > detects mixed indentation",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > ignores whitespace lines",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > removes its own",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > works in only whitespace",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > bug 9697 - whitespace before comment token",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > bug 10162 - line comment before caret",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > comment single line - leading whitespace",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > ignores invisible selection",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > multiple lines",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > multiple modes on multiple lines",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > toggle single line #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > toggle single line #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > toggle multiple lines #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > toggle multiple lines #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > issue #5964: Ctrl+/ to create comment when cursor is at the beginning of the line puts the cursor in a strange position",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > issue #35673: Comment hotkeys throws the cursor before the comment #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > issue #35673: Comment hotkeys throws the cursor before the comment #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > issue #2837 \"Add Line Comment\" fault when blank lines involved",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > issue #47004: Toggle comments shouldn't move cursor",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > insertSpace false",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.insertSpace false"
+  ]
+ },
+ {
+  "name": "Editor Contrib - Line Comment Command > insertSpace false does not remove space",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.insertSpace false"
+  ]
+ },
+ {
+  "name": "ignoreEmptyLines false > does not ignore whitespace lines",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.ignoreEmptyLines false"
+  ]
+ },
+ {
+  "name": "ignoreEmptyLines false > removes its own",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.ignoreEmptyLines false"
+  ]
+ },
+ {
+  "name": "ignoreEmptyLines false > works in only whitespace",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.ignoreEmptyLines false"
+  ]
+ },
+ {
+  "name": "ignoreEmptyLines false > comments single line",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.ignoreEmptyLines false"
+  ]
+ },
+ {
+  "name": "ignoreEmptyLines false > detects indentation",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.ignoreEmptyLines false"
+  ]
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment > fall back to block comment command",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment > fall back to block comment command - toggle",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment > bug 9513 - expand single line to uncomment auto block",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment > bug 9691 - always expand selection to line boundaries #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment > bug 9691 - always expand selection to line boundaries #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > no selection => uses indentation #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > no selection => uses indentation #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #3",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #4",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #5",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > can remove #6",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > issue #993: Remove comment does not work consistently in HTML #1",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment As Block Comment 2 > issue #993: Remove comment does not work consistently in HTML #2",
+  "fixture": "lineCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Line Comment in mixed modes > issue #24047 (part 1): Commenting code in JSX files",
+  "na": "accessor.get(other service)"
+ },
+ {
+  "name": "Editor Contrib - Line Comment in mixed modes > issue #24047 (part 2): Commenting code in JSX files",
+  "na": "accessor.get(other service)"
+ },
+ {
+  "name": "Editor Contrib - Line Comment in mixed modes > issue #36173: Commenting code in JSX tag body",
+  "na": "accessor.get(other service)"
+ }
+]

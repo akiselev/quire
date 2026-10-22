@@ -136,27 +136,33 @@
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should be noop on empty",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should delete selected range",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should delete to the right of the cursor",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should join two lines, if at the end of the line",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should work with multiple cursors",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > DeleteAllRightAction > should work with undo/redo",
-  "na": "new DeleteAllRightAction"
+  "fixture": "linesOperations.test.fixture",
+  "features": []
  },
  {
   "name": "Editor Contrib - Line Operations > InsertLineBeforeAction #1",

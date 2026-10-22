@@ -1,0 +1,146 @@
+[
+ {
+  "name": "Editor Contrib - Block Comment Command > empty selection wraps itself",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > invisible selection ignored",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > bug9511 #1",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > bug9511 #2",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #1",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #2",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #3",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #4",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #5",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > one line selection toggle #6",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection toggle #1",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection toggle #2",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection toggle #3",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection toggle #4",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > multi line selection toggle #5",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #1",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #2",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #3",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #4",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #5",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > fuzzy removes #6",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > bug #30358 #1",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > bug #30358 #2",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > issue #34618",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": []
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > insertSpace false",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.insertSpace false"
+  ]
+ },
+ {
+  "name": "Editor Contrib - Block Comment Command > insertSpace false does not remove space",
+  "fixture": "blockCommentCommand.test.fixture",
+  "features": [
+   "editor option comments.insertSpace false"
+  ]
+ }
+]

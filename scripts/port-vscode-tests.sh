@@ -24,7 +24,17 @@ SUITES=(
   src/vs/editor/test/common/model/model.line.test.ts
   src/vs/editor/test/common/model/model.test.ts
   src/vs/editor/test/common/model/textModel.test.ts
+  src/vs/editor/contrib/comment/test/browser/lineCommentCommand.test.ts
+  src/vs/editor/contrib/comment/test/browser/blockCommentCommand.test.ts
+  src/vs/editor/contrib/indentation/test/browser/indentation.test.ts
 )
+# Test language definitions some suites import (inlined by port.mjs).
+SUPPORTS=(indentationRules onEnterRules bracketRules autoClosingPairsRules)
+mkdir -p "$src/src/vs/editor/test/common/modes/supports"
+for f in "${SUPPORTS[@]}"; do
+  curl -sfL "https://raw.githubusercontent.com/microsoft/vscode/$SHA/src/vs/editor/test/common/modes/supports/$f.ts" \
+    -o "$src/src/vs/editor/test/common/modes/supports/$f.ts"
+done
 # PORT_ONLY=<substring> regenerates only matching suites (the others keep their fixtures).
 for rel in "${SUITES[@]}"; do
   [[ -n "${PORT_ONLY:-}" && "$rel" != *"$PORT_ONLY"* ]] && continue

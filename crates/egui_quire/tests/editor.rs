@@ -634,17 +634,8 @@ fn keymap_resolves_against_core_commands() {
     let mut unresolved: Vec<&str> = map.unresolved().iter().map(|(id, _)| id.as_str()).collect();
     unresolved.sort_unstable();
     unresolved.dedup();
-    // Every core command in the default keymap resolves; the comment and delete-all-right
-    // chords wait for core's batch 2.
-    assert_eq!(
-        unresolved,
-        vec![
-            "deleteAllRight",
-            "editor.action.addCommentLine",
-            "editor.action.blockComment",
-            "editor.action.removeCommentLine",
-        ]
-    );
+    // Every command in the default keymap resolves against quire-core.
+    assert_eq!(unresolved, Vec::<&str>::new());
     let os = egui::os::OperatingSystem::Nix;
     let ctx = egui_quire::keymap::WhenContext::default();
     let b = map
@@ -1391,17 +1382,16 @@ fn keymap_parses_two_chord_entries() {
     let map = egui_quire::Keymap::vscode_default();
     let os = egui::os::OperatingSystem::Nix;
     let ctx = egui_quire::keymap::WhenContext::default();
-    // ctrl+k starts the fold chords; ctrl+k ctrl+c is not bound until core has addCommentLine
-    // (only resolved bindings count).
+    // ctrl+k starts the fold and comment chords.
     let k = egui_quire::Chord::parse("ctrl+k").unwrap();
     assert!(matches!(
         map.lookup_seq(os, None, Key::K, Modifiers::CTRL, &ctx),
         egui_quire::KeyLookup::Prefix(c) if c == k
     ));
-    assert!(matches!(
-        map.lookup_seq(os, Some(k), Key::C, Modifiers::CTRL, &ctx),
-        egui_quire::KeyLookup::Unbound
-    ));
+    match map.lookup_seq(os, Some(k), Key::C, Modifiers::CTRL, &ctx) {
+        egui_quire::KeyLookup::Bound(b) => assert_eq!(b.command_id, "editor.action.addCommentLine"),
+        other => panic!("{other:?}"),
+    }
     match map.lookup_seq(os, Some(k), Key::Num0, Modifiers::CTRL, &ctx) {
         egui_quire::KeyLookup::Bound(b) => assert_eq!(b.command_id, "editor.foldAll"),
         other => panic!("{other:?}"),
