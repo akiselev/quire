@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use std::ops::{ControlFlow, Range};
 
 use streaming_iterator::StreamingIterator;
-use tree_sitter::{InputEdit, Node, ParseOptions, Parser, Point, QueryCursor, Range as TsRange, Tree};
+use tree_sitter::{
+    InputEdit, Node, ParseOptions, Parser, Point, QueryCursor, Range as TsRange, Tree,
+};
 
 use crate::config::{self, InjLang};
 use crate::lang::Lang;
@@ -13,9 +15,6 @@ use crate::source::{self, Chunks, Source};
 
 /// Deepest injection nesting (svelte > script > css template is 2).
 const MAX_DEPTH: u32 = 4;
-
-/// The marker the Svelte injection query uses for `{expressions}`.
-const SVELTE_SCRIPT: &str = "svelte.script";
 
 /// One edit in old-text coordinates.
 #[derive(Clone, Debug)]
@@ -29,30 +28,113 @@ pub(crate) struct EditRef<'a> {
 pub(crate) struct Layer {
     pub lang: Lang,
     pub tree: Tree,
-    /// Included ranges; empty for the root (the whole text).
-    pub ranges: Vec<TsRange>,
+    /// Included byte ranges; empty for the root (the whole text).
+    pub ranges: Vec<Range<usize>>,
     /// The bounding byte range of `ranges` (the whole text for the root).
     pub span: Range<usize>,
     pub depth: u32,
+    /// The parent layer's index (`u32::MAX` for the root).
+    pub parent: u32,
+    /// Real position = position in `tree` + `shift`. Layers carried over past an edit's last
+    /// line move lazily instead of paying `Tree::edit`; the shift is materialised (one synthetic
+    /// edit) only when the layer is reparsed. Spans and ranges are always real.
+    pub shift: Shift,
 }
 
-/// All layers of a document. `layers[0]` is the root; the rest are sorted by span start.
+/// A lazy move of a whole tree: bytes and rows (columns never change, see [`Layer::shift`]).
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub(crate) struct Shift {
+    pub bytes: isize,
+    pub rows: isize,
+}
+
+impl Shift {
+    /// Tree coordinates -> real.
+    pub fn real(self, b: usize) -> usize {
+        (b as isize + self.bytes) as usize
+    }
+    /// Real coordinates -> tree (saturating at 0).
+    pub fn tree(self, b: usize) -> usize {
+        (b as isize - self.bytes).max(0) as usize
+    }
+    pub fn row(self, r: usize) -> usize {
+        (r as isize + self.rows) as usize
+    }
+}
+
+impl Layer {
+    /// The tree in real coordinates (applies the lazy shift as one edit at the start).
+    fn materialized(&self) -> Tree {
+        let mut t = self.tree.clone();
+        let Shift { bytes: d, rows: r } = self.shift;
+        if d != 0 || r != 0 {
+            let (a, b) = ((-d).max(0) as usize, d.max(0) as usize);
+            let (ra, rb) = ((-r).max(0) as usize, r.max(0) as usize);
+            t.edit(&InputEdit {
+                start_byte: 0,
+                old_end_byte: a,
+                new_end_byte: b,
+                start_position: Point { row: 0, column: 0 },
+                old_end_position: Point { row: ra, column: 0 },
+                new_end_position: Point { row: rb, column: 0 },
+            });
+        }
+        t
+    }
+}
+
+/// All layers of a document. `layers[0]` is the root; parents come before their children.
 #[derive(Clone, Debug)]
 pub(crate) struct Layers {
     pub layers: Vec<Layer>,
+    /// Indices of the injected layers sorted by span start; `max_end[i]` is the largest span end
+    /// among `by_start[..=i]`, so a range lookup is a binary search.
+    by_start: Vec<u32>,
+    max_end: Vec<usize>,
 }
 
 impl Layers {
-    /// Layers whose span intersects `r` (the root always does), root first, then by depth.
-    pub fn intersecting(&self, r: Range<usize>) -> impl Iterator<Item = &Layer> + '_ {
-        self.layers.iter().enumerate().filter_map(move |(i, l)| {
-            (i == 0 || (l.span.start < r.end.max(r.start + 1) && l.span.end >= r.start)).then_some(l)
-        })
+    fn new(layers: Vec<Layer>) -> Self {
+        let mut by_start: Vec<u32> = (1..layers.len() as u32).collect();
+        by_start.sort_by_key(|&i| (layers[i as usize].span.start, layers[i as usize].depth));
+        let mut max_end = Vec::with_capacity(by_start.len());
+        let mut m = 0;
+        for &i in &by_start {
+            m = m.max(layers[i as usize].span.end);
+            max_end.push(m);
+        }
+        Layers {
+            layers,
+            by_start,
+            max_end,
+        }
+    }
+
+    /// The root and the layers whose span intersects `r` (touching counts), root first, then
+    /// by depth.
+    pub fn intersecting(&self, r: Range<usize>) -> Vec<&Layer> {
+        let first = self.max_end.partition_point(|&e| e < r.start);
+        let last = self
+            .by_start
+            .partition_point(|&i| self.layers[i as usize].span.start <= r.end);
+        let mut out = vec![&self.layers[0]];
+        for &i in &self.by_start[first..last.max(first)] {
+            let l = &self.layers[i as usize];
+            if l.span.end >= r.start {
+                out.push(l);
+            }
+        }
+        out.sort_by_key(|l| l.depth);
+        out
     }
 }
 
 /// tree-sitter edits for `edits` (old coordinates, sorted, non-overlapping), applied in order.
-pub(crate) fn input_edits<S: Source + ?Sized>(old: &S, new: &S, edits: &[EditRef<'_>]) -> Vec<InputEdit> {
+pub(crate) fn input_edits<S: Source + ?Sized>(
+    old: &S,
+    new: &S,
+    edits: &[EditRef<'_>],
+) -> Vec<InputEdit> {
     let old_chunks = Chunks::new(old);
     let mut out = Vec::with_capacity(edits.len());
     let mut delta: isize = 0;
@@ -105,7 +187,7 @@ fn map_pos(edits: &[EditRef<'_>], pos: usize, after: bool) -> usize {
     (pos as isize + delta) as usize
 }
 
-/// The previous parse, the edits from its text to the new one, and the old text.
+/// The previous parse and the edits from its text to the new one.
 pub(crate) struct Prev<'p, 'e> {
     pub layers: &'p Layers,
     pub edits: &'e [EditRef<'e>],
@@ -119,33 +201,38 @@ pub struct ParseStats {
     pub layers: usize,
     /// Layers parsed (incrementally or from scratch).
     pub parsed: usize,
-    /// Layers reused from the previous tree without parsing.
+    /// Layers whose injections were searched again (all of a layer, or its changed ranges).
+    pub searched: usize,
+    /// Layers carried over from the previous tree without parsing.
     pub reused: usize,
 }
 
-struct Ctx<'a> {
+struct Ctx<'a, S: ?Sized> {
     parser: Parser,
+    src: &'a S,
     chunks: Chunks<'a>,
     cancel: &'a dyn Fn() -> bool,
     stats: ParseStats,
 }
 
-impl Ctx<'_> {
+impl<S: Source + ?Sized> Ctx<'_, S> {
     fn parse(&mut self, lang: Lang, ranges: &[TsRange], old: Option<&Tree>) -> Option<Tree> {
         let cfg = config::get(lang)?;
         self.parser.set_language(&cfg.grammar).ok()?;
-        if ranges.is_empty() {
-            self.parser.set_included_ranges(&[]).ok()?;
-        } else {
-            self.parser.set_included_ranges(ranges).ok()?;
-        }
+        self.parser.set_included_ranges(ranges).ok()?;
         let chunks = &self.chunks;
         let cancel = self.cancel;
         let mut progress = |_: &tree_sitter::ParseState| {
-            if cancel() { ControlFlow::Break(()) } else { ControlFlow::Continue(()) }
+            if cancel() {
+                ControlFlow::Break(())
+            } else {
+                ControlFlow::Continue(())
+            }
         };
         let opts = ParseOptions::new().progress_callback(&mut progress);
-        let tree = self.parser.parse_with_options(&mut |b: usize, _: Point| chunks.at(b), old, Some(opts));
+        let tree =
+            self.parser
+                .parse_with_options(&mut |b: usize, _: Point| chunks.at(b), old, Some(opts));
         self.parser.reset();
         self.stats.parsed += 1;
         tree
@@ -159,6 +246,15 @@ struct Found {
     span: Range<usize>,
 }
 
+/// How a new layer relates to the previous parse.
+enum Origin {
+    /// No previous layer: search the whole tree for injections.
+    Fresh,
+    /// Reparsed from the previous layer `old`; `before` is the old tree after the edits, for
+    /// `changed_ranges`.
+    Reparsed { old: usize, before: Tree },
+}
+
 /// Parses `src` as `lang`, reusing `prev` when given. `None` if cancelled or the grammar is
 /// missing.
 pub(crate) fn parse<S: Source + ?Sized>(
@@ -167,100 +263,314 @@ pub(crate) fn parse<S: Source + ?Sized>(
     prev: Option<Prev<'_, '_>>,
     cancel: &dyn Fn() -> bool,
 ) -> Option<(Layers, ParseStats)> {
-    let mut ctx = Ctx { parser: Parser::new(), chunks: Chunks::new(src), cancel, stats: ParseStats::default() };
+    let mut ctx = Ctx {
+        parser: Parser::new(),
+        src,
+        chunks: Chunks::new(src),
+        cancel,
+        stats: ParseStats::default(),
+    };
     let len = src.len_bytes();
-
-    // Root.
-    let old_root = prev.as_ref().map(|p| {
-        let mut t = p.layers.layers[0].tree.clone();
-        for e in p.input_edits {
-            t.edit(e);
+    let first_edit = prev
+        .as_ref()
+        .and_then(|p| p.edits.first())
+        .map_or(usize::MAX, |e| e.range.start);
+    let edited = |p: &Prev<'_, '_>, old: &Layer| {
+        let mut t = old.materialized();
+        if old.span.end >= first_edit {
+            for e in p.input_edits {
+                t.edit(e);
+            }
         }
         t
+    };
+    // Edited ranges in new coordinates.
+    let new_edits: Vec<Range<usize>> = prev.as_ref().map_or_else(Vec::new, |p| {
+        let mut delta: isize = 0;
+        p.edits
+            .iter()
+            .map(|e| {
+                let s = (e.range.start as isize + delta) as usize;
+                delta += e.insert.len() as isize - e.range.len() as isize;
+                s..s + e.insert.len()
+            })
+            .collect()
     });
-    let root = ctx.parse(lang, &[], old_root.as_ref())?;
-    let mut out = vec![Layer { lang, tree: root, ranges: Vec::new(), span: 0..len, depth: 0 }];
-
-    // Old injected layers by (lang, depth), sorted by mapped span start.
-    struct Cand {
-        idx: usize,
-        mapped: Range<usize>,
-        touched: bool,
-        used: bool,
-    }
-    let mut cands: HashMap<(Lang, u32), Vec<Cand>> = HashMap::new();
-    if let Some(p) = &prev {
-        for (idx, l) in p.layers.layers.iter().enumerate().skip(1) {
-            let mapped = map_pos(p.edits, l.span.start, true)..map_pos(p.edits, l.span.end, false);
-            let touched =
-                p.edits.iter().any(|e| e.range.start <= l.span.end && e.range.end >= l.span.start);
-            cands.entry((l.lang, l.depth)).or_default().push(Cand { idx, mapped, touched, used: false });
+    let eidx = prev
+        .as_ref()
+        .map(|p| EditIndex::new(p.edits, p.input_edits))
+        .unwrap_or(EditIndex {
+            old_end: Vec::new(),
+            cum: Vec::new(),
+        });
+    // Old children per old layer.
+    let old_children: Vec<Vec<u32>> = prev.as_ref().map_or_else(Vec::new, |p| {
+        let mut c = vec![Vec::new(); p.layers.layers.len()];
+        for (i, l) in p.layers.layers.iter().enumerate().skip(1) {
+            c[l.parent as usize].push(i as u32);
         }
-        for v in cands.values_mut() {
-            v.sort_by_key(|c| c.mapped.start);
-        }
-    }
+        c
+    });
 
-    // Breadth-first over layers: find each layer's injections, then build their trees.
-    let mut next = 0;
-    while next < out.len() {
-        let (parent_lang, parent_depth, parent_ranges) = {
-            let l = &out[next];
-            (l.lang, l.depth, l.ranges.clone())
-        };
-        next += 1;
-        if parent_depth + 1 > MAX_DEPTH {
+    // Root.
+    let (root, origin) = match &prev {
+        Some(p) => {
+            let before = edited(p, &p.layers.layers[0]);
+            let t = ctx.parse(lang, &[], Some(&before))?;
+            (t, Origin::Reparsed { old: 0, before })
+        }
+        None => (ctx.parse(lang, &[], None)?, Origin::Fresh),
+    };
+    let mut out = vec![Layer {
+        lang,
+        tree: root,
+        ranges: Vec::new(),
+        span: 0..len,
+        depth: 0,
+        parent: u32::MAX,
+        shift: Shift::default(),
+    }];
+    let mut queue: Vec<(usize, Origin)> = vec![(0, origin)];
+
+    while let Some((idx, origin)) = queue.pop() {
+        let (plang, pdepth, pranges) = (out[idx].lang, out[idx].depth, out[idx].ranges.clone());
+        if pdepth + 1 > MAX_DEPTH {
             continue;
         }
-        let found = find_injections(&out[next - 1].tree, parent_lang, &parent_ranges, &ctx.chunks);
-        for f in found {
-            let depth = parent_depth + 1;
-            let mut tree = None;
-            if let (Some(p), Some(list)) = (&prev, cands.get_mut(&(f.lang, depth))) {
-                let i = list.partition_point(|c| c.mapped.end < f.span.start);
-                if let Some(c) = list[i..]
-                    .iter_mut()
-                    .take_while(|c| c.mapped.start <= f.span.end)
-                    .find(|c| !c.used)
-                {
-                    c.used = true;
-                    let old = &p.layers.layers[c.idx];
-                    let mut t = old.tree.clone();
-                    if old.span.end >= p.edits.first().map_or(usize::MAX, |e| e.range.start) {
-                        for e in p.input_edits {
-                            t.edit(e);
-                        }
-                    }
-                    let same = !c.touched
-                        && old.ranges.len() == f.ranges.len()
-                        && old.ranges.iter().zip(&f.ranges).all(|(a, b)| {
-                            map_pos(p.edits, a.start_byte, true) == b.start_byte
-                                && map_pos(p.edits, a.end_byte, false) == b.end_byte
-                        });
-                    if same {
-                        ctx.stats.reused += 1;
-                        tree = Some(t);
-                    } else {
-                        tree = Some(ctx.parse(f.lang, &f.ranges, Some(&t))?);
-                    }
+        let depth = pdepth + 1;
+        ctx.stats.searched += 1;
+        match origin {
+            Origin::Fresh => {
+                let found = find_injections(&out[idx].tree, plang, &pranges, &ctx, None);
+                for f in found {
+                    let tree = ctx.parse(f.lang, &f.ranges, None)?;
+                    let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
+                    out.push(Layer {
+                        lang: f.lang,
+                        tree,
+                        ranges,
+                        span: f.span,
+                        depth,
+                        parent: idx as u32,
+                        shift: Shift::default(),
+                    });
+                    queue.push((out.len() - 1, Origin::Fresh));
                 }
             }
-            let tree = match tree {
-                Some(t) => t,
-                None => ctx.parse(f.lang, &f.ranges, None)?,
-            };
-            out.push(Layer { lang: f.lang, tree, ranges: f.ranges, span: f.span, depth });
+            Origin::Reparsed { old, before } => {
+                let p = prev.as_ref().expect("reparsed implies prev");
+                // Where the injections may have changed: what tree-sitter reports, plus the edits.
+                let mut changed: Vec<Range<usize>> = out[idx]
+                    .tree
+                    .changed_ranges(&before)
+                    .map(|r| r.start_byte..r.end_byte)
+                    .collect();
+                changed.extend(
+                    new_edits
+                        .iter()
+                        .filter(|r| r.start <= out[idx].span.end && r.end >= out[idx].span.start)
+                        .cloned(),
+                );
+                let changed = merge(changed);
+                let found = if changed.is_empty() {
+                    Vec::new()
+                } else {
+                    find_injections(&out[idx].tree, plang, &pranges, &ctx, Some(&changed))
+                };
+                let hits = |r: &Range<usize>| {
+                    changed.iter().any(|c| c.start <= r.end && c.end >= r.start)
+                        || found
+                            .iter()
+                            .any(|f| f.span.start <= r.end && f.span.end >= r.start)
+                };
+                // Old children outside the changed ranges carry over with their subtrees; the
+                // rest are candidates for incremental reparse of what was found.
+                let mut cands: Vec<(usize, Range<usize>, bool)> = Vec::new();
+                for &c in &old_children[old] {
+                    let ol = &p.layers.layers[c as usize];
+                    let mapped =
+                        map_pos(p.edits, ol.span.start, true)..map_pos(p.edits, ol.span.end, false);
+                    let touched = p
+                        .edits
+                        .iter()
+                        .any(|e| e.range.start <= ol.span.end && e.range.end >= ol.span.start);
+                    if touched || hits(&mapped) {
+                        cands.push((c as usize, mapped, false));
+                    } else {
+                        carry(
+                            p,
+                            &eidx,
+                            ctx.src,
+                            c as usize,
+                            idx as u32,
+                            &old_children,
+                            &mut out,
+                            &mut ctx.stats,
+                        );
+                    }
+                }
+                for f in found {
+                    let i = cands.iter().position(|(c, m, used)| {
+                        !used
+                            && p.layers.layers[*c].lang == f.lang
+                            && m.start <= f.span.end
+                            && m.end >= f.span.start
+                    });
+                    // tree-sitter's lexer can crash when the old tree does not cover the new
+                    // included ranges (tree-house carries the same guard, helix#12972).
+                    let reuse = i
+                        .map(|i| (i, edited(p, &p.layers.layers[cands[i].0])))
+                        .filter(|(_, t)| {
+                            let r = t.root_node().byte_range();
+                            r.start <= f.span.start && r.end >= f.span.end
+                        });
+                    let (tree, origin) = match reuse {
+                        Some((i, before)) => {
+                            cands[i].2 = true;
+                            let t = ctx.parse(f.lang, &f.ranges, Some(&before))?;
+                            (
+                                t,
+                                Origin::Reparsed {
+                                    old: cands[i].0,
+                                    before,
+                                },
+                            )
+                        }
+                        None => (ctx.parse(f.lang, &f.ranges, None)?, Origin::Fresh),
+                    };
+                    let ranges = f.ranges.iter().map(|r| r.start_byte..r.end_byte).collect();
+                    out.push(Layer {
+                        lang: f.lang,
+                        tree,
+                        ranges,
+                        span: f.span,
+                        depth,
+                        parent: idx as u32,
+                        shift: Shift::default(),
+                    });
+                    queue.push((out.len() - 1, origin));
+                }
+            }
         }
     }
-    out[1..].sort_by_key(|l| (l.span.start, l.depth));
     ctx.stats.layers = out.len();
-    Some((Layers { layers: out }, ctx.stats))
+    Some((Layers::new(out), ctx.stats))
 }
 
-/// Runs the injection query of `lang` over `tree`.
-fn find_injections(tree: &Tree, lang: Lang, parent_ranges: &[TsRange], chunks: &Chunks<'_>) -> Vec<Found> {
-    let Some(cfg) = config::get(lang) else { return Vec::new() };
-    let Some(inj) = &cfg.injections else { return Vec::new() };
+/// Per edit, for lazy shifts: the old end byte, and after this edit the cumulative byte and
+/// row deltas and the new end row.
+pub(crate) struct EditIndex {
+    old_end: Vec<usize>,
+    cum: Vec<(isize, isize, usize)>,
+}
+
+impl EditIndex {
+    fn new(edits: &[EditRef<'_>], input: &[InputEdit]) -> Self {
+        let mut d = 0;
+        let mut r = 0;
+        let mut cum = Vec::with_capacity(edits.len());
+        for (e, ie) in edits.iter().zip(input) {
+            d += e.insert.len() as isize - e.range.len() as isize;
+            r += ie.new_end_position.row as isize - ie.old_end_position.row as isize;
+            cum.push((d, r, ie.new_end_position.row));
+        }
+        EditIndex {
+            old_end: edits.iter().map(|e| e.range.end).collect(),
+            cum,
+        }
+    }
+
+    /// For an untouched span starting at old byte `start`: the byte and row deltas of the
+    /// edits before it, and the row the last of them ends on (new coordinates).
+    fn before(&self, start: usize) -> Option<(isize, isize, usize)> {
+        let n = self.old_end.partition_point(|&e| e <= start);
+        (n > 0).then(|| self.cum[n - 1])
+    }
+}
+
+/// Copies old layer `old` and its subtree (untouched by the edits) under new parent `parent`.
+#[allow(clippy::too_many_arguments)]
+fn carry<S: Source + ?Sized>(
+    p: &Prev<'_, '_>,
+    idx: &EditIndex,
+    src: &S,
+    old: usize,
+    parent: u32,
+    children: &[Vec<u32>],
+    out: &mut Vec<Layer>,
+    stats: &mut ParseStats,
+) {
+    let ol = &p.layers.layers[old];
+    let (tree, shift, d) = match idx.before(ol.span.start) {
+        None => (ol.tree.clone(), ol.shift, 0),
+        Some((d, r, end_row)) => {
+            let new_start = (ol.span.start as isize + d) as usize;
+            if end_row < src.byte_to_line(new_start) {
+                // Only whole lines moved: shift lazily.
+                (
+                    ol.tree.clone(),
+                    Shift {
+                        bytes: ol.shift.bytes + d,
+                        rows: ol.shift.rows + r,
+                    },
+                    d,
+                )
+            } else {
+                let mut t = ol.materialized();
+                for e in p.input_edits {
+                    t.edit(e);
+                }
+                (t, Shift::default(), d)
+            }
+        }
+    };
+    let m = |b: usize| (b as isize + d) as usize;
+    let ranges = ol.ranges.iter().map(|r| m(r.start)..m(r.end)).collect();
+    out.push(Layer {
+        lang: ol.lang,
+        tree,
+        ranges,
+        span: m(ol.span.start)..m(ol.span.end),
+        depth: ol.depth,
+        parent,
+        shift,
+    });
+    stats.reused += 1;
+    let me = (out.len() - 1) as u32;
+    for &c in &children[old] {
+        carry(p, idx, src, c as usize, me, children, out, stats);
+    }
+}
+
+/// Sorts and merges ranges, widening each by one byte so touching edits count.
+fn merge(mut v: Vec<Range<usize>>) -> Vec<Range<usize>> {
+    v.sort_by_key(|r| r.start);
+    let mut out: Vec<Range<usize>> = Vec::with_capacity(v.len());
+    for r in v {
+        let r = r.start.saturating_sub(1)..r.end + 1;
+        match out.last_mut() {
+            Some(l) if r.start <= l.end => l.end = l.end.max(r.end),
+            _ => out.push(r),
+        }
+    }
+    out
+}
+
+/// Runs the injection query of `lang` over `tree` (only matches touching `within`, if given).
+fn find_injections<S: Source + ?Sized>(
+    tree: &Tree,
+    lang: Lang,
+    parent_ranges: &[Range<usize>],
+    ctx: &Ctx<'_, S>,
+    within: Option<&[Range<usize>]>,
+) -> Vec<Found> {
+    let chunks = &ctx.chunks;
+    let Some(cfg) = config::get(lang) else {
+        return Vec::new();
+    };
+    let Some(inj) = &cfg.injections else {
+        return Vec::new();
+    };
     struct Hit<'t> {
         pattern: usize,
         node: Node<'t>,
@@ -269,42 +579,49 @@ fn find_injections(tree: &Tree, lang: Lang, parent_ranges: &[TsRange], chunks: &
         lang: Option<Lang>,
     }
     let mut hits: Vec<Hit<'_>> = Vec::new();
-    let mut unresolved: Vec<(usize, Node<'_>)> = Vec::new();
     let mut cursor = QueryCursor::new();
-    let text = |n: Node<'_>| chunks.slices(n.byte_range());
-    let mut matches = cursor.matches(&inj.query, tree.root_node(), text);
-    while let Some(m) = matches.next() {
-        let pat = &inj.patterns[m.pattern_index];
-        let Some(content) = m.captures.iter().find(|c| c.index == inj.content).map(|c| c.node) else {
-            continue;
-        };
-        let name = match &pat.lang {
-            Some(InjLang::Fixed(s)) => s.clone(),
-            Some(InjLang::Captured) => match m.captures.iter().find(|c| Some(c.index) == inj.language) {
-                Some(c) => chunks.string(c.node.byte_range()),
+    let whole = [0..usize::MAX];
+    for r in within.unwrap_or(&whole) {
+        cursor.set_byte_range(r.clone());
+        let text = |n: Node<'_>| chunks.slices(n.byte_range());
+        let mut matches = cursor.matches(&inj.query, tree.root_node(), text);
+        while let Some(m) = matches.next() {
+            let pat = &inj.patterns[m.pattern_index];
+            let Some(content) = m
+                .captures
+                .iter()
+                .find(|c| c.index == inj.content)
+                .map(|c| c.node)
+            else {
+                continue;
+            };
+            let name = match &pat.lang {
+                Some(InjLang::Fixed(s)) => s.clone(),
+                Some(InjLang::Captured) => {
+                    match m.captures.iter().find(|c| Some(c.index) == inj.language) {
+                        Some(c) => chunks.string(c.node.byte_range()),
+                        None => continue,
+                    }
+                }
                 None => continue,
-            },
-            None => continue,
-        };
-        if name == SVELTE_SCRIPT {
-            unresolved.push((m.pattern_index, content));
-            continue;
+            };
+            let lang = Lang::from_name(&name).filter(|l| l.is_available());
+            hits.push(Hit {
+                pattern: m.pattern_index,
+                node: content,
+                lang,
+            });
         }
-        let lang = Lang::from_name(&name).filter(|l| l.is_available());
-        hits.push(Hit { pattern: m.pattern_index, node: content, lang });
-    }
-    // Svelte expressions take the component script's language.
-    if !unresolved.is_empty() {
-        let script = if hits.iter().any(|h| h.lang == Some(Lang::TypeScript)) {
-            Lang::TypeScript
-        } else {
-            Lang::JavaScript
-        };
-        let lang = script.is_available().then_some(script);
-        hits.extend(unresolved.into_iter().map(|(pattern, node)| Hit { pattern, node, lang }));
     }
     // First pattern wins per content node.
-    hits.sort_by_key(|h| (h.node.start_byte(), h.node.end_byte(), h.node.id(), h.pattern));
+    hits.sort_by_key(|h| {
+        (
+            h.node.start_byte(),
+            h.node.end_byte(),
+            h.node.id(),
+            h.pattern,
+        )
+    });
     hits.dedup_by_key(|h| h.node.id());
 
     let mut out: Vec<Found> = Vec::new();
@@ -314,7 +631,7 @@ fn find_injections(tree: &Tree, lang: Lang, parent_ranges: &[TsRange], chunks: &
         let pat = &inj.patterns[h.pattern];
         let mut ranges = content_ranges(h.node, pat.include_children);
         if !parent_ranges.is_empty() {
-            ranges = intersect(&ranges, parent_ranges);
+            ranges = intersect(&ranges, parent_ranges, ctx.src);
         }
         if ranges.is_empty() {
             continue;
@@ -348,28 +665,51 @@ fn content_ranges(node: Node<'_>, include_children: bool) -> Vec<TsRange> {
     let mut c = node.walk();
     for child in node.named_children(&mut c) {
         if child.start_byte() > sb {
-            out.push(TsRange { start_byte: sb, end_byte: child.start_byte(), start_point: sp, end_point: child.start_position() });
+            out.push(TsRange {
+                start_byte: sb,
+                end_byte: child.start_byte(),
+                start_point: sp,
+                end_point: child.start_position(),
+            });
         }
         sb = child.end_byte();
         sp = child.end_position();
     }
     if whole.end_byte > sb {
-        out.push(TsRange { start_byte: sb, end_byte: whole.end_byte, start_point: sp, end_point: whole.end_point });
+        out.push(TsRange {
+            start_byte: sb,
+            end_byte: whole.end_byte,
+            start_point: sp,
+            end_point: whole.end_point,
+        });
     }
     out
 }
 
 /// The parts of `a` inside `b` (both sorted, non-overlapping).
-fn intersect(a: &[TsRange], b: &[TsRange]) -> Vec<TsRange> {
+fn intersect<S: Source + ?Sized>(a: &[TsRange], b: &[Range<usize>], src: &S) -> Vec<TsRange> {
     let mut out = Vec::new();
     for x in a {
         for y in b {
-            let s = x.start_byte.max(y.start_byte);
-            let e = x.end_byte.min(y.end_byte);
+            let s = x.start_byte.max(y.start);
+            let e = x.end_byte.min(y.end);
             if s < e {
-                let sp = if s == x.start_byte { x.start_point } else { y.start_point };
-                let ep = if e == x.end_byte { x.end_point } else { y.end_point };
-                out.push(TsRange { start_byte: s, end_byte: e, start_point: sp, end_point: ep });
+                let sp = if s == x.start_byte {
+                    x.start_point
+                } else {
+                    source::point(src, s)
+                };
+                let ep = if e == x.end_byte {
+                    x.end_point
+                } else {
+                    source::point(src, e)
+                };
+                out.push(TsRange {
+                    start_byte: s,
+                    end_byte: e,
+                    start_point: sp,
+                    end_point: ep,
+                });
             }
         }
     }
@@ -382,14 +722,20 @@ mod tests {
 
     #[test]
     fn map_pos_basics() {
-        let e = [EditRef { range: 2..4, insert: "xyz" }];
+        let e = [EditRef {
+            range: 2..4,
+            insert: "xyz",
+        }];
         assert_eq!(map_pos(&e, 0, false), 0);
         assert_eq!(map_pos(&e, 2, false), 2);
         assert_eq!(map_pos(&e, 3, false), 2);
         assert_eq!(map_pos(&e, 3, true), 5);
         assert_eq!(map_pos(&e, 4, false), 5);
         assert_eq!(map_pos(&e, 10, false), 11);
-        let ins = [EditRef { range: 2..2, insert: "ab" }];
+        let ins = [EditRef {
+            range: 2..2,
+            insert: "ab",
+        }];
         assert_eq!(map_pos(&ins, 2, false), 2);
         assert_eq!(map_pos(&ins, 2, true), 4);
         assert_eq!(map_pos(&ins, 3, false), 5);

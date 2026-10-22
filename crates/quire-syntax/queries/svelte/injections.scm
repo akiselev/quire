@@ -4,52 +4,56 @@
 ; When several patterns inject into the same content node, the FIRST pattern wins, so the
 ; lang-specific patterns come before the defaults.
 
+; The script/style patterns are rooted at the start tag and its raw_text sibling, not at the
+; element: an element-rooted pattern makes a range-limited query walk into every sibling element
+; before the range (2.6 ms per query on a 20k-line component; E5.md).
+
 ; <script lang="ts">
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_attr
-      (quoted_attribute_value (attribute_value) @_lang)))
-  (raw_text) @injection.content)
+((start_tag
+  (tag_name) @_tag
+  (attribute
+    (attribute_name) @_attr
+    (quoted_attribute_value (attribute_value) @_lang)))
+ .
+ (raw_text) @injection.content
  (#eq? @_tag "script")
  (#eq? @_attr "lang")
  (#any-of? @_lang "ts" "typescript")
  (#set! injection.language "typescript"))
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_attr
-      (unquoted_attribute_value) @_lang))
-  (raw_text) @injection.content)
+((start_tag
+  (tag_name) @_tag
+  (attribute
+    (attribute_name) @_attr
+    (unquoted_attribute_value) @_lang))
+ .
+ (raw_text) @injection.content
  (#eq? @_tag "script")
  (#eq? @_attr "lang")
  (#any-of? @_lang "ts" "typescript")
  (#set! injection.language "typescript"))
 
 ; <script>
-((element
-  (start_tag (tag_name) @_tag)
-  (raw_text) @injection.content)
+((start_tag (tag_name) @_tag)
+ .
+ (raw_text) @injection.content
  (#eq? @_tag "script")
  (#set! injection.language "javascript"))
 
 ; <style lang="scss"> etc.: the named language (unknown names claim the node and are skipped)
-((element
-  (start_tag
-    (tag_name) @_tag
-    (attribute
-      (attribute_name) @_attr
-      (quoted_attribute_value (attribute_value) @injection.language)))
-  (raw_text) @injection.content)
+((start_tag
+  (tag_name) @_tag
+  (attribute
+    (attribute_name) @_attr
+    (quoted_attribute_value (attribute_value) @injection.language)))
+ .
+ (raw_text) @injection.content
  (#eq? @_tag "style")
  (#eq? @_attr "lang"))
 
 ; <style>
-((element
-  (start_tag (tag_name) @_tag)
-  (raw_text) @injection.content)
+((start_tag (tag_name) @_tag)
+ .
+ (raw_text) @injection.content
  (#eq? @_tag "style")
  (#set! injection.language "css"))
 

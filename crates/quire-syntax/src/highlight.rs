@@ -16,14 +16,22 @@ use crate::tree::{Layer, Layers};
 pub(crate) type LineRuns = Vec<Vec<(u32, u32)>>;
 
 /// Highlights `lines` (end exclusive, clamped to the text).
-pub(crate) fn highlight<S: Source + ?Sized>(layers: &Layers, src: &S, lines: Range<usize>) -> LineRuns {
+pub(crate) fn highlight<S: Source + ?Sized>(
+    layers: &Layers,
+    src: &S,
+    lines: Range<usize>,
+) -> LineRuns {
     let n_lines = src.len_lines();
     let lines = lines.start.min(n_lines)..lines.end.min(n_lines);
     if lines.is_empty() {
         return Vec::new();
     }
     let start = src.line_to_byte(lines.start);
-    let end = if lines.end >= n_lines { src.len_bytes() } else { src.line_to_byte(lines.end) };
+    let end = if lines.end >= n_lines {
+        src.len_bytes()
+    } else {
+        src.line_to_byte(lines.end)
+    };
     let chunks = Chunks::new(src);
     let mut paint = vec![style::NONE; end - start];
 
@@ -33,15 +41,24 @@ pub(crate) fn highlight<S: Source + ?Sized>(layers: &Layers, src: &S, lines: Ran
     let mut clipped = Vec::new();
     let mut cursor = QueryCursor::new();
     for layer in layers.intersecting(start..end) {
-        let Some(cfg) = config::get(layer.lang) else { continue };
-        cursor.set_byte_range(start..end);
-        let text = |n: Node<'_>| chunks.slices(n.byte_range());
+        let Some(cfg) = config::get(layer.lang) else {
+            continue;
+        };
+        let sh = layer.shift;
+        cursor.set_byte_range(sh.tree(start)..sh.tree(end));
+        let text = |n: Node<'_>| chunks.slices(sh.real(n.start_byte())..sh.real(n.end_byte()));
         let mut caps = cursor.captures(&cfg.highlights, layer.tree.root_node(), text);
         while let Some((m, i)) = caps.next() {
             let c = m.captures[*i];
-            let Some(Some(st)) = cfg.capture_styles.get(c.index as usize) else { continue };
+            let Some(Some(st)) = cfg.capture_styles.get(c.index as usize) else {
+                continue;
+            };
             clipped.clear();
-            clip(layer, c.node.byte_range(), &mut clipped);
+            clip(
+                layer,
+                sh.real(c.node.start_byte())..sh.real(c.node.end_byte()),
+                &mut clipped,
+            );
             spans.extend(clipped.iter().map(|&(s, e)| (layer.depth, s, e, *st)));
         }
     }
@@ -56,7 +73,11 @@ pub(crate) fn highlight<S: Source + ?Sized>(layers: &Layers, src: &S, lines: Ran
     let mut out = Vec::with_capacity(lines.len());
     for line in lines {
         let ls = src.line_to_byte(line);
-        let mut le = if line + 1 >= n_lines { src.len_bytes() } else { src.line_to_byte(line + 1) };
+        let mut le = if line + 1 >= n_lines {
+            src.len_bytes()
+        } else {
+            src.line_to_byte(line + 1)
+        };
         if le > ls && chunks.at(le - 1).first() == Some(&b'\n') {
             le -= 1;
         }
@@ -81,8 +102,8 @@ fn clip(layer: &Layer, r: Range<usize>, out: &mut Vec<(usize, usize)>) {
         return;
     }
     for x in &layer.ranges {
-        let s = r.start.max(x.start_byte);
-        let e = r.end.min(x.end_byte);
+        let s = r.start.max(x.start);
+        let e = r.end.min(x.end);
         if s < e {
             out.push((s, e));
         }
@@ -101,7 +122,9 @@ pub(crate) fn folds(layers: &Layers) -> Vec<Fold> {
     let mut out = Vec::new();
     let mut cursor = QueryCursor::new();
     for layer in &layers.layers {
-        let Some(cfg) = config::get(layer.lang) else { continue };
+        let Some(cfg) = config::get(layer.lang) else {
+            continue;
+        };
         let Some(q) = &cfg.folds else { continue };
         let Some(fold) = q.a else { continue };
         let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
@@ -110,12 +133,17 @@ pub(crate) fn folds(layers: &Layers) -> Vec<Fold> {
             if c.index != fold {
                 continue;
             }
-            let (s, mut e) = (c.node.start_position(), c.node.end_position());
+            let (mut s, mut e) = (c.node.start_position(), c.node.end_position());
+            s.row = layer.shift.row(s.row);
+            e.row = layer.shift.row(e.row);
             if e.column == 0 && e.row > s.row {
                 e.row -= 1;
             }
             if e.row > s.row {
-                out.push(Fold { start: s.row, end: e.row });
+                out.push(Fold {
+                    start: s.row,
+                    end: e.row,
+                });
             }
         }
     }
@@ -136,10 +164,15 @@ pub(crate) fn brackets(layers: &Layers, r: Range<usize>) -> Vec<Brackets> {
     let mut out = Vec::new();
     let mut cursor = QueryCursor::new();
     for layer in layers.intersecting(r.clone()) {
-        let Some(cfg) = config::get(layer.lang) else { continue };
+        let Some(cfg) = config::get(layer.lang) else {
+            continue;
+        };
         let Some(q) = &cfg.brackets else { continue };
-        let (Some(open), Some(close)) = (q.a, q.b) else { continue };
-        cursor.set_byte_range(r.clone());
+        let (Some(open), Some(close)) = (q.a, q.b) else {
+            continue;
+        };
+        let sh = layer.shift;
+        cursor.set_byte_range(sh.tree(r.start)..sh.tree(r.end));
         let mut ms = cursor.matches(&q.query, layer.tree.root_node(), &[] as &[u8]);
         while let Some(m) = ms.next() {
             let o = m.captures.iter().find(|c| c.index == open);
@@ -148,7 +181,8 @@ pub(crate) fn brackets(layers: &Layers, r: Range<usize>) -> Vec<Brackets> {
                 if o.node.is_missing() || c.node.is_missing() {
                     continue;
                 }
-                let (o, c) = (o.node.byte_range(), c.node.byte_range());
+                let real = |n: Node<'_>| sh.real(n.start_byte())..sh.real(n.end_byte());
+                let (o, c) = (real(o.node), real(c.node));
                 if (o.start < r.end && o.end > r.start) || (c.start < r.end && c.end > r.start) {
                     out.push(Brackets { open: o, close: c });
                 }
@@ -168,7 +202,11 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
         return None;
     }
     let ls = src.line_to_byte(line);
-    let le = if line + 1 >= src.len_lines() { src.len_bytes() } else { src.line_to_byte(line + 1) };
+    let le = if line + 1 >= src.len_lines() {
+        src.len_bytes()
+    } else {
+        src.line_to_byte(line + 1)
+    };
     let chunks = Chunks::new(src);
     let mut b = ls;
     while b < le {
@@ -182,15 +220,16 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
     let mut any = false;
     let mut cursor = QueryCursor::new();
     for layer in layers.intersecting(b..b + 1) {
-        if !layer.ranges.is_empty()
-            && !layer.ranges.iter().any(|r| r.start_byte <= b && b <= r.end_byte)
-        {
+        if !layer.ranges.is_empty() && !layer.ranges.iter().any(|r| r.start <= b && b <= r.end) {
             continue;
         }
-        let Some(cfg) = config::get(layer.lang) else { continue };
+        let Some(cfg) = config::get(layer.lang) else {
+            continue;
+        };
         let Some(q) = &cfg.indents else { continue };
         any = true;
-        cursor.set_byte_range(b.saturating_sub(1)..b + 1);
+        let sh = layer.shift;
+        cursor.set_byte_range(sh.tree(b.saturating_sub(1))..sh.tree(b + 1));
         let mut seen = Vec::new();
         let mut caps = cursor.captures(&q.query, layer.tree.root_node(), &[] as &[u8]);
         while let Some((m, i)) = caps.next() {
@@ -201,10 +240,15 @@ pub(crate) fn indent<S: Source + ?Sized>(layers: &Layers, src: &S, line: usize) 
                     continue;
                 }
                 seen.push(n.id());
-                if n.start_byte() < ls && (n.end_byte() > b || (at_eol && n.end_byte() >= b && n.end_byte() > ls)) {
+                let (ns, ne) = (sh.real(n.start_byte()), sh.real(n.end_byte()));
+                if ns < ls && (ne > b || (at_eol && ne >= b && ne > ls)) {
                     level += 1;
                 }
-            } else if Some(c.index) == q.b && n.start_byte() == b && !at_eol && !n.is_missing() {
+            } else if Some(c.index) == q.b
+                && sh.real(n.start_byte()) == b
+                && !at_eol
+                && !n.is_missing()
+            {
                 level -= 1;
             }
         }

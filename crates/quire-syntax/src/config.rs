@@ -75,8 +75,13 @@ impl std::fmt::Display for QueryError {
 }
 impl std::error::Error for QueryError {}
 
-static CONFIGS: [OnceLock<Result<LangConfig, QueryError>>; 5] =
-    [OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new(), OnceLock::new()];
+static CONFIGS: [OnceLock<Result<LangConfig, QueryError>>; 5] = [
+    OnceLock::new(),
+    OnceLock::new(),
+    OnceLock::new(),
+    OnceLock::new(),
+    OnceLock::new(),
+];
 
 /// The compiled configuration, or `None` if the grammar is not compiled in.
 pub(crate) fn get(lang: Lang) -> Option<&'static LangConfig> {
@@ -85,14 +90,26 @@ pub(crate) fn get(lang: Lang) -> Option<&'static LangConfig> {
 
 pub(crate) fn try_get(lang: Lang) -> Option<Result<&'static LangConfig, &'static QueryError>> {
     let grammar = lang.grammar()?;
-    Some(CONFIGS[lang.index()].get_or_init(|| build(lang, grammar)).as_ref())
+    Some(
+        CONFIGS[lang.index()]
+            .get_or_init(|| build(lang, grammar))
+            .as_ref(),
+    )
 }
 
-fn compile(lang: Lang, grammar: &Language, kind: &'static str) -> Result<Option<Query>, QueryError> {
-    let Some(src) = queries::resolve(lang.id(), kind) else { return Ok(None) };
-    Query::new(grammar, &src)
-        .map(Some)
-        .map_err(|e| QueryError { lang, kind, message: format!("{e}") })
+fn compile(
+    lang: Lang,
+    grammar: &Language,
+    kind: &'static str,
+) -> Result<Option<Query>, QueryError> {
+    let Some(src) = queries::resolve(lang.id(), kind) else {
+        return Ok(None);
+    };
+    Query::new(grammar, &src).map(Some).map_err(|e| QueryError {
+        lang,
+        kind,
+        message: format!("{e}"),
+    })
 }
 
 fn captured(q: Option<Query>, a: &str, b: &str) -> Option<Captured> {
@@ -104,16 +121,25 @@ fn captured(q: Option<Query>, a: &str, b: &str) -> Option<Captured> {
 }
 
 fn build(lang: Lang, grammar: Language) -> Result<LangConfig, QueryError> {
-    let highlights = compile(lang, &grammar, "highlights")?.unwrap_or_else(|| {
-        Query::new(&grammar, "").expect("the empty query compiles")
-    });
-    let capture_styles = highlights.capture_names().iter().map(|n| style::for_capture(n)).collect();
+    let highlights = compile(lang, &grammar, "highlights")?
+        .unwrap_or_else(|| Query::new(&grammar, "").expect("the empty query compiles"));
+    let capture_styles = highlights
+        .capture_names()
+        .iter()
+        .map(|n| style::for_capture(n))
+        .collect();
     let injections = compile(lang, &grammar, "injections")?.map(|query| {
-        let content = query.capture_index_for_name("injection.content").unwrap_or(u32::MAX);
+        let content = query
+            .capture_index_for_name("injection.content")
+            .unwrap_or(u32::MAX);
         let language = query.capture_index_for_name("injection.language");
         let patterns = (0..query.pattern_count())
             .map(|i| {
-                let mut p = InjPattern { lang: None, combined: false, include_children: false };
+                let mut p = InjPattern {
+                    lang: None,
+                    combined: false,
+                    include_children: false,
+                };
                 for prop in query.property_settings(i) {
                     match &*prop.key {
                         "injection.language" => {
@@ -130,12 +156,26 @@ fn build(lang: Lang, grammar: Language) -> Result<LangConfig, QueryError> {
                 p
             })
             .collect();
-        Injections { query, content, language, patterns }
+        Injections {
+            query,
+            content,
+            language,
+            patterns,
+        }
     });
     let folds = captured(compile(lang, &grammar, "folds")?, "fold", "");
     let indents = captured(compile(lang, &grammar, "indents")?, "indent", "outdent");
     let brackets = captured(compile(lang, &grammar, "brackets")?, "open", "close");
-    Ok(LangConfig { lang, grammar, highlights, capture_styles, injections, folds, indents, brackets })
+    Ok(LangConfig {
+        lang,
+        grammar,
+        highlights,
+        capture_styles,
+        injections,
+        folds,
+        indents,
+        brackets,
+    })
 }
 
 /// Compiles every query of every available language; the first error, if any.

@@ -12,24 +12,38 @@ pub(crate) trait Source {
     fn len_lines(&self) -> usize;
 }
 
-impl Source for str {
+/// A string with a line index (tests and benches before the quire-core seam).
+#[cfg_attr(not(test), allow(dead_code))]
+pub(crate) struct StrText {
+    pub s: String,
+    starts: Vec<usize>,
+}
+
+#[cfg_attr(not(test), allow(dead_code))]
+impl StrText {
+    pub fn new(s: impl Into<String>) -> Self {
+        let s = s.into();
+        let mut starts = vec![0];
+        starts.extend(s.match_indices('\n').map(|(i, _)| i + 1));
+        StrText { s, starts }
+    }
+}
+
+impl Source for StrText {
     fn len_bytes(&self) -> usize {
-        self.len()
+        self.s.len()
     }
     fn chunk_list(&self) -> Vec<&str> {
-        vec![self]
+        vec![&self.s]
     }
     fn byte_to_line(&self, b: usize) -> usize {
-        self.as_bytes()[..b].iter().filter(|c| **c == b'\n').count()
+        self.starts.partition_point(|x| *x <= b) - 1
     }
     fn line_to_byte(&self, line: usize) -> usize {
-        if line == 0 {
-            return 0;
-        }
-        self.match_indices('\n').nth(line - 1).map_or(self.len(), |(i, _)| i + 1)
+        self.starts.get(line).copied().unwrap_or(self.s.len())
     }
     fn len_lines(&self) -> usize {
-        self.as_bytes().iter().filter(|c| **c == b'\n').count() + 1
+        self.starts.len()
     }
 }
 
@@ -49,7 +63,11 @@ impl<'a> Chunks<'a> {
             starts.push(at);
             at += c.len();
         }
-        Chunks { starts, chunks, len: at }
+        Chunks {
+            starts,
+            chunks,
+            len: at,
+        }
     }
 
     /// The bytes from `b` to the end of its chunk (empty at the end).
@@ -105,5 +123,8 @@ impl<'a> Chunks<'a> {
 /// The tree-sitter point (row, byte column) of `b`.
 pub(crate) fn point<S: Source + ?Sized>(src: &S, b: usize) -> tree_sitter::Point {
     let row = src.byte_to_line(b);
-    tree_sitter::Point { row, column: b - src.line_to_byte(row) }
+    tree_sitter::Point {
+        row,
+        column: b - src.line_to_byte(row),
+    }
 }

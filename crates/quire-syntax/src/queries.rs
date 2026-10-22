@@ -28,7 +28,10 @@ table! {
 
 /// The raw text of one query file, if it exists.
 pub(crate) fn raw(dir: &str, kind: &str) -> Option<&'static str> {
-    TABLE.iter().find(|(d, k, _)| *d == dir && *k == kind).map(|(_, _, s)| *s)
+    TABLE
+        .iter()
+        .find(|(d, k, _)| *d == dir && *k == kind)
+        .map(|(_, _, s)| *s)
 }
 
 /// The query of `kind` for directory `dir` with inherits resolved; `None` if neither the file
@@ -53,7 +56,11 @@ pub(crate) fn resolve(dir: &str, kind: &str) -> Option<String> {
 }
 
 fn inherits(line: &str) -> Option<&str> {
-    let rest = line.trim_start().strip_prefix(';')?.trim_start_matches(';').trim_start();
+    let rest = line
+        .trim_start()
+        .strip_prefix(';')?
+        .trim_start_matches(';')
+        .trim_start();
     let rest = rest.strip_prefix("inherits")?.trim_start();
     Some(rest.strip_prefix(':').unwrap_or(rest).trim())
 }

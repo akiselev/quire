@@ -18,7 +18,13 @@ pub enum Lang {
 
 impl Lang {
     /// Every language, in a fixed order (also the index order of per-language tables).
-    pub const ALL: [Lang; 5] = [Lang::Svelte, Lang::TypeScript, Lang::Tsx, Lang::JavaScript, Lang::Css];
+    pub const ALL: [Lang; 5] = [
+        Lang::Svelte,
+        Lang::TypeScript,
+        Lang::Tsx,
+        Lang::JavaScript,
+        Lang::Css,
+    ];
 
     /// The stable id: the query directory name and the name injections use.
     pub fn id(self) -> &'static str {
