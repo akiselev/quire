@@ -3,6 +3,17 @@
 # quire-core. Run once at the end of a milestone, never on unchanged code.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# The whole run holds one machine build slot (svelters' cargo-slot protocol). cargo-slot sets
+# BUILD_SLOT_HELD, so the nested scripts/cargo.sh calls below run inside it without taking
+# another slot, including the clippy and check steps that would otherwise run unslotted.
+if [ -z "${BUILD_SLOT_HELD:-}" ]; then
+  slot=${CARGO_SLOT:-$PWD/../svelters/tools/dev/cargo-slot}
+  [ -x "$slot" ] || slot=$HOME/projects/svelters/tools/dev/cargo-slot
+  if [ -x "$slot" ]; then
+    exec "$slot" "$PWD/scripts/check.sh" "$@"
+  fi
+  echo "check.sh: no cargo-slot found (set CARGO_SLOT); running without a slot" >&2
+fi
 c=scripts/cargo.sh
 step() { printf '\n== %s\n' "$*"; }
 

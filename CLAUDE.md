@@ -39,7 +39,9 @@ quire depends on neither.
   `CARGO_BUILD_BUILD_DIR=<dir>/build`. Below 20 GB free disk, stop building and tell the coordinator.
 - While writing: `scripts/cargo.sh check -p <crate>` and only the touched tests
   (`scripts/cargo.sh test -p <crate> --test <name>` or a name filter).
-- `scripts/check.sh` once per milestone, never on unchanged code.
+- `scripts/check.sh` once per lane, at the end (it takes one machine slot for the whole run); it is
+  quire's CI. During development run only filtered tests for what you touched, through
+  `scripts/cargo.sh`. Never run it on unchanged code or for a docs-only change.
 - No hosted CI.
 
 ## Git
@@ -52,7 +54,7 @@ quire depends on neither.
   (use `git fetch` / `git ls-remote`, raw.githubusercontent.com for sources); poll at most every
   5 minutes.
 - Commit messages say what changed and which milestone (QE0, QE1, QE2, QE4).
-- **Master stays green:** only work that passes the full `scripts/check.sh` lands on master.
+- **Master stays green:** a lane lands on master only after its end-of-lane `scripts/check.sh` passes.
   Unfinished code stays on your branch.
 
 ## Handoff
