@@ -356,3 +356,14 @@ pub fn take_reveal(view: &mut EditorView, doc: &Document) -> Option<(usize, bool
         ),
     })
 }
+
+/// The word at `pos` as double-click selects it.
+pub fn word_range_at(doc: &Document, pos: usize) -> Range<usize> {
+    let cls = quire_core::words::WordClassifier::new(&doc.config().word_separators);
+    quire_core::words::word_range_at(doc.text(), pos, &cls)
+}
+
+/// The line at `pos` with its line feed, as triple-click selects it.
+pub fn line_range_at(doc: &Document, pos: usize) -> Range<usize> {
+    quire_core::words::line_range_at(doc.text(), pos.min(doc.text().len_bytes()))
+}

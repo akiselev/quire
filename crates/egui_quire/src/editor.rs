@@ -852,29 +852,13 @@ impl FrameCx<'_> {
         shaper.shape(&s, &runs, style_hash, self.theme.foreground)
     }
 
-    /// The unit range (char: empty at pos; word; line incl. its break) around `pos`.
+    /// The unit range around `pos` (char: empty; word and line: quire-core's double- and
+    /// triple-click ranges).
     fn unit_range(&self, pos: usize, unit: Unit) -> Range<usize> {
-        let text = glue::text(self.doc);
         match unit {
             Unit::Char => pos..pos,
-            Unit::Line => {
-                let l = text.byte_to_line(pos);
-                let r = text.line_range(l);
-                let end = if l + 1 < text.len_lines() {
-                    text.line_to_byte(l + 1)
-                } else {
-                    r.end
-                };
-                r.start..end
-            }
-            Unit::Word => {
-                let l = text.byte_to_line(pos);
-                let start = text.line_to_byte(l);
-                let s = glue::line_str(text, l);
-                let col = pos - start;
-                let r = word_at(&s, col);
-                start + r.start..start + r.end
-            }
+            Unit::Word => glue::word_range_at(self.doc, pos),
+            Unit::Line => glue::line_range_at(self.doc, pos),
         }
     }
 
@@ -1210,62 +1194,5 @@ impl FrameCx<'_> {
 impl Mem {
     pub(crate) fn galleys_max_width(&self) -> f32 {
         self.max_seen_width
-    }
-}
-
-/// The word (or run of punctuation / whitespace) at byte column `col` of `line`.
-pub(crate) fn word_at(line: &str, col: usize) -> Range<usize> {
-    #[derive(PartialEq)]
-    enum K {
-        Word,
-        Space,
-        Punct,
-    }
-    fn kind(c: char) -> K {
-        if c.is_alphanumeric() || c == '_' {
-            K::Word
-        } else if c.is_whitespace() {
-            K::Space
-        } else {
-            K::Punct
-        }
-    }
-    let col = col.min(line.len());
-    // Prefer the char at col; at end of a word (col after it) take the char before.
-    let at = line[col..].chars().next().map(kind);
-    let before = line[..col].chars().next_back().map(kind);
-    let k = match (&at, &before) {
-        (Some(K::Word), _) => K::Word,
-        (_, Some(K::Word)) => K::Word,
-        (Some(_), _) => at.unwrap(),
-        (None, Some(_)) => before.unwrap(),
-        (None, None) => return col..col,
-    };
-    let start = line[..col]
-        .char_indices()
-        .rev()
-        .take_while(|(_, c)| kind(*c) == k)
-        .last()
-        .map_or(col, |(i, _)| i);
-    let end = col
-        + line[col..]
-            .chars()
-            .take_while(|c| kind(*c) == k)
-            .map(char::len_utf8)
-            .sum::<usize>();
-    start..end
-}
-
-#[cfg(test)]
-mod tests {
-    use super::word_at;
-
-    #[test]
-    fn words() {
-        assert_eq!(word_at("let foo_bar = 1;", 5), 4..11);
-        assert_eq!(word_at("let foo_bar = 1;", 11), 4..11);
-        assert_eq!(word_at("a  b", 2), 1..3);
-        assert_eq!(word_at("", 0), 0..0);
-        assert_eq!(word_at("x(", 2), 1..2);
     }
 }
