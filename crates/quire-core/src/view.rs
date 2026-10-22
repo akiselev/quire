@@ -117,6 +117,9 @@ pub struct EditorView {
     /// Byte ranges of the current text changed since the find matches were computed (`None`:
     /// unknown, search everything), so a refresh re-searches only those lines.
     find_dirty: Option<Vec<Range<usize>>>,
+    /// The compiled find query, reused across refreshes (compiling costs hundreds of
+    /// allocations).
+    find_regex: Option<(FindQuery, regex_automata::meta::Regex)>,
 }
 
 impl EditorView {
@@ -135,6 +138,7 @@ impl EditorView {
             auto_closed: Vec::new(),
             session: None,
             find_dirty: Some(Vec::new()),
+            find_regex: None,
         }
     }
 
@@ -449,8 +453,15 @@ impl EditorView {
                 && self.synced_at == doc.version()
             {
                 dirty.sort_by_key(|d| d.start);
+                if self.find_regex.as_ref().is_none_or(|(q, _)| *q != f.query) {
+                    self.find_regex = crate::find::build_regex(&f.query)
+                        .ok()
+                        .map(|re| (f.query.clone(), re));
+                }
                 let ws = &doc.config().word_separators;
-                if crate::find::refresh_lines(f, doc.text(), &dirty, doc.version(), ws) {
+                if let Some((_, re)) = &self.find_regex
+                    && crate::find::refresh_lines(f, re, doc.text(), &dirty, doc.version(), ws)
+                {
                     self.find_dirty = Some(Vec::new());
                     return;
                 }

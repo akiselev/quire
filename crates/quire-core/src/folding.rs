@@ -135,11 +135,14 @@ impl IndentLevels {
             end_above: usize,
         }
         let count = self.levels.len();
-        let mut prev = vec![Prev {
+        let mut prev = Vec::with_capacity(64);
+        prev.push(Prev {
             indent: -1,
             end_above: count,
-        }];
-        let mut out: Vec<FoldRange> = Vec::new();
+        });
+        // At most one range per two lines; reserving up front avoids regrowing (and copying)
+        // the vector while scanning. Untouched capacity costs no memory.
+        let mut out: Vec<FoldRange> = Vec::with_capacity(count / 2 + 1);
         for line in (0..count).rev() {
             let indent = self.levels[line];
             if indent == BLANK {

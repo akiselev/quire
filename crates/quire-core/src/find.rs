@@ -88,7 +88,7 @@ impl FindState {
     }
 }
 
-fn build_regex(q: &FindQuery) -> Result<regex_automata::meta::Regex, FindError> {
+pub(crate) fn build_regex(q: &FindQuery) -> Result<regex_automata::meta::Regex, FindError> {
     use regex_automata::meta::Regex;
     use regex_automata::util::syntax;
     let pattern = if q.is_regex {
@@ -169,10 +169,11 @@ pub fn find_all(
 /// Brings `state` up to date after edits by re-searching only the lines that contain `dirty`
 /// (byte ranges of the current text that changed since `state.version`; the matches must already
 /// be mapped through the edits). Only for plain queries without a line break, whose matches
-/// cannot cross a line, so the result equals a full search. Returns `false` (and changes nothing)
+/// cannot cross a line, so the result equals a full search. `re` is `build_regex(&state.query)`. Returns `false` (and changes nothing)
 /// when the query does not qualify or the match limit was reached; search everything then.
 pub(crate) fn refresh_lines(
     state: &mut FindState,
+    re: &regex_automata::meta::Regex,
     text: &Text,
     dirty: &[Range<usize>],
     version: Version,
@@ -206,9 +207,6 @@ pub(crate) fn refresh_lines(
             _ => merged.push(r),
         }
     }
-    let Ok(re) = build_regex(q) else {
-        return false;
-    };
     let mut out: Vec<Range<usize>> = Vec::with_capacity(state.matches.len());
     let mut old = std::mem::take(&mut state.matches).into_iter().peekable();
     for region in &merged {

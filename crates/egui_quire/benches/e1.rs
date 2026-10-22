@@ -228,7 +228,9 @@ fn report(text: &str) {
         )
         .unwrap();
     r.caret_to(caret.head);
-    run("type with find active", &mut r, &mut |r, i| r.frame(vec![keystroke(i)]));
+    run("type with find active", &mut r, &mut |r, i| {
+        r.frame(vec![keystroke(i)])
+    });
 }
 
 fn main() {
