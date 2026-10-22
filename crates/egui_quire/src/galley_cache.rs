@@ -80,6 +80,11 @@ impl<V: Clone> GalleyCache<V> {
         self.map.is_empty()
     }
 
+    /// The value for `key` if cached (does not count as a use).
+    pub fn peek(&self, key: &GalleyKey) -> Option<&V> {
+        self.map.get(key).map(|(v, _)| v)
+    }
+
     /// Get the value for `key`, laying it out with `make` on a miss.
     pub fn get_or_insert(&mut self, key: GalleyKey, make: impl FnOnce() -> V) -> V {
         self.tick += 1;

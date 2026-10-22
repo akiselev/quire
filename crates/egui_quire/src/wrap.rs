@@ -335,7 +335,8 @@ impl VisualLine {
     }
 }
 
-/// Lay out the rows of `text` at the breaks for `wrap`. `widths` are per-char columns.
+/// Lay out the rows of `text` at the breaks for `wrap`. `one` is the one-row layout of non-ASCII
+/// text (its advances place the breaks).
 #[allow(clippy::too_many_arguments)]
 fn build_rows(
     ctx: &Context,
@@ -345,16 +346,12 @@ fn build_rows(
     spans: &[(usize, TextFormat)],
     default: &TextFormat,
     wrap: Wrap,
-    widths: &[f32],
+    one: Option<&LineLayout>,
 ) -> WrappedRows {
     let adv = mono.advance();
     let indent = indent_cols(text, tab_size, wrap.cols, wrap.indent);
-    let brk = breaks(
-        text,
-        widths,
-        wrap.cols as f32,
-        wrap.cols.saturating_sub(indent).max(1) as f32,
-    );
+    let widths = widths_of(text, tab_size, one, adv);
+    let brk = row_breaks(text, &widths, tab_size, wrap);
     let mut starts = Vec::with_capacity(brk.len() + 1);
     starts.push(0);
     starts.extend(brk);
@@ -397,6 +394,98 @@ fn build_rows(
     }
 }
 
+/// Whether a line fits one row at `w`, decided as cheaply as possible: ASCII by arithmetic,
+/// other text by its one-row layout (returned, so callers reuse it).
+enum Fit {
+    /// One row (with its layout when it was needed to decide).
+    One(Option<LineLayout>),
+    /// More than one row (with the one-row layout of non-ASCII text, for its advances).
+    Wraps(Option<LineLayout>),
+}
+
+fn fit(
+    sh: &mut LineShaper<'_>,
+    text: &str,
+    runs: &[(usize, Color32)],
+    style_hash: u64,
+    default: Color32,
+    w: Wrap,
+) -> Fit {
+    // A char is at least one byte and at most two columns per byte... except a tab: a line
+    // with no more bytes than columns and no tab fits without measuring.
+    let has_tab = text.contains('\t');
+    if text.len() <= w.cols as usize && !has_tab {
+        return Fit::One(None);
+    }
+    if text.is_ascii() {
+        let ts = sh.tab_size.max(1);
+        let cols = text.bytes().fold(
+            0u32,
+            |c, b| {
+                if b == b'\t' { c + ts - c % ts } else { c + 1 }
+            },
+        );
+        if cols <= w.cols {
+            Fit::One(None)
+        } else {
+            Fit::Wraps(None)
+        }
+    } else {
+        let l = sh.shape(text, runs, style_hash, default);
+        if l.width() <= w.cols as f32 * sh.mono.advance() + 0.5 {
+            Fit::One(Some(l))
+        } else {
+            Fit::Wraps(Some(l))
+        }
+    }
+}
+
+/// The break offsets of `text` at `w` (rows 1.. start there); `widths` from [`widths_of`].
+fn row_breaks(text: &str, widths: &[f32], tab_size: u32, w: Wrap) -> Vec<usize> {
+    let indent = indent_cols(text, tab_size, w.cols, w.indent);
+    breaks(
+        text,
+        widths,
+        w.cols as f32,
+        w.cols.saturating_sub(indent).max(1) as f32,
+    )
+}
+
+fn wrap_key(sh: &LineShaper<'_>, text: &str, style_hash: u64, w: Wrap) -> GalleyKey {
+    GalleyKey::new(
+        hash_one(text),
+        style_hash ^ hash_one(("quire.wrap", w, sh.tab_size)),
+        sh.font,
+        sh.pixels_per_point,
+        w.cols as f32,
+    )
+}
+
+/// Rows `shape_line` lays `text` out in, without laying out the rows: arithmetic for ASCII,
+/// the one-row layout (through the galley cache) for other text, or the cached rows.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn count_rows(
+    sh: &mut LineShaper<'_>,
+    wraps: &mut GalleyCache<Arc<WrappedRows>>,
+    text: &str,
+    runs: &[(usize, Color32)],
+    style_hash: u64,
+    default: Color32,
+    wrap: Option<Wrap>,
+) -> usize {
+    let Some(w) = wrap else { return 1 };
+    match fit(sh, text, runs, style_hash, default, w) {
+        Fit::One(_) => 1,
+        Fit::Wraps(one) => match wraps.peek(&wrap_key(sh, text, style_hash, w)) {
+            Some(rows) => rows.rows.len(),
+            None => {
+                let widths = widths_of(text, sh.tab_size, one.as_ref(), sh.mono.advance());
+                row_breaks(text, &widths, sh.tab_size, w).len() + 1
+            }
+        },
+    }
+}
+
 /// Lay out a document line through the caches: unwrapped (or fitting) lines through the galley
 /// cache, wrapped lines through `wraps`. `text` is the rendered part of a line of `full_len`
 /// bytes.
@@ -416,47 +505,20 @@ pub(crate) fn shape_line(
         let l = sh.shape(text, runs, style_hash, default);
         return VisualLine::new(Rows::One(l), full_len, adv);
     };
-    // A char is at least one byte and at most two columns per byte... except a tab: a line
-    // with no more bytes than columns and no tab fits without measuring.
-    let has_tab = text.contains('\t');
-    if text.len() <= w.cols as usize && !has_tab {
-        let l = sh.shape(text, runs, style_hash, default);
-        return VisualLine::new(Rows::One(l), full_len, adv);
-    }
-    let mut one = None;
-    if text.is_ascii() {
-        let ts = sh.tab_size.max(1);
-        let cols = text.bytes().fold(
-            0u32,
-            |c, b| {
-                if b == b'\t' { c + ts - c % ts } else { c + 1 }
-            },
-        );
-        if cols <= w.cols {
-            let l = sh.shape(text, runs, style_hash, default);
+    let one = match fit(sh, text, runs, style_hash, default, w) {
+        Fit::One(l) => {
+            let l = l.unwrap_or_else(|| sh.shape(text, runs, style_hash, default));
             return VisualLine::new(Rows::One(l), full_len, adv);
         }
-    } else {
-        let l = sh.shape(text, runs, style_hash, default);
-        if l.width() <= w.cols as f32 * adv + 0.5 {
-            return VisualLine::new(Rows::One(l), full_len, adv);
-        }
-        one = Some(l);
-    }
-    let key = GalleyKey::new(
-        hash_one(text),
-        style_hash ^ hash_one(("quire.wrap", w, sh.tab_size)),
-        sh.font,
-        sh.pixels_per_point,
-        w.cols as f32,
-    );
+        Fit::Wraps(one) => one,
+    };
+    let key = wrap_key(sh, text, style_hash, w);
     let (ctx, font, mono, ts) = (sh.ctx, sh.font, sh.mono, sh.tab_size);
     let rows = wraps.get_or_insert(key, || {
         let spans: Vec<(usize, TextFormat)> = runs
             .iter()
             .map(|&(s, c)| (s, TextFormat::simple(font.clone(), c)))
             .collect();
-        let widths = widths_of(text, ts, one.as_ref(), adv);
         Arc::new(build_rows(
             ctx,
             mono,
@@ -465,7 +527,7 @@ pub(crate) fn shape_line(
             &spans,
             &TextFormat::simple(font.clone(), default),
             w,
-            &widths,
+            one.as_ref(),
         ))
     });
     VisualLine::new(Rows::Many(rows), full_len, adv)
@@ -489,8 +551,7 @@ pub(crate) fn shape_uncached(
     let full = text.len();
     match wrap {
         Some(w) if one.width() > w.cols as f32 * adv + 0.5 => {
-            let widths = widths_of(text, tab_size, Some(&one), adv);
-            let rows = build_rows(ctx, mono, tab_size, text, spans, default, w, &widths);
+            let rows = build_rows(ctx, mono, tab_size, text, spans, default, w, Some(&one));
             VisualLine::new(Rows::Many(Arc::new(rows)), full, adv)
         }
         _ => VisualLine::new(Rows::One(one), full, adv),

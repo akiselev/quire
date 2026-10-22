@@ -166,6 +166,8 @@ pub(crate) struct Mem {
     pub mono_cache: Option<(egui::FontId, f32, (f32, f32), layout::Mono)>,
     /// The font atlas the cached galleys point into; when egui rebuilds it, the caches go.
     pub atlas: Option<crate::ascii::AtlasState>,
+    /// `CodeEditor::measure`'s last wrapped row count: (hash of what it depends on, rows).
+    pub measured: Option<(u64, usize)>,
 }
 
 #[derive(Clone, Debug)]
@@ -326,22 +328,83 @@ impl<'a> CodeEditor<'a> {
         Some((mem.galleys.len(), mem.galleys.misses))
     }
 
-    /// Size for layout without drawing: all lines × line height; width fills `available.x` when
-    /// finite, else gutter plus 80 columns.
+    /// Size for layout without drawing; width fills `available.x` when finite, else gutter plus
+    /// 80 columns. The height is what [`CodeEditor::show_in`] renders in a rect that wide: every
+    /// line not folded away, with soft wrap its rows at that width (the rows are counted as
+    /// the widget lays them out, so measure equals render; svelters' measure, §4.2). The result
+    /// is cached per document version, width and style.
     pub fn measure(&self, ctx: &Context, available: Vec2) -> Vec2 {
         let theme = self
             .theme
             .cloned()
             .unwrap_or_else(|| EditorTheme::from_visuals(&ctx.global_style().visuals));
         let row_h = layout::row_height(ctx, &theme.font);
-        let adv = layout::mono(ctx, &theme.font).advance();
-        let lines = glue::text(self.doc).len_lines().max(1);
+        let mono = layout::mono(ctx, &theme.font);
+        let adv = mono.advance();
+        let doc: &Document = &*self.doc;
+        let text = glue::text(doc);
+        let lines = text.len_lines().max(1);
+        let gw = gutter_width(lines, adv);
         let w = if available.x.is_finite() {
             available.x
         } else {
-            gutter_width(lines, adv) + 80.0 * adv
+            gw + 80.0 * adv
         };
-        vec2(w, lines as f32 * row_h + PAD_Y * 2.0)
+        let cfg = doc.config();
+        let wrap = wrap_for(cfg, w, gw, pad_left(adv, &mono), adv);
+        let stop_after = cfg.stop_rendering_line_after.max(1);
+        let ppp = ctx.pixels_per_point();
+        let style_salt = theme.galley_hash();
+        let view: &EditorView = &*self.view;
+        let folds = glue::folds(view);
+        let key = crate::galley_cache::hash_one((
+            glue::version(doc),
+            wrap,
+            stop_after,
+            row_h.to_bits(),
+            adv.to_bits(),
+            ppp.to_bits(),
+            &theme.font,
+            style_salt,
+            folds,
+        ));
+        // Folded lines (spans merged: folds nest).
+        let mut hidden = glue::hidden_line_spans(view, doc);
+        hidden.sort_unstable();
+        let mut shown = vec![];
+        let mut next = 0usize;
+        for (a, b) in hidden {
+            let b = b.min(lines - 1);
+            if a > b || b < next {
+                continue;
+            }
+            let a = a.max(next);
+            if a > next {
+                shown.push(next..a);
+            }
+            next = b + 1;
+        }
+        if next < lines {
+            shown.push(next..lines);
+        }
+        let rows = match wrap {
+            None => shown.iter().map(|r| r.len()).sum::<usize>(),
+            Some(_) => {
+                let shared = load_mem(ctx, self.id);
+                let mut mem = shared.lock().unwrap_or_else(|e| e.into_inner());
+                match mem.measured {
+                    Some((k, rows)) if k == key => rows,
+                    _ => {
+                        let rows = count_doc_rows(
+                            ctx, doc, &theme, &mut mem, mono, wrap, stop_after, style_salt, &shown,
+                        );
+                        mem.measured = Some((key, rows));
+                        rows
+                    }
+                }
+            }
+        };
+        vec2(w, rows as f32 * row_h + PAD_Y * 2.0)
     }
 
     /// Allocate the available space and show.
@@ -407,15 +470,10 @@ impl<'a> CodeEditor<'a> {
         let adv = mono.advance();
         let n_lines = glue::text(doc).len_lines().max(1);
         let gw = gutter_width(n_lines, adv);
-        let pad_left = (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point;
+        let pad_left = pad_left(adv, &mono);
         let cfg = doc.config();
         let stop_after = cfg.stop_rendering_line_after.max(1);
-        // VS Code's wrapping column: the columns that fit beside the vertical scrollbar.
-        let wrap = (cfg.word_wrap == quire_core::WordWrap::On).then(|| Wrap {
-            cols: (((rect.width() - gw - pad_left - SCROLLBAR_W - 2.0) / adv).floor() as u32)
-                .max(1),
-            indent: cfg.wrapping_indent,
-        });
+        let wrap = wrap_for(cfg, rect.width(), gw, pad_left, adv);
         mem.widths.sync(doc);
         let sig = crate::galley_cache::hash_one((
             n_lines,
@@ -612,6 +670,103 @@ pub(crate) const SCROLLBAR_W: f32 = 8.0;
 fn estimate_rows(cols: u32, wrap: u32, stop_after: usize) -> u32 {
     let cols = cols.min(stop_after.min(u32::MAX as usize - 3) as u32 + 3);
     cols.div_ceil(wrap.max(1)).max(1)
+}
+
+/// The rendered part of a document line (`slice`, without its break): all of it, or its first
+/// `stop` chars when it may be longer (E3 F2). A line split across rope chunks is joined in
+/// `buf`.
+fn rendered_str<'t>(slice: quire_core::TextSlice<'t>, stop: usize, buf: &'t mut String) -> &'t str {
+    if slice.len_bytes() > stop {
+        // Possibly more chars than the prefix: copy at most `stop` of them.
+        buf.clear();
+        let mut chars = 0usize;
+        for c in slice.chunks() {
+            match c.char_indices().nth(stop - chars) {
+                Some((b, _)) => {
+                    buf.push_str(&c[..b]);
+                    break;
+                }
+                None => {
+                    buf.push_str(c);
+                    chars += c.chars().count();
+                }
+            }
+        }
+        return buf.as_str();
+    }
+    match slice.as_str() {
+        Some(s) => s,
+        None => {
+            buf.clear();
+            slice.chunks().for_each(|c| buf.push_str(c));
+            buf.as_str()
+        }
+    }
+}
+
+/// Left padding of the text area.
+fn pad_left(adv: f32, mono: &layout::Mono) -> f32 {
+    (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point
+}
+
+/// Soft wrap for an editor `width` wide (None: off). VS Code's wrapping column: the columns that
+/// fit beside the vertical scrollbar.
+fn wrap_for(
+    cfg: &quire_core::EditorConfig,
+    width: f32,
+    gutter: f32,
+    pad: f32,
+    adv: f32,
+) -> Option<Wrap> {
+    (cfg.word_wrap == quire_core::WordWrap::On).then(|| Wrap {
+        cols: (((width - gutter - pad - SCROLLBAR_W - 2.0) / adv).floor() as u32).max(1),
+        indent: cfg.wrapping_indent,
+    })
+}
+
+/// Rows of the lines in `shown` as `FrameCx::layout_line` lays them out (with `wrap`), through
+/// the editor's caches (`CodeEditor::measure`).
+#[allow(clippy::too_many_arguments)]
+fn count_doc_rows(
+    ctx: &Context,
+    doc: &Document,
+    theme: &EditorTheme,
+    mem: &mut Mem,
+    mono: layout::Mono,
+    wrap: Option<Wrap>,
+    stop_after: usize,
+    style_salt: u64,
+    shown: &[Range<usize>],
+) -> usize {
+    let text = glue::text(doc);
+    let mut buf = std::mem::take(&mut mem.line_buf);
+    let mut runs = std::mem::take(&mut mem.runs_buf);
+    let mut rows = 0;
+    let Mem { galleys, wraps, .. } = &mut *mem;
+    let mut shaper = LineShaper {
+        cache: galleys,
+        ctx,
+        font: &theme.font,
+        pixels_per_point: ctx.pixels_per_point(),
+        mono,
+        tab_size: doc.config().tab_size,
+    };
+    for line in shown.iter().flat_map(|r| r.clone()) {
+        let s = rendered_str(text.line(line), stop_after, &mut buf);
+        let style_hash = glue::line_runs(doc, line, theme, &mut runs) ^ style_salt;
+        rows += wrap::count_rows(
+            &mut shaper,
+            wraps,
+            s,
+            &runs,
+            style_hash,
+            theme.foreground,
+            wrap,
+        );
+    }
+    mem.line_buf = buf;
+    mem.runs_buf = runs;
+    rows
 }
 
 /// Gutter width for `lines` lines: diagnostic mark, digits, padding, fold markers.
@@ -1197,33 +1352,7 @@ impl FrameCx<'_> {
         let stop = self.geom.stop_after;
         let mut buf = std::mem::take(&mut self.mem.line_buf);
         let mut runs = std::mem::take(&mut self.mem.runs_buf);
-        let s = if full_len > stop {
-            // Possibly more chars than the prefix: copy at most `stop` of them.
-            buf.clear();
-            let mut chars = 0usize;
-            for c in slice.chunks() {
-                match c.char_indices().nth(stop - chars) {
-                    Some((b, _)) => {
-                        buf.push_str(&c[..b]);
-                        break;
-                    }
-                    None => {
-                        buf.push_str(c);
-                        chars += c.chars().count();
-                    }
-                }
-            }
-            buf.as_str()
-        } else {
-            match slice.as_str() {
-                Some(s) => s,
-                None => {
-                    buf.clear();
-                    slice.chunks().for_each(|c| buf.push_str(c));
-                    buf.as_str()
-                }
-            }
-        };
+        let s = rendered_str(slice, stop, &mut buf);
         let style_hash =
             glue::line_runs(self.doc, line, self.theme, &mut runs) ^ self.mem.style_salt;
         let mut shaper = LineShaper {

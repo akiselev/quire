@@ -470,3 +470,128 @@ fn altgr_text_with_no_binding_still_types() {
     key_then_text(&mut h, Key::Q, Modifiers::CTRL | Modifiers::ALT, "@");
     assert_eq!(h.state().doc.text().to_string(), "abc@");
 }
+
+// ---------------------------------------------------------------------------------------------
+// `CodeEditor::measure` with soft wrap: measured equals rendered (svelters' measure).
+
+struct Sized {
+    st: St,
+    width: f32,
+    measured: Vec2,
+}
+
+/// An editor shown at the size `measure` gives for `width`, at the top left of a tall window.
+fn measured_harness(st: St, width: f32) -> Harness<'static, Sized> {
+    let mut h = Harness::builder()
+        .with_size(Vec2::new(width + 40.0, 1600.0))
+        .with_step_dt(1.0 / 60.0)
+        // Wide ideographs are tofu in the test fonts: wide glyphs that are not two advances.
+        .allow_missing_glyphs()
+        .build_ui_state(
+            |ui, s: &mut Sized| {
+                let st = &mut s.st;
+                let ed = CodeEditor::new(&mut st.doc, &mut st.view, "measured", "Source");
+                st.id = ed.editor_id();
+                s.measured = ed.measure(ui.ctx(), Vec2::new(s.width, f32::INFINITY));
+                let ed = CodeEditor::new(&mut st.doc, &mut st.view, "measured", "Source");
+                let rect = Rect::from_min_size(ui.max_rect().min, s.measured);
+                let out = ed.show_in(ui, rect);
+                st.caret = out.caret_rect;
+                st.rect = rect;
+            },
+            Sized {
+                st,
+                width,
+                measured: Vec2::ZERO,
+            },
+        );
+    h.run();
+    h
+}
+
+/// Bottom of the last row: the caret at the document end, after the frames settle.
+fn rendered_bottom(h: &mut Harness<'_, Sized>) -> f32 {
+    let end = h.state().st.doc.text().len_bytes();
+    h.state_mut().st.select(end);
+    h.run();
+    h.state().st.caret.expect("caret").bottom()
+}
+
+#[test]
+fn measure_with_wrap_equals_the_rendered_height() {
+    // Word breaks (more rows than columns ÷ width), an indented continuation, a tab, wide
+    // ideographs, a line with no break opportunity, and short lines.
+    let text = format!(
+        "{}\n    {}\n\t{}\nshort\n{}\n{}\n\nend",
+        words(37),
+        words(23),
+        "a,b ".repeat(30),
+        "日本語の文章です。".repeat(9),
+        "x".repeat(170),
+    );
+    let width = 380.0;
+    let mut h = measured_harness(St::new(&text, wrap_cfg()), width);
+    let measured = h.state().measured;
+    assert_eq!(measured.x, width);
+    let bottom = rendered_bottom(&mut h);
+    let rect = h.state().st.rect;
+    let row_h = h.state().st.caret.unwrap().height();
+    // The text starts PAD_Y (2 points) below the top and the last row ends PAD_Y above the
+    // bottom; no row is cut off and there is no slack.
+    assert!(
+        (rect.bottom() - bottom - 2.0).abs() < 0.5,
+        "measured {measured:?}, last row ends at {bottom}, rect {rect:?}"
+    );
+    let rows = ((measured.y - 4.0) / row_h).round();
+    assert!(rows >= 8.0 + 12.0, "wrapped rows counted: {rows}");
+    // Unchanged after more frames (heights settled, measure cached).
+    h.run();
+    assert_eq!(h.state().measured, measured);
+
+    // Typing changes the measure and the render together.
+    h.state_mut().st.select(0);
+    h.run();
+    {
+        let st = &mut h.state_mut().st;
+        st.doc
+            .execute(
+                &mut st.view,
+                &EditorCommand::Type {
+                    text: format!("{} ", words(12)),
+                },
+                None,
+            )
+            .unwrap();
+    }
+    h.run();
+    let after = h.state().measured;
+    assert!(after.y > measured.y, "{after:?} vs {measured:?}");
+    let bottom = rendered_bottom(&mut h);
+    assert!((h.state().st.rect.bottom() - bottom - 2.0).abs() < 0.5);
+}
+
+#[test]
+fn measure_counts_folded_lines_out_and_wrap_off_counts_lines() {
+    let text = format!("fn f() {{ {}\n    body\n    body\n}}\nafter", words(30));
+    let mut h = measured_harness(St::new(&text, wrap_cfg()), 380.0);
+    let unfolded = h.state().measured.y;
+    {
+        let st = &mut h.state_mut().st;
+        st.doc
+            .execute(&mut st.view, &EditorCommand::Fold, None)
+            .unwrap();
+    }
+    h.run();
+    h.run();
+    let folded = h.state().measured.y;
+    let row_h = h.state().st.caret.unwrap().height();
+    assert!(
+        (unfolded - folded - 2.0 * row_h).abs() < 0.5,
+        "{unfolded} {folded}"
+    );
+    let bottom = rendered_bottom(&mut h);
+    assert!((h.state().st.rect.bottom() - bottom - 2.0).abs() < 0.5);
+    // Wrap off: one row per line.
+    let h = measured_harness(St::new(&text, EditorConfig::default()), 380.0);
+    assert!((h.state().measured.y - (5.0 * row_h + 4.0)).abs() < 0.5);
+}
