@@ -1,0 +1,2921 @@
+{
+ "commands": {
+  "actions.find": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+f",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+f",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+f",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+f"
+     ],
+     "mac": [
+      "cmd+f"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:567",
+     "when": "EditorContextKeys.focus",
+     "win": [
+      "ctrl+f"
+     ]
+    }
+   ]
+  },
+  "closeFindWidget": {
+   "expected": {
+    "linux": [
+     {
+      "key": "escape",
+      "when": "findWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "findWidgetVisible"
+     }
+    ],
+    "mac": [
+     {
+      "key": "escape",
+      "when": "findWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "findWidgetVisible"
+     }
+    ],
+    "win": [
+     {
+      "key": "escape",
+      "when": "findWidgetVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "findWidgetVisible"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "escape",
+      "shift+escape"
+     ],
+     "mac": [
+      "escape",
+      "shift+escape"
+     ],
+     "modeled": true,
+     "quire_when": "findWidgetVisible",
+     "reason": "",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:1072",
+     "when": "EditorContextKeys.focus && CONTEXT_FIND_WIDGET_VISIBLE",
+     "win": [
+      "escape",
+      "shift+escape"
+     ]
+    }
+   ]
+  },
+  "cursorBottom": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+end",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+end",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+end"
+     ],
+     "mac": [
+      "cmd+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1286",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+end"
+     ]
+    }
+   ]
+  },
+  "cursorBottomSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+end",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+end",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+end"
+     ],
+     "mac": [
+      "shift+cmd+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1298",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+end"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectDown": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:567",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+down"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectLeft": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+left",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:478",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+left"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectPageDown": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+pagedown",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+pagedown",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+pagedown"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:579",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+pagedown"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectPageUp": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+pageup",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+pageup",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+pageup"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:541",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+pageup"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectRight": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+right",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:497",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+right"
+     ]
+    }
+   ]
+  },
+  "cursorColumnSelectUp": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "shift+alt+cmd+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+alt+up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "shift+alt+cmd+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:529",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+alt+up"
+     ]
+    }
+   ]
+  },
+  "cursorDown": {
+   "expected": {
+    "linux": [
+     {
+      "key": "down",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "down",
+      "when": null
+     },
+     {
+      "key": "ctrl+n",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "down"
+     ],
+     "mac": [
+      "down",
+      "ctrl+n"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:831",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "down"
+     ]
+    }
+   ]
+  },
+  "cursorDownSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+down",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+down",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+down"
+     ],
+     "mac": [
+      "shift+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:848",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+down",
+      "ctrl+shift+down"
+     ]
+    }
+   ]
+  },
+  "cursorEnd": {
+   "expected": {
+    "linux": [
+     {
+      "key": "end",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "end",
+      "when": null
+     },
+     {
+      "key": "cmd+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "end",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "end"
+     ],
+     "mac": [
+      "end",
+      "cmd+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1109",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "end"
+     ]
+    }
+   ]
+  },
+  "cursorEndSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+end",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+end",
+      "when": null
+     },
+     {
+      "key": "shift+cmd+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+end",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+end"
+     ],
+     "mac": [
+      "shift+end",
+      "shift+cmd+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1138",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+end"
+     ]
+    }
+   ]
+  },
+  "cursorHome": {
+   "expected": {
+    "linux": [
+     {
+      "key": "home",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "home",
+      "when": null
+     },
+     {
+      "key": "cmd+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "home",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "home"
+     ],
+     "mac": [
+      "home",
+      "cmd+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1007",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "home"
+     ]
+    }
+   ]
+  },
+  "cursorHomeSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+home",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+home",
+      "when": null
+     },
+     {
+      "key": "shift+cmd+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+home",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+home"
+     ],
+     "mac": [
+      "shift+home",
+      "shift+cmd+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1019",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+home"
+     ]
+    }
+   ]
+  },
+  "cursorLeft": {
+   "expected": {
+    "linux": [
+     {
+      "key": "left",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "left",
+      "when": null
+     },
+     {
+      "key": "ctrl+b",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "left",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "left"
+     ],
+     "mac": [
+      "left",
+      "ctrl+b"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:697",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "left"
+     ]
+    }
+   ]
+  },
+  "cursorLeftSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+left",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+left",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+left"
+     ],
+     "mac": [
+      "shift+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:714",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+left"
+     ]
+    }
+   ]
+  },
+  "cursorPageDown": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pagedown",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "pagedown",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "pagedown",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pagedown"
+     ],
+     "mac": [
+      "pagedown"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:867",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "pagedown"
+     ]
+    }
+   ]
+  },
+  "cursorPageDownSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+pagedown",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+pagedown",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+pagedown",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+pagedown"
+     ],
+     "mac": [
+      "shift+pagedown"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:883",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+pagedown"
+     ]
+    }
+   ]
+  },
+  "cursorPageUp": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pageup",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "pageup",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "pageup",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pageup"
+     ],
+     "mac": [
+      "pageup"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:799",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "pageup"
+     ]
+    }
+   ]
+  },
+  "cursorPageUpSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+pageup",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+pageup",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+pageup",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+pageup"
+     ],
+     "mac": [
+      "shift+pageup"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:815",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+pageup"
+     ]
+    }
+   ]
+  },
+  "cursorRight": {
+   "expected": {
+    "linux": [
+     {
+      "key": "right",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "right",
+      "when": null
+     },
+     {
+      "key": "ctrl+f",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "right",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "right"
+     ],
+     "mac": [
+      "right",
+      "ctrl+f"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:730",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "right"
+     ]
+    }
+   ]
+  },
+  "cursorRightSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+right",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+right",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+right"
+     ],
+     "mac": [
+      "shift+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:747",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+right"
+     ]
+    }
+   ]
+  },
+  "cursorTop": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+home",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+home",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+home"
+     ],
+     "mac": [
+      "cmd+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1242",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+home"
+     ]
+    }
+   ]
+  },
+  "cursorTopSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+home",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+home",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+home"
+     ],
+     "mac": [
+      "shift+cmd+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1254",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+shift+home"
+     ]
+    }
+   ]
+  },
+  "cursorUp": {
+   "expected": {
+    "linux": [
+     {
+      "key": "up",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "up",
+      "when": null
+     },
+     {
+      "key": "ctrl+p",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "up"
+     ],
+     "mac": [
+      "up",
+      "ctrl+p"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:763",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "up"
+     ]
+    }
+   ]
+  },
+  "cursorUpSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+up",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+up",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+up"
+     ],
+     "mac": [
+      "shift+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:780",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "shift+up",
+      "ctrl+shift+up"
+     ]
+    }
+   ]
+  },
+  "cursorWordEndRight": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+right",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+right",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+right"
+     ],
+     "mac": [
+      "alt+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:226",
+     "when": "EditorContextKeys.textInputFocus && !(accessibilityModeEnabled && isWindows)",
+     "win": [
+      "ctrl+right"
+     ]
+    }
+   ]
+  },
+  "cursorWordEndRightSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+right",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+alt+right",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+right",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+right"
+     ],
+     "mac": [
+      "shift+alt+right"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:265",
+     "when": "EditorContextKeys.textInputFocus && !(accessibilityModeEnabled && isWindows)",
+     "win": [
+      "ctrl+shift+right"
+     ]
+    }
+   ]
+  },
+  "cursorWordLeft": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+left",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+left",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+left"
+     ],
+     "mac": [
+      "alt+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:128",
+     "when": "EditorContextKeys.textInputFocus && !(accessibilityModeEnabled && isWindows)",
+     "win": [
+      "ctrl+left"
+     ]
+    }
+   ]
+  },
+  "cursorWordLeftSelect": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+left",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+alt+left",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+left",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+left"
+     ],
+     "mac": [
+      "shift+alt+left"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:167",
+     "when": "EditorContextKeys.textInputFocus && !(accessibilityModeEnabled && isWindows)",
+     "win": [
+      "ctrl+shift+left"
+     ]
+    }
+   ]
+  },
+  "deleteAllLeft": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "cmd+backspace",
+      "when": null
+     }
+    ],
+    "win": []
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "cmd+backspace"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:755",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable",
+     "win": []
+    }
+   ]
+  },
+  "deleteAllRight": {
+   "expected": {
+    "linux": [],
+    "mac": [
+     {
+      "key": "ctrl+k",
+      "when": null
+     },
+     {
+      "key": "cmd+delete",
+      "when": null
+     }
+    ],
+    "win": []
+   },
+   "rules": [
+    {
+     "linux": [],
+     "mac": [
+      "ctrl+k",
+      "cmd+delete"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:833",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable",
+     "win": []
+    }
+   ]
+  },
+  "deleteLeft": {
+   "expected": {
+    "linux": [
+     {
+      "key": "backspace",
+      "when": null
+     },
+     {
+      "key": "shift+backspace",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "backspace",
+      "when": null
+     },
+     {
+      "key": "shift+backspace",
+      "when": null
+     },
+     {
+      "key": "ctrl+h",
+      "when": null
+     },
+     {
+      "key": "ctrl+backspace",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "backspace",
+      "when": null
+     },
+     {
+      "key": "shift+backspace",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "backspace",
+      "shift+backspace"
+     ],
+     "mac": [
+      "backspace",
+      "shift+backspace",
+      "ctrl+h",
+      "ctrl+backspace"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:2050",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "backspace",
+      "shift+backspace"
+     ]
+    }
+   ]
+  },
+  "deleteRight": {
+   "expected": {
+    "linux": [
+     {
+      "key": "delete",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "delete",
+      "when": null
+     },
+     {
+      "key": "ctrl+d",
+      "when": null
+     },
+     {
+      "key": "ctrl+delete",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "delete",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "delete"
+     ],
+     "mac": [
+      "delete",
+      "ctrl+d",
+      "ctrl+delete"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:2075",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "delete"
+     ]
+    }
+   ]
+  },
+  "deleteWordLeft": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+backspace",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+backspace",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+backspace",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+backspace"
+     ],
+     "mac": [
+      "alt+backspace"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:419",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+backspace"
+     ]
+    }
+   ]
+  },
+  "deleteWordRight": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+delete",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+delete",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+delete",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+delete"
+     ],
+     "mac": [
+      "alt+delete"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/wordOperations/browser/wordOperations.ts:458",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+delete"
+     ]
+    }
+   ]
+  },
+  "editor.action.addCommentLine": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+c",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+c",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+c",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+c"
+     ],
+     "mac": [
+      "cmd+k cmd+c"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/comment/browser/comment.ts:106",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+k ctrl+c"
+     ]
+    }
+   ]
+  },
+  "editor.action.addSelectionToNextFindMatch": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+d",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+d",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+d",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+d"
+     ],
+     "mac": [
+      "cmd+d"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/multicursor/browser/multicursor.ts:729",
+     "when": "EditorContextKeys.focus",
+     "win": [
+      "ctrl+d"
+     ]
+    }
+   ]
+  },
+  "editor.action.blockComment": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+a",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+alt+a",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+alt+a",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+a"
+     ],
+     "mac": [
+      "shift+alt+a"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/comment/browser/comment.ts:139",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "shift+alt+a"
+     ]
+    }
+   ]
+  },
+  "editor.action.commentLine": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+/",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+/",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+/",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+/"
+     ],
+     "mac": [
+      "cmd+/"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/comment/browser/comment.ts:84",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+/"
+     ]
+    }
+   ]
+  },
+  "editor.action.copyLinesDownAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+alt+down",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+alt+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+alt+down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+alt+down"
+     ],
+     "mac": [
+      "shift+alt+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:104",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "shift+alt+down"
+     ]
+    }
+   ]
+  },
+  "editor.action.copyLinesUpAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+alt+up",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+alt+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+alt+up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+alt+up"
+     ],
+     "mac": [
+      "shift+alt+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:81",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "shift+alt+up"
+     ]
+    }
+   ]
+  },
+  "editor.action.deleteLines": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+k",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+k",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+k",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+k"
+     ],
+     "mac": [
+      "shift+cmd+k"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:511",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+shift+k"
+     ]
+    }
+   ]
+  },
+  "editor.action.indentLines": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+]",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+]",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+]",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+]"
+     ],
+     "mac": [
+      "cmd+]"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:614",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+]"
+     ]
+    }
+   ]
+  },
+  "editor.action.insertCursorAbove": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+alt+up",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+up",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+cmd+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+alt+up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+alt+up",
+      "ctrl+shift+up"
+     ],
+     "mac": [
+      "alt+cmd+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/multicursor/browser/multicursor.ts:50",
+     "when": "EditorContextKeys.editorTextFocus",
+     "win": [
+      "ctrl+alt+up"
+     ]
+    }
+   ]
+  },
+  "editor.action.insertCursorBelow": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+alt+down",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+down",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+cmd+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+alt+down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+alt+down",
+      "ctrl+shift+down"
+     ],
+     "mac": [
+      "alt+cmd+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/multicursor/browser/multicursor.ts:102",
+     "when": "EditorContextKeys.editorTextFocus",
+     "win": [
+      "ctrl+alt+down"
+     ]
+    }
+   ]
+  },
+  "editor.action.insertLineAfter": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+enter",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+enter",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+enter",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+enter"
+     ],
+     "mac": [
+      "cmd+enter"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:687",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+enter"
+     ]
+    }
+   ]
+  },
+  "editor.action.insertLineBefore": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+enter",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+enter",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+enter",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+enter"
+     ],
+     "mac": [
+      "shift+cmd+enter"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:661",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+shift+enter"
+     ]
+    }
+   ]
+  },
+  "editor.action.moveLinesDownAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "alt+down",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+down",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "alt+down",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "alt+down"
+     ],
+     "mac": [
+      "alt+down"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:219",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "alt+down"
+     ]
+    }
+   ]
+  },
+  "editor.action.moveLinesUpAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "alt+up",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+up",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "alt+up",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "alt+up"
+     ],
+     "mac": [
+      "alt+up"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:196",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "alt+up"
+     ]
+    }
+   ]
+  },
+  "editor.action.nextMatchFindAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "f3",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+g",
+      "when": null
+     },
+     {
+      "key": "f3",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "f3",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "f3"
+     ],
+     "mac": [
+      "cmd+g",
+      "f3"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:778",
+     "when": "EditorContextKeys.focus",
+     "win": [
+      "f3"
+     ]
+    },
+    {
+     "linux": [
+      "enter"
+     ],
+     "mac": [
+      "enter"
+     ],
+     "modeled": false,
+     "quire_when": null,
+     "reason": "find input focused: quire's find bar handles Enter / Shift+Enter in its own text field",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:778",
+     "when": "EditorContextKeys.focus && CONTEXT_FIND_INPUT_FOCUSED",
+     "win": [
+      "enter"
+     ]
+    }
+   ]
+  },
+  "editor.action.outdentLines": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+[",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+[",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+[",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+["
+     ],
+     "mac": [
+      "cmd+["
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/linesOperations/browser/linesOperations.ts:640",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+["
+     ]
+    }
+   ]
+  },
+  "editor.action.previousMatchFindAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+f3",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+g",
+      "when": null
+     },
+     {
+      "key": "shift+f3",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+f3",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+f3"
+     ],
+     "mac": [
+      "shift+cmd+g",
+      "shift+f3"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:799",
+     "when": "EditorContextKeys.focus",
+     "win": [
+      "shift+f3"
+     ]
+    },
+    {
+     "linux": [
+      "shift+enter"
+     ],
+     "mac": [
+      "shift+enter"
+     ],
+     "modeled": false,
+     "quire_when": null,
+     "reason": "find input focused: quire's find bar handles Enter / Shift+Enter in its own text field",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:799",
+     "when": "EditorContextKeys.focus && CONTEXT_FIND_INPUT_FOCUSED",
+     "win": [
+      "shift+enter"
+     ]
+    }
+   ]
+  },
+  "editor.action.removeCommentLine": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+u",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+u",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+u",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+u"
+     ],
+     "mac": [
+      "cmd+k cmd+u"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/comment/browser/comment.ts:122",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.writable",
+     "win": [
+      "ctrl+k ctrl+u"
+     ]
+    }
+   ]
+  },
+  "editor.action.selectAll": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+a",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+a",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+a",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+a"
+     ],
+     "mac": [
+      "cmd+a"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/editorExtensions.ts:703",
+     "when": "",
+     "win": [
+      "ctrl+a"
+     ]
+    }
+   ]
+  },
+  "editor.action.startFindReplaceAction": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+h",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+cmd+f",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+h",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+h"
+     ],
+     "mac": [
+      "alt+cmd+f"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/find/browser/findController.ts:1005",
+     "when": "EditorContextKeys.focus",
+     "win": [
+      "ctrl+h"
+     ]
+    }
+   ]
+  },
+  "editor.fold": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+[",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+cmd+[",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+[",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+["
+     ],
+     "mac": [
+      "alt+cmd+["
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/folding/browser/folding.ts:722",
+     "when": "EditorContextKeys.editorTextFocus && CONTEXT_FOLDING_ENABLED",
+     "win": [
+      "ctrl+shift+["
+     ]
+    }
+   ]
+  },
+  "editor.foldAll": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+0",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+0",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+0",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+0"
+     ],
+     "mac": [
+      "cmd+k cmd+0"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/folding/browser/folding.ts:998",
+     "when": "EditorContextKeys.editorTextFocus && CONTEXT_FOLDING_ENABLED",
+     "win": [
+      "ctrl+k ctrl+0"
+     ]
+    }
+   ]
+  },
+  "editor.toggleFold": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+l",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+l",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+l",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+l"
+     ],
+     "mac": [
+      "cmd+k cmd+l"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/folding/browser/folding.ts:793",
+     "when": "EditorContextKeys.editorTextFocus && CONTEXT_FOLDING_ENABLED",
+     "win": [
+      "ctrl+k ctrl+l"
+     ]
+    }
+   ]
+  },
+  "editor.unfold": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+]",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "alt+cmd+]",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+]",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+]"
+     ],
+     "mac": [
+      "alt+cmd+]"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/folding/browser/folding.ts:639",
+     "when": "EditorContextKeys.editorTextFocus && CONTEXT_FOLDING_ENABLED",
+     "win": [
+      "ctrl+shift+]"
+     ]
+    }
+   ]
+  },
+  "editor.unfoldAll": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+j",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+j",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+j",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+j"
+     ],
+     "mac": [
+      "cmd+k cmd+j"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/folding/browser/folding.ts:1018",
+     "when": "EditorContextKeys.editorTextFocus && CONTEXT_FOLDING_ENABLED",
+     "win": [
+      "ctrl+k ctrl+j"
+     ]
+    }
+   ]
+  },
+  "expandLineSelection": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+l",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+l",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+l",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+l"
+     ],
+     "mac": [
+      "cmd+l"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/lineSelection/browser/lineSelection.ts:22",
+     "when": "EditorContextKeys.textInputFocus",
+     "win": [
+      "ctrl+l"
+     ]
+    }
+   ]
+  },
+  "outdent": {
+   "expected": {
+    "linux": [
+     {
+      "key": "shift+tab",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+tab",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "shift+tab",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "shift+tab"
+     ],
+     "mac": [
+      "shift+tab"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:2004",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.tabDoesNotMoveFocus && EditorContextKeys.writable",
+     "win": [
+      "shift+tab"
+     ]
+    }
+   ]
+  },
+  "redo": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+y",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+z",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+z",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+y",
+      "when": null
+     },
+     {
+      "key": "ctrl+shift+z",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+y",
+      "ctrl+shift+z"
+     ],
+     "mac": [
+      "shift+cmd+z"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/editorExtensions.ts:674",
+     "when": "",
+     "win": [
+      "ctrl+y",
+      "ctrl+shift+z"
+     ]
+    }
+   ]
+  },
+  "removeSecondaryCursors": {
+   "expected": {
+    "linux": [
+     {
+      "key": "escape",
+      "when": "editorHasMultipleSelections"
+     },
+     {
+      "key": "shift+escape",
+      "when": "editorHasMultipleSelections"
+     }
+    ],
+    "mac": [
+     {
+      "key": "escape",
+      "when": "editorHasMultipleSelections"
+     },
+     {
+      "key": "shift+escape",
+      "when": "editorHasMultipleSelections"
+     }
+    ],
+    "win": [
+     {
+      "key": "escape",
+      "when": "editorHasMultipleSelections"
+     },
+     {
+      "key": "shift+escape",
+      "when": "editorHasMultipleSelections"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "escape",
+      "shift+escape"
+     ],
+     "mac": [
+      "escape",
+      "shift+escape"
+     ],
+     "modeled": true,
+     "quire_when": "editorHasMultipleSelections",
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:1805",
+     "when": "EditorContextKeys.textInputFocus && EditorContextKeys.hasMultipleSelections",
+     "win": [
+      "escape",
+      "shift+escape"
+     ]
+    }
+   ]
+  },
+  "tab": {
+   "expected": {
+    "linux": [
+     {
+      "key": "tab",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "tab",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "tab",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "tab"
+     ],
+     "mac": [
+      "tab"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/coreCommands.ts:2027",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.tabDoesNotMoveFocus && EditorContextKeys.writable",
+     "win": [
+      "tab"
+     ]
+    }
+   ]
+  },
+  "undo": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+z",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+z",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+z",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+z"
+     ],
+     "mac": [
+      "cmd+z"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/browser/editorExtensions.ts:647",
+     "when": "",
+     "win": [
+      "ctrl+z"
+     ]
+    }
+   ]
+  },
+  "workbench.action.files.save": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+s",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+s",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+s",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+s"
+     ],
+     "mac": [
+      "cmd+s"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/workbench/contrib/files/browser/fileCommands.ts:505",
+     "when": "",
+     "win": [
+      "ctrl+s"
+     ]
+    }
+   ]
+  }
+ },
+ "generated_by": "scripts/vscode-keybindings.py",
+ "quire_only": {
+  "type": "VS Code inserts Enter / Shift+Enter through the text area's input event, not a keybinding; quire's widget binds them to `type` with a newline."
+ },
+ "vscode_sha": "bdce63db587665a91d1f1237b807d43471f0d9bc"
+}

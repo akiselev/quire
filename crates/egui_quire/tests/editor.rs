@@ -1643,13 +1643,15 @@ fn column_select_with_keys() {
     h.run();
     focus(&mut h);
     caret_to(&mut h, 1);
-    assert!(press_command(&mut h, "cursorColumnSelectRight"));
+    // VS Code binds no column-select keys on Linux (`linux: { primary: 0 }`).
+    if !press_command(&mut h, "cursorColumnSelectRight") {
+        assert_eq!(h.ctx.os(), egui::os::OperatingSystem::Nix);
+        return;
+    }
     assert!(press_command(&mut h, "cursorColumnSelectRight"));
     assert_eq!(ranges(&h), vec![(1, 3)]);
-    // Up/Down are not bound on Linux (VS Code's Linux keys copy lines there).
-    if press_command(&mut h, "cursorColumnSelectDown") {
-        assert_eq!(ranges(&h), vec![(1, 3), (6, 8)]);
-    }
+    assert!(press_command(&mut h, "cursorColumnSelectDown"));
+    assert_eq!(ranges(&h), vec![(1, 3), (6, 8)]);
     assert!(press_command(&mut h, "cursorColumnSelectPageDown"));
     assert_eq!(ranges(&h), vec![(1, 3), (6, 8), (11, 13)]);
 }
