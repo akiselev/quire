@@ -801,9 +801,10 @@ mod tests {
     }
 
     /// Backtrack-limit survey (see the module doc): `QUIRE_BT_CASES=<ndjson> cargo test -p
-    /// quire-core --release --lib backtrack_survey -- --ignored --nocapture`. Each line of the
-    /// file is `{"p": pattern, "cases": [[line, javascript_verdict], ...]}`. Prints the smallest
-    /// limit each case needs, by line length, and every disagreement with JavaScript.
+    /// quire-core --release --lib backtrack_survey -- --ignored --nocapture`, with the file from
+    /// `tests/port/bt-survey.mjs`. Each line is `{"p": pattern, "origin": …, "cases": [[line,
+    /// javascript_verdict], ...]}`. Prints the smallest limit each case needs, per pattern and by
+    /// line length, and every disagreement with JavaScript.
     #[test]
     #[ignore]
     fn backtrack_survey() {
