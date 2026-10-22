@@ -1,8 +1,10 @@
 //! AccessKit: the editor node (`Role::MultilineTextInput`, host-supplied name) with `TextRun`
 //! children for a page of lines around the caret (50 lines, 500 when a screen reader is active),
 //! following egui 0.37's `text_selection/accesskit_text.rs`. The page counts visible lines only:
-//! lines hidden by folds get no run. It shifts when the caret leaves it. Run ids: `Id::unique((editor_id, "run", line))` for a line's first chunk and
-//! `Id::unique((editor_id, "run", line, k))` for chunk `k > 0` (AccessKit runs hold ≤ 255 chars).
+//! lines hidden by folds get no run. It shifts when the caret leaves it. A line's runs are its
+//! visual rows (soft wrap), each split into runs of at most 255 chars (AccessKit's limit). Run
+//! ids: `Id::unique((editor_id, "run", line))` for a line's first run and
+//! `Id::unique((editor_id, "run", line, k))` for run `k > 0`.
 
 use egui::accesskit::{self, Role};
 use egui::{Id, Rect, Ui, UiBuilder, pos2, vec2};
@@ -90,10 +92,12 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
     }
     let first_row = row_of(f.mem.a11y_page_start);
     let rows = (f.mem.heights.total() / row_h).round() as usize;
-    let page: Vec<usize> = (first_row..(first_row + n).min(rows))
+    let mut page: Vec<usize> = (first_row..(first_row + n).min(rows))
         .map(|r| f.mem.heights.line_at((r as f32 + 0.5) * row_h))
         .filter(|&l| l < lines)
         .collect();
+    // A wrapped line spans several rows.
+    page.dedup();
 
     let to_global = f
         .ctx
@@ -101,27 +105,63 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
         .unwrap_or_default();
     let left = f.geom.text_left(f.mem);
 
-    // (line, chunk start chars) of the selection ends, mapped to run positions.
+    // Runs of each page line: a wrapped line's rows are split into runs of at most 255 chars.
+    let mut runs: Vec<LineRuns> = Vec::with_capacity(page.len());
+    for &line in &page {
+        let vl = f.layout_line(line);
+        let top = f.geom.line_top(f.mem, line);
+        let last_line = line + 1 >= lines;
+        let mut out = LineRuns {
+            line,
+            runs: Vec::new(),
+        };
+        let mut char0 = 0usize;
+        for k in 0..vl.n_rows() {
+            let row = vl.row_layout(k);
+            let x0 = vl.row_x0(k);
+            let char_xs = row.char_xs();
+            let mut chars: Vec<(char, f32, f32)> = row
+                .text()
+                .chars()
+                .enumerate()
+                .map(|(i, c)| (c, x0 + char_xs[i], char_xs[i + 1] - char_xs[i]))
+                .collect();
+            if k + 1 == vl.n_rows() && !last_line {
+                chars.push(('\n', x0 + row.width(), 0.0));
+            }
+            let row_top = top + k as f32 * row_h;
+            let pieces = chars.len().div_ceil(MAX_CHARS).max(1);
+            for p in 0..pieces {
+                let c0 = p * MAX_CHARS;
+                let c1 = (c0 + MAX_CHARS).min(chars.len());
+                out.runs.push(Run {
+                    char_start: char0 + c0,
+                    top: row_top,
+                    chars: chars[c0..c1].to_vec(),
+                });
+            }
+            char0 += row.text().chars().count();
+        }
+        runs.push(out);
+    }
+
+    // Selection ends mapped to run positions.
     let pos_of = |b: usize| -> Option<accesskit::TextPosition> {
         let text = glue::text(f.doc);
         let b = b.min(text.len_bytes());
         let line = text.byte_to_line(b);
-        if page.binary_search(&line).is_err() {
-            return None;
-        }
-        let col_chars = text
-            .slice(text.line_to_byte(line)..b)
-            .to_string()
-            .chars()
-            .count();
-        let chunk = if col_chars > 0 && col_chars.is_multiple_of(MAX_CHARS) {
-            col_chars / MAX_CHARS - 1
-        } else {
-            col_chars / MAX_CHARS
-        };
+        let lr = runs.iter().find(|r| r.line == line)?;
+        let col_chars = text.slice(text.line_to_byte(line)..b).chars().count();
+        // The run holding the char; at a run boundary the earlier run's end.
+        let k = lr
+            .runs
+            .iter()
+            .rposition(|r| r.char_start < col_chars)
+            .unwrap_or(0);
+        let r = &lr.runs[k];
         Some(accesskit::TextPosition {
-            node: run_id(id, line, chunk).accesskit_id(),
-            character_index: col_chars - chunk * MAX_CHARS,
+            node: run_id(id, line, k).accesskit_id(),
+            character_index: (col_chars - r.char_start.min(col_chars)).min(r.chars.len()),
         })
     };
     let anchor = pos_of(sel.anchor);
@@ -132,47 +172,14 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
         });
     }
 
-    for &line in &page {
-        let layout = f.layout_line(line);
-        let top = f.geom.line_top(f.mem, line);
-        let last = line + 1 >= lines;
-        let char_xs = layout.char_xs();
-        let mut value = String::new();
-        let mut lens: Vec<u8> = Vec::new();
-        let mut xs: Vec<f32> = Vec::new();
-        let mut ws: Vec<f32> = Vec::new();
-        let mut word_starts: Vec<usize> = Vec::new();
-        let mut was_word_end = false;
-        for (i, chr) in layout.text().chars().enumerate() {
-            let is_word = chr.is_alphanumeric() || chr == '_';
-            if is_word && was_word_end {
-                word_starts.push(lens.len());
-            }
-            was_word_end = !is_word;
-            let before = value.len();
-            value.push(chr);
-            lens.push((value.len() - before) as u8);
-            xs.push(char_xs[i]);
-            ws.push(char_xs[i + 1] - char_xs[i]);
-        }
-        if !last {
-            value.push('\n');
-            lens.push(1);
-            xs.push(layout.width());
-            ws.push(0.0);
-        }
-        let chunks = lens.len().div_ceil(MAX_CHARS).max(1);
-        let mut byte = 0usize;
-        for k in 0..chunks {
-            let c0 = k * MAX_CHARS;
-            let c1 = (c0 + MAX_CHARS).min(lens.len());
-            let b0 = byte;
-            let b1 = b0 + lens[c0..c1].iter().map(|&l| l as usize).sum::<usize>();
-            byte = b1;
-            let rid = run_id(id, line, k);
-            let x0 = xs.get(c0).copied().unwrap_or(0.0);
-            let x1 = if c1 > c0 { xs[c1 - 1] + ws[c1 - 1] } else { x0 };
-            let rect = Rect::from_min_size(pos2(left + x0, top), vec2((x1 - x0).max(1.0), row_h));
+    for lr in &runs {
+        let count = lr.runs.len();
+        for (k, run) in lr.runs.iter().enumerate() {
+            let rid = run_id(id, lr.line, k);
+            let x0 = run.chars.first().map_or(0.0, |c| c.1);
+            let x1 = run.chars.last().map_or(x0, |c| c.1 + c.2);
+            let rect =
+                Rect::from_min_size(pos2(left + x0, run.top), vec2((x1 - x0).max(1.0), row_h));
             // A child Ui with an explicit id and the editor as accessibility parent gives the run
             // node its place in the tree (egui's register_accesskit_parent is crate-private).
             let _child = ui.new_child(
@@ -182,16 +189,23 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
                     .accessibility_role(Role::TextRun)
                     .max_rect(rect),
             );
-            let value = value[b0..b1].to_owned();
-            let lens = lens[c0..c1].to_vec();
-            let pos: Vec<f32> = xs[c0..c1].iter().map(|x| x - x0).collect();
-            let wid = ws[c0..c1].to_vec();
-            let starts: Vec<u8> = word_starts
-                .iter()
-                .filter(|&&w| w >= c0 && w < c1)
-                .map(|&w| (w - c0) as u8)
-                .collect();
+            let mut value = String::new();
+            let mut lens = Vec::with_capacity(run.chars.len());
+            let mut word_starts = Vec::new();
+            let mut was_word_end = false;
+            for (i, (c, _, _)) in run.chars.iter().enumerate() {
+                let is_word = c.is_alphanumeric() || *c == '_';
+                if is_word && was_word_end {
+                    word_starts.push(i as u8);
+                }
+                was_word_end = !is_word;
+                lens.push(c.len_utf8() as u8);
+                value.push(*c);
+            }
+            let pos: Vec<f32> = run.chars.iter().map(|c| c.1 - x0).collect();
+            let wid: Vec<f32> = run.chars.iter().map(|c| c.2).collect();
             let g = to_global * rect;
+            let line = lr.line;
             f.ctx.accesskit_node_builder(rid, |n| {
                 n.set_role(Role::TextRun);
                 n.set_text_direction(accesskit::TextDirection::LeftToRight);
@@ -205,14 +219,28 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
                 n.set_character_lengths(lens);
                 n.set_character_positions(pos);
                 n.set_character_widths(wid);
-                n.set_word_starts(starts);
+                n.set_word_starts(word_starts);
                 if k > 0 {
                     n.set_previous_on_line(run_id(id, line, k - 1).accesskit_id());
                 }
-                if k + 1 < chunks {
+                if k + 1 < count {
                     n.set_next_on_line(run_id(id, line, k + 1).accesskit_id());
                 }
             });
         }
     }
+}
+
+/// The text runs of one line.
+struct LineRuns {
+    line: usize,
+    runs: Vec<Run>,
+}
+
+/// One text run: (char, x, width) with x relative to the text left, on the row at `top`.
+struct Run {
+    /// Index in the line of the run's first char.
+    char_start: usize,
+    top: f32,
+    chars: Vec<(char, f32, f32)>,
 }

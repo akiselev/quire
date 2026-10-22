@@ -20,6 +20,9 @@ pub(crate) struct LineWidths {
     max_dirty: bool,
     /// Lines measured since creation (tests check that edits stay incremental).
     pub(crate) measured: u64,
+    /// Lines re-measured by incremental syncs since the caller last cleared it (soft wrap
+    /// re-estimates their heights).
+    pub(crate) changed: Vec<usize>,
 }
 
 /// Visible columns of `chunks` (one line without its break) with tabs every `tab_size` columns.
@@ -124,6 +127,7 @@ impl LineWidths {
         dirty.sort_unstable();
         dirty.dedup();
         for d in dirty {
+            self.changed.push(d);
             let c = self.measure(doc, d);
             self.cols[d] = c;
             if c > self.max {
@@ -143,7 +147,6 @@ impl LineWidths {
     }
 
     /// Columns of `line` (0 past the end).
-    #[cfg(test)]
     pub(crate) fn cols(&self, line: usize) -> u32 {
         self.cols.get(line).copied().unwrap_or(0)
     }

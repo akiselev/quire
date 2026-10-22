@@ -23,6 +23,7 @@ pub mod layout;
 mod paint;
 pub mod theme;
 mod widths;
+mod wrap;
 
 pub use a11y::{page_size as a11y_page_size, run_id as a11y_run_id};
 pub use chord::{Chord, KeySeq};
@@ -33,3 +34,4 @@ pub use glue::FindOptions;
 pub use height::HeightIndex;
 pub use keymap::{KeyLookup, Keymap};
 pub use theme::{EditorText, EditorTheme};
+pub use wrap::VisualLine;

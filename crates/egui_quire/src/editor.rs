@@ -14,7 +14,9 @@ use egui::{
     Color32, Context, Event, EventFilter, Id, ImeEvent, Key, Pos2, Rect, Response, Sense, Ui, Vec2,
     pos2, vec2,
 };
-use quire_core::{Applied, Document, EditorCommand, EditorView, HostRequest, Selection, Version};
+use quire_core::{
+    Applied, Document, EditorCommand, EditorView, HostRequest, SelRange, Selection, Version,
+};
 
 use crate::command::{KeyAction, WidgetAction};
 use crate::find_bar::FindBar;
@@ -22,8 +24,9 @@ use crate::galley_cache::GalleyCache;
 use crate::glue;
 use crate::height::HeightIndex;
 use crate::keymap::{KeyLookup, Keymap, WhenContext};
-use crate::layout::{self, LineLayout, LineShaper};
+use crate::layout::{self, LineShaper};
 use crate::theme::{EditorText, EditorTheme};
+use crate::wrap::{self, VisualLine, Wrap, WrappedRows};
 
 /// How keys reach the editor.
 #[derive(Clone, Debug)]
@@ -117,6 +120,11 @@ pub struct CodeEditor<'a> {
 #[derive(Debug, Default)]
 pub(crate) struct Mem {
     pub galleys: GalleyCache,
+    /// Rows of wrapped lines.
+    pub wraps: GalleyCache<Arc<WrappedRows>>,
+    /// Carets drawn at the end of a wrapped row rather than the next row's start: (hash of the
+    /// selection and document version they belong to, the heads).
+    pub upstream: Option<(u64, Vec<usize>)>,
     pub heights: HeightIndex,
     /// Hash of (lines, row height, folds) the height index was built for.
     pub heights_sig: u64,
@@ -164,6 +172,14 @@ pub(crate) struct Drag {
     pub column: Option<((usize, u32), (usize, u32))>,
 }
 
+/// A motion by visual rows (soft wrap).
+#[derive(Clone, Copy, Debug)]
+enum RowMove {
+    Vertical(isize),
+    Home,
+    End,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum Unit {
     Char,
@@ -190,6 +206,10 @@ pub(crate) struct Geom {
     pub adv: f32,
     pub mono: layout::Mono,
     pub pad_left: f32,
+    /// Soft wrap of this frame (None: off).
+    pub wrap: Option<Wrap>,
+    /// Lines with more chars than this render a prefix (`stop_rendering_line_after`).
+    pub stop_after: usize,
 }
 
 impl Geom {
@@ -375,18 +395,54 @@ impl<'a> CodeEditor<'a> {
         };
         let adv = mono.advance();
         let n_lines = glue::text(doc).len_lines().max(1);
-        let sig = crate::galley_cache::hash_one((n_lines, row_h.to_bits(), glue::folds(view)));
+        let gw = gutter_width(n_lines, adv);
+        let pad_left = (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point;
+        let cfg = doc.config();
+        let stop_after = cfg.stop_rendering_line_after.max(1);
+        // VS Code's wrapping column: the columns that fit beside the vertical scrollbar.
+        let wrap = (cfg.word_wrap == quire_core::WordWrap::On).then(|| Wrap {
+            cols: (((rect.width() - gw - pad_left - SCROLLBAR_W - 2.0) / adv).floor() as u32)
+                .max(1),
+            indent: cfg.wrapping_indent,
+        });
+        mem.widths.sync(doc);
+        let sig = crate::galley_cache::hash_one((
+            n_lines,
+            row_h.to_bits(),
+            glue::folds(view),
+            wrap,
+            stop_after,
+        ));
         if mem.heights_sig != sig {
             mem.heights_sig = sig;
+            mem.heights = match wrap {
+                None => HeightIndex::uniform(n_lines, row_h),
+                // Rows estimated from each line's columns; laying a line out measures it.
+                Some(w) => {
+                    let widths = &mem.widths;
+                    HeightIndex::from_fn(n_lines, |l| {
+                        estimate_rows(widths.cols(l), w.cols, stop_after) as f32 * row_h
+                    })
+                }
+            };
             // Folded lines are zero-height: line_at() never lands on them and painting skips them.
-            mem.heights = HeightIndex::uniform(n_lines, row_h);
             for (a, b) in glue::hidden_line_spans(view, doc) {
                 for l in a..=b.min(n_lines - 1) {
                     mem.heights.set(l, 0.0);
                 }
             }
+        } else if let Some(w) = wrap {
+            // Lines edited since the last frame get a fresh estimate (visible ones are measured
+            // when painted).
+            let changed = std::mem::take(&mut mem.widths.changed);
+            for l in changed {
+                if l < mem.heights.len() && mem.heights.get(l) != 0.0 {
+                    let h = estimate_rows(mem.widths.cols(l), w.cols, stop_after) as f32 * row_h;
+                    mem.heights.set(l, h);
+                }
+            }
         }
-        let gw = gutter_width(n_lines, adv);
+        mem.widths.changed.clear();
         let geom = Geom {
             rect,
             gutter: Rect::from_min_max(rect.min, pos2(rect.left() + gw, rect.bottom())),
@@ -397,10 +453,11 @@ impl<'a> CodeEditor<'a> {
             row_h,
             adv,
             mono,
-            pad_left: (adv * 0.5 * mono.pixels_per_point).round() / mono.pixels_per_point,
+            pad_left,
+            wrap,
+            stop_after,
         };
 
-        mem.widths.sync(doc);
         if mem.seen_version != Some(glue::version(doc)) {
             mem.seen_version = Some(glue::version(doc));
             mem.max_seen_width = 0.0;
@@ -535,6 +592,16 @@ impl<'a> CodeEditor<'a> {
 
 const PAD_Y: f32 = 2.0;
 
+/// Width of the scrollbars.
+pub(crate) const SCROLLBAR_W: f32 = 8.0;
+
+/// Estimated rows of a line of `cols` columns wrapped at `wrap` columns (exact for lines of one
+/// column per char that break anywhere; laying the line out measures it).
+fn estimate_rows(cols: u32, wrap: u32, stop_after: usize) -> u32 {
+    let cols = cols.min(stop_after.min(u32::MAX as usize - 3) as u32 + 3);
+    cols.div_ceil(wrap.max(1)).max(1)
+}
+
 /// Gutter width for `lines` lines: diagnostic mark, digits, padding, fold markers.
 fn gutter_width(lines: usize, adv: f32) -> f32 {
     let digits = (lines.max(1).ilog10() + 1).max(2) as f32;
@@ -582,6 +649,9 @@ impl FrameCx<'_> {
     /// goes through the core and is applied now.
     pub fn dispatch(&mut self, cmd: EditorCommand) {
         self.touch();
+        if self.wrapped_motion(&cmd) {
+            return;
+        }
         let cmd = glue::with_page_lines(cmd, self.page_lines());
         self.out.commands.push(cmd.clone());
         match &cmd {
@@ -619,6 +689,143 @@ impl FrameCx<'_> {
                 }
             }
             Err(_refused) => {}
+        }
+    }
+
+    /// Under soft wrap, vertical motions and Home/End move by visual row, as VS Code's
+    /// view-model cursor moves do (`cursorMoveCommands.ts` `_moveToLineStart` / `_moveToLineEnd`,
+    /// `cursorMoveOperations.ts` `moveUp` / `moveDown` over view lines). The core knows only
+    /// document lines, so the widget resolves these to a selection and records `setSelection`,
+    /// as it does for the mouse. Returns false for every other command.
+    fn wrapped_motion(&mut self, cmd: &EditorCommand) -> bool {
+        use quire_core::Motion;
+        let EditorCommand::CursorMove { to, select } = cmd else {
+            return false;
+        };
+        if self.geom.wrap.is_none() {
+            return false;
+        }
+        let page = self.page_lines() as isize;
+        let m = match to {
+            Motion::Up => RowMove::Vertical(-1),
+            Motion::Down => RowMove::Vertical(1),
+            Motion::PageUp { .. } => RowMove::Vertical(-page),
+            Motion::PageDown { .. } => RowMove::Vertical(page),
+            Motion::LineStart => RowMove::Home,
+            Motion::LineEnd => RowMove::End,
+            _ => return false,
+        };
+        let sel = glue::selection(self.view).clone();
+        let mut ups = Vec::new();
+        let new = sel.transform(|r| {
+            let (nr, up) = self.row_move(r, m, *select);
+            if up {
+                ups.push(nr.head);
+            }
+            nr
+        });
+        self.set_selection(new);
+        self.set_upstream(ups);
+        true
+    }
+
+    /// One range moved by visual rows; returns it and whether its head is drawn at the end of a
+    /// wrapped row.
+    fn row_move(&mut self, r: SelRange, m: RowMove, select: bool) -> (SelRange, bool) {
+        let finish = |head: usize, goal: Option<u32>| {
+            SelRange::new(if select { r.anchor } else { head }, head).with_goal(goal)
+        };
+        let len = glue::text(self.doc).len_bytes();
+        let row_h = self.geom.row_h;
+        let adv = self.geom.adv;
+        match m {
+            RowMove::Vertical(delta) => {
+                let start = if !r.is_empty() && !select {
+                    if delta < 0 { r.from() } else { r.to() }
+                } else {
+                    r.head
+                };
+                let up0 = start == r.head && self.upstream(r.head);
+                let text = glue::text(self.doc);
+                let line = text.byte_to_line(start.min(len));
+                let col = start - text.line_to_byte(line);
+                let vl = self.layout_line(line);
+                let (row, x) = vl.locate(col, up0);
+                let goal = match r.goal_column {
+                    Some(g) if r.is_empty() || select => g,
+                    _ => (x / adv).round().max(0.0) as u32,
+                };
+                let at_edge = if delta < 0 { start == 0 } else { start == len };
+                let goal_out = (!at_edge).then_some(goal);
+                let total = (self.mem.heights.total() / row_h).round() as isize;
+                let cur = (self.mem.heights.y_of(line) / row_h).round() as isize + row as isize;
+                let target = cur + delta;
+                if target < 0 {
+                    return (finish(0, goal_out), false);
+                }
+                if target >= total {
+                    return (finish(len, goal_out), false);
+                }
+                let y = (target as f32 + 0.5) * row_h;
+                let tl = self.mem.heights.line_at(y);
+                let tl = tl.min(glue::text(self.doc).len_lines().saturating_sub(1));
+                let tvl = self.layout_line(tl);
+                let trow = ((y - self.mem.heights.y_of(tl)) / row_h)
+                    .floor()
+                    .clamp(0.0, (tvl.n_rows() - 1) as f32) as usize;
+                let gx = if goal == u32::MAX {
+                    f32::INFINITY
+                } else {
+                    goal as f32 * adv
+                };
+                let (c, up) = tvl.hit(trow, gx);
+                let head = glue::text(self.doc).line_to_byte(tl) + c;
+                (finish(head, goal_out), up)
+            }
+            RowMove::Home => {
+                let head = r.head.min(len);
+                let up = self.upstream(head);
+                let text = glue::text(self.doc);
+                let line = text.byte_to_line(head);
+                let ls = text.line_to_byte(line);
+                let col = head - ls;
+                let vl = self.layout_line(line);
+                let row = vl.row_of(col, up);
+                let first_non_ws = |s: &str| s.find(|c| c != ' ' && c != '\t');
+                if row > 0 {
+                    let rs = vl.row_start(row);
+                    let first = rs + first_non_ws(vl.row_layout(row).text()).unwrap_or(0);
+                    if col != first {
+                        return (finish(ls + first, None), false);
+                    }
+                }
+                let target = if self.doc.config().smart_home {
+                    let s = glue::line_str(glue::text(self.doc), line);
+                    let first = first_non_ws(&s).unwrap_or(0);
+                    if col == first { 0 } else { first }
+                } else {
+                    0
+                };
+                (finish(ls + target, None), false)
+            }
+            RowMove::End => {
+                let head = r.head.min(len);
+                let up = self.upstream(head);
+                let text = glue::text(self.doc);
+                let line = text.byte_to_line(head);
+                let ls = text.line_to_byte(line);
+                let col = head - ls;
+                let vl = self.layout_line(line);
+                let row = vl.row_of(col, up);
+                let last = row + 1 == vl.n_rows();
+                let re = vl.row_end(row);
+                let at_row_end = !last && col == re && up;
+                if last || at_row_end {
+                    (finish(ls + vl.full_len(), Some(u32::MAX)), false)
+                } else {
+                    (finish(ls + re, Some(u32::MAX)), true)
+                }
+            }
         }
     }
 
@@ -891,42 +1098,110 @@ impl FrameCx<'_> {
     /// the galley hit test (so wide CJK glyphs count as core counts them), past the line end it
     /// adds whole advances, as VS Code's mouse column selection does.
     fn line_col_at(&mut self, p: Pos2) -> (usize, u32) {
-        let line = self.line_at_y(p.y);
+        let (line, row) = self.line_row_at(p.y);
         let x = p.x - self.geom.text_left(self.mem);
-        let ll = self.layout_line(line);
+        let vl = self.layout_line(line);
         let s = glue::line_str(glue::text(self.doc), line);
         let tab = self.doc.config().tab_size;
-        if x <= ll.width() {
-            return (line, quire_core::columns::visual_col(&s, ll.col_at(x), tab));
+        let last = row + 1 >= vl.n_rows();
+        let end = vl.row_x0(row) + vl.row_layout(row).width();
+        if x <= end || !last {
+            let (col, _) = vl.hit(row, x);
+            return (
+                line,
+                quire_core::columns::visual_col(&s, col.min(s.len()), tab),
+            );
         }
-        let past = ((x - ll.width()) / self.geom.adv).round().max(0.0) as u32;
+        let past = ((x - end) / self.geom.adv).round().max(0.0) as u32;
         (
             line,
             quire_core::columns::visual_col(&s, s.len(), tab) + past,
         )
     }
 
+    /// (visible line, row within it) at screen y.
+    fn line_row_at(&mut self, y: f32) -> (usize, usize) {
+        let line = self.line_at_y(y);
+        let top = self.geom.line_top(self.mem, line);
+        let row = ((y - top) / self.geom.row_h).floor().max(0.0) as usize;
+        (line, row)
+    }
+
     /// Byte offset under a screen position.
     pub fn pos_at(&mut self, p: Pos2) -> usize {
-        let line = self.line_at_y(p.y);
-        let ll = self.layout_line(line);
-        let col = ll.col_at(p.x - self.geom.text_left(self.mem));
-        glue::text(self.doc).line_to_byte(line) + col
+        self.pos_at_affine(p).0
+    }
+
+    /// Byte offset under a screen position, and whether it is the end of a wrapped row (drawn
+    /// there rather than at the next row's start).
+    pub fn pos_at_affine(&mut self, p: Pos2) -> (usize, bool) {
+        let (line, row) = self.line_row_at(p.y);
+        let vl = self.layout_line(line);
+        let (col, up) = vl.hit(row, p.x - self.geom.text_left(self.mem));
+        (glue::text(self.doc).line_to_byte(line) + col, up)
+    }
+
+    /// Whether the caret at `head` is drawn at the end of the previous wrapped row.
+    pub fn upstream(&self, head: usize) -> bool {
+        match &self.mem.upstream {
+            Some((key, heads)) if *key == self.selection_key() => heads.contains(&head),
+            _ => false,
+        }
+    }
+
+    /// Identity of the current selection and text (upstream carets belong to it).
+    fn selection_key(&self) -> u64 {
+        let sel = glue::selection(self.view);
+        crate::galley_cache::hash_one((
+            glue::version(self.doc),
+            glue::ranges(sel)
+                .iter()
+                .map(|r| (r.anchor, r.head))
+                .collect::<Vec<_>>(),
+        ))
+    }
+
+    /// Record which heads of the current selection sit at the end of a wrapped row.
+    fn set_upstream(&mut self, heads: Vec<usize>) {
+        self.mem.upstream = (!heads.is_empty()).then(|| (self.selection_key(), heads));
     }
 
     /// Lay out line `line` through the cache. A cache hit allocates nothing: a line split across
     /// rope chunks is joined in a reused buffer, and token runs go to a reused vector (E1).
-    pub fn layout_line(&mut self, line: usize) -> LineLayout {
+    /// A line longer than `stop_rendering_line_after` chars lays out only that prefix (E3 F2).
+    /// Laying out a line measures its rows into the height index.
+    pub fn layout_line(&mut self, line: usize) -> VisualLine {
         let text = glue::text(self.doc);
         let slice = text.line(line);
+        let full_len = slice.len_bytes();
+        let stop = self.geom.stop_after;
         let mut buf = std::mem::take(&mut self.mem.line_buf);
         let mut runs = std::mem::take(&mut self.mem.runs_buf);
-        let s = match slice.as_str() {
-            Some(s) => s,
-            None => {
-                buf.clear();
-                slice.chunks().for_each(|c| buf.push_str(c));
-                buf.as_str()
+        let s = if full_len > stop {
+            // Possibly more chars than the prefix: copy at most `stop` of them.
+            buf.clear();
+            let mut chars = 0usize;
+            for c in slice.chunks() {
+                match c.char_indices().nth(stop - chars) {
+                    Some((b, _)) => {
+                        buf.push_str(&c[..b]);
+                        break;
+                    }
+                    None => {
+                        buf.push_str(c);
+                        chars += c.chars().count();
+                    }
+                }
+            }
+            buf.as_str()
+        } else {
+            match slice.as_str() {
+                Some(s) => s,
+                None => {
+                    buf.clear();
+                    slice.chunks().for_each(|c| buf.push_str(c));
+                    buf.as_str()
+                }
             }
         };
         let style_hash =
@@ -939,10 +1214,35 @@ impl FrameCx<'_> {
             mono: self.geom.mono,
             tab_size: self.doc.config().tab_size,
         };
-        let layout = shaper.shape(s, &runs, style_hash, self.theme.foreground);
+        let layout = wrap::shape_line(
+            &mut shaper,
+            &mut self.mem.wraps,
+            s,
+            &runs,
+            style_hash,
+            self.theme.foreground,
+            self.geom.wrap,
+            full_len,
+        );
         self.mem.line_buf = buf;
         self.mem.runs_buf = runs;
+        self.note_rows(line, layout.n_rows());
         layout
+    }
+
+    /// Record a laid-out line's measured rows in the height index (not for folded lines).
+    /// Returns whether its height changed.
+    pub fn note_rows(&mut self, line: usize, rows: usize) -> bool {
+        if self.geom.wrap.is_none() || line >= self.mem.heights.len() {
+            return false;
+        }
+        let h = self.mem.heights.get(line);
+        let want = rows as f32 * self.geom.row_h;
+        if h == 0.0 || h == want {
+            return false;
+        }
+        self.mem.heights.set(line, want);
+        true
     }
 
     /// The unit range around `pos` (char: empty; word and line: quire-core's double- and
@@ -991,7 +1291,7 @@ impl FrameCx<'_> {
 
         if pressed && response.hovered() && in_text {
             self.touch();
-            let pos = self.pos_at(ptr);
+            let (pos, up) = self.pos_at_affine(ptr);
             if mods.command && !mods.shift && !mods.alt {
                 let range = self.unit_range(pos, Unit::Word);
                 self.out.events.push(EditorEvent::LinkActivated {
@@ -1064,6 +1364,9 @@ impl FrameCx<'_> {
                 glue::single(anchor_range.start, anchor_range.end)
             };
             self.set_selection(new);
+            if up && unit == Unit::Char {
+                self.set_upstream(vec![pos]);
+            }
         } else if down
             && let Some(Drag {
                 column: Some((anchor, head)),
@@ -1083,7 +1386,7 @@ impl FrameCx<'_> {
             && let Some(drag) = self.mem.drag.clone()
             && (response.dragged() || response.is_pointer_button_down_on())
         {
-            let pos = self.pos_at(ptr);
+            let (pos, up) = self.pos_at_affine(ptr);
             let r = self.unit_range(pos, drag.unit);
             let a = drag.anchor;
             let new = if r.start < a.start {
@@ -1095,6 +1398,9 @@ impl FrameCx<'_> {
                 || glue::selection(self.view).primary().head != new.primary().head
             {
                 self.set_selection(new);
+                if up && drag.unit == Unit::Char {
+                    self.set_upstream(vec![pos]);
+                }
             }
             // Autoscroll when dragging past the edges.
             let t = self.geom.text;
@@ -1222,7 +1528,12 @@ impl FrameCx<'_> {
     /// Horizontal extent: the longest line (columns × advance, or the widest galley laid out
     /// since the last edit when wide glyphs make that larger) plus a margin.
     pub fn content_width(&mut self) -> f32 {
-        let cols = self.mem.widths.max_cols() as f32 * self.geom.adv + self.geom.pad_left;
+        if self.geom.wrap.is_some() {
+            return self.geom.text.width();
+        }
+        let cols = (self.mem.widths.max_cols() as usize).min(self.geom.stop_after + 3) as f32
+            * self.geom.adv
+            + self.geom.pad_left;
         cols.max(self.mem.max_seen_width) + self.geom.adv * 4.0
     }
 
@@ -1255,7 +1566,9 @@ impl FrameCx<'_> {
         let head = pos.min(text.len_bytes());
         let line = text.byte_to_line(head);
         let col = head - text.line_to_byte(line);
-        let top = self.mem.heights.y_of(line);
+        let vl = self.layout_line(line);
+        let (row, x) = vl.locate(col, self.upstream(head));
+        let top = self.mem.heights.y_of(line) + row as f32 * self.geom.row_h;
         let bottom = top + self.geom.row_h;
         let view_h = self.geom.text.height();
         if center {
@@ -1265,7 +1578,7 @@ impl FrameCx<'_> {
         } else if bottom > self.mem.scroll.y + view_h {
             self.mem.scroll.y = bottom - view_h;
         }
-        let x = self.layout_line(line).x_of(col) + self.geom.pad_left;
+        let x = x + self.geom.pad_left;
         let view_w = self.geom.text.width();
         let margin = self.geom.adv * 4.0;
         if x < self.mem.scroll.x + margin {
@@ -1344,12 +1657,19 @@ impl FrameCx<'_> {
         let ls = text.line_to_byte(line);
         let line_len = glue::line_str(text, line).len();
         let end = range.end.clamp(start, ls + line_len);
-        let ll = self.layout_line(line);
+        let vl = self.layout_line(line);
         let left = self.geom.text_left(self.mem);
         let top = self.geom.line_top(self.mem, line);
-        let x0 = left + ll.x_of(start - ls);
-        let x1 = (left + ll.x_of(end - ls)).max(x0 + self.geom.adv);
-        let rect = Rect::from_min_max(pos2(x0, top), pos2(x1, top + self.geom.row_h));
+        let (r0, x0) = vl.locate(start - ls, false);
+        let (r1, x1) = vl.locate(end - ls, true);
+        let row_top = top + r0 as f32 * self.geom.row_h;
+        let x0 = left + x0;
+        let x1 = if r1 == r0 {
+            (left + x1).max(x0 + self.geom.adv)
+        } else {
+            left + vl.row_x0(r0) + vl.row_layout(r0).width()
+        };
+        let rect = Rect::from_min_max(pos2(x0, row_top), pos2(x1, row_top + self.geom.row_h));
         let items: Vec<HoverItem> = glue::diagnostics_at(self.doc, start)
             .into_iter()
             .map(|d| {

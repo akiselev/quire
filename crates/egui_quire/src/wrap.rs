@@ -436,9 +436,12 @@ pub(crate) fn shape_line(
     let mut one = None;
     if text.is_ascii() {
         let ts = sh.tab_size.max(1);
-        let cols = text.bytes().fold(0u32, |c, b| {
-            if b == b'\t' { c + ts - c % ts } else { c + 1 }
-        });
+        let cols = text.bytes().fold(
+            0u32,
+            |c, b| {
+                if b == b'\t' { c + ts - c % ts } else { c + 1 }
+            },
+        );
         if cols <= w.cols {
             let l = sh.shape(text, runs, style_hash, default);
             return VisualLine::new(Rows::One(l), full_len, adv);
@@ -528,16 +531,19 @@ mod tests {
             ["aaa bbb ", "ccc ddd"]
         );
         // Break after a run of break-after chars, before an opening bracket.
-        assert_eq!(rows("foo.bar.baz(x)", 9, WrappingIndent::None), [
-            "foo.bar.", "baz(x)"
-        ]);
-        assert_eq!(rows("abc(def)ghi", 5, WrappingIndent::None), [
-            "abc", "(def)", "ghi"
-        ]);
+        assert_eq!(
+            rows("foo.bar.baz(x)", 9, WrappingIndent::None),
+            ["foo.bar.", "baz(x)"]
+        );
+        assert_eq!(
+            rows("abc(def)ghi", 5, WrappingIndent::None),
+            ["abc", "(def)", "ghi"]
+        );
         // No opportunity: break anywhere.
-        assert_eq!(rows("abcdefghij", 4, WrappingIndent::None), [
-            "abcd", "efgh", "ij"
-        ]);
+        assert_eq!(
+            rows("abcdefghij", 4, WrappingIndent::None),
+            ["abcd", "efgh", "ij"]
+        );
         // Fits: no break.
         assert_eq!(rows("abcd", 4, WrappingIndent::None), ["abcd"]);
     }

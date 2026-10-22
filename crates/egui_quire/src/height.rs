@@ -34,6 +34,18 @@ impl HeightIndex {
         }
     }
 
+    /// `lines` lines, line `i` `height(i)` tall (O(n)).
+    pub fn from_fn(lines: usize, height: impl FnMut(usize) -> f32) -> Self {
+        let mut s = Self {
+            tree: Vec::new(),
+            heights: (0..lines).map(height).collect(),
+            uniform: None,
+            len: lines,
+        };
+        s.rebuild();
+        s
+    }
+
     /// Switch from the uniform representation to the tree.
     fn materialize(&mut self) {
         if let Some(h) = self.uniform.take() {
