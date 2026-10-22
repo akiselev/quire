@@ -60,9 +60,12 @@ it, so a fresh agent can continue.
 ## Questions and approvals
 
 - **Needs approval before it lands on master** (main-cadatomic takes it to the user): a new
-  public command, type, trait, method, enum variant or event, or behaviour that differs from VS
-  Code or `docs/design/ARCH-QUIRE.md` §3. Send the proposal (signature, rationale,
-  recommendation) to the coordinator, keep it on your branch, and keep working meanwhile.
+  user-facing command, or behaviour that differs from VS Code or `docs/design/ARCH-QUIRE.md` §3.
+  Send the proposal (signature, rationale, recommendation) to the coordinator, keep it on your
+  branch, and keep working meanwhile.
+- **The coordinator decides** small public helpers, types and signature changes that stay inside
+  the agreed design and VS Code behaviour (main-cadatomic, 2026-10-22); they are listed in its
+  reports. Tell the coordinator about them before landing.
 - Internal representation and test-port mechanics need no approval.
 
 Workers send questions to the coordinator (macbook-cadatomic) with a recommendation and keep
