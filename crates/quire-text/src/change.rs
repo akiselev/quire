@@ -519,6 +519,34 @@ impl ChangeSet {
         new
     }
 
+    /// The change set that turns `old` into `new` as one edit: the common prefix and suffix are
+    /// kept and the middle replaced (no diff library; what `replace_all` uses without the `diff`
+    /// feature, and what GTK/Qt undo steps become).
+    pub fn between_trimmed(old: &Text, new: &str) -> ChangeSet {
+        let a = old.to_string();
+        let (ab, bb) = (a.as_bytes(), new.as_bytes());
+        let mut pre = ab.iter().zip(bb).take_while(|(x, y)| x == y).count();
+        while pre > 0 && !(a.is_char_boundary(pre) && new.is_char_boundary(pre)) {
+            pre -= 1;
+        }
+        let max_suf = ab.len().min(bb.len()) - pre;
+        let mut suf = ab
+            .iter()
+            .rev()
+            .zip(bb.iter().rev())
+            .take(max_suf)
+            .take_while(|(x, y)| x == y)
+            .count();
+        while suf > 0 && !(a.is_char_boundary(ab.len() - suf) && new.is_char_boundary(bb.len() - suf)) {
+            suf -= 1;
+        }
+        ChangeSet::replace(
+            ab.len(),
+            [(pre..ab.len() - suf, &new[pre..bb.len() - suf])],
+        )
+        .expect("in bounds")
+    }
+
     /// The change set that turns `old` into `new`, computed with imara-diff (histogram, by line),
     /// then trimmed to the changed bytes within each changed hunk, so carets outside changed text
     /// keep their place. Used for reloads (`apply_remote(.., Origin::Reload)`). Behind the `diff`

@@ -33,7 +33,7 @@ pub use command::{
     DeleteUnit, Dir, EditCommand, EditRules, Executed, HexKey, HostRequest, InputFilter,
     PreeditUpdate, PrimaryRule, Rejected, Resolved, Unit,
 };
-pub use document::{Anchor, Applied, Refusal, Snapshot, TextDocument};
+pub use document::{Anchor, Applied, ExternalSet, Refusal, Snapshot, TextDocument};
 pub use history::{History, UndoGroup, UndoGroupClosed, UndoMode, UndoRules};
 pub use recent::{LineEdit, RecentChange, RecentChanges, Stale};
 pub use rules::{DocRules, LineBreaks, LineMode};

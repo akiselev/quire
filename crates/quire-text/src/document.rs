@@ -126,6 +126,17 @@ pub struct Anchor {
     pub version: Version,
 }
 
+/// How [`TextDocument::replace_all`] treats history.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+pub enum ExternalSet {
+    /// A text set from outside starts a new history (GTK `set_text`, Qt `setText`).
+    ResetHistory,
+    /// A foreign change (quire's reload): not undoable; the stacks are rebased over it.
+    Foreign,
+    /// An undoable change of its own (an app-level revert).
+    Undoable,
+}
+
 static EMPTY_LOCAL: History = History::new(UndoMode::Local);
 static EMPTY_HOST: History = History::new(UndoMode::Host);
 
@@ -217,9 +228,10 @@ impl TextDocument {
     }
 
     fn history_mut(&mut self) -> &mut History {
-        let mode = self.rules.undo_mode;
+        let r = &self.rules;
+        let (mode, rules, limit) = (r.undo_mode, r.undo, r.undo_limit);
         self.history
-            .get_or_insert_with(|| Box::new(History::new(mode)))
+            .get_or_insert_with(|| Box::new(History::with_rules(mode, rules, limit)))
     }
 
     /// The recent changes.
@@ -316,6 +328,42 @@ impl TextDocument {
             .with_origin(origin)
             .with_author(author);
         self.apply_inner(tr, None).map(|(a, _)| a)
+    }
+
+    /// Replaces the whole text from outside (a prop write, a reload, a revert). The change is
+    /// the differing middle (common prefix and suffix kept; with the `diff` feature, a reload uses
+    /// a line diff), so carets outside it keep their place.
+    pub fn replace_all(
+        &mut self,
+        text: &str,
+        mode: ExternalSet,
+        view: Option<&mut TextView>,
+    ) -> Result<Applied, Refusal> {
+        let new = crate::text::normalize_line_endings(text);
+        let changes = match mode {
+            #[cfg(feature = "diff")]
+            ExternalSet::Foreign => ChangeSet::diff(&self.text, &Text::from(&*new)),
+            _ => ChangeSet::between_trimmed(&self.text, &new),
+        };
+        let base = self.version;
+        match mode {
+            ExternalSet::ResetHistory | ExternalSet::Foreign => {
+                let tr: Transaction<NoEffect> = Transaction::new(base, changes).with_origin(Origin::Reload);
+                let r = self.apply_inner(tr, view).map(|(a, _)| a);
+                if mode == ExternalSet::ResetHistory
+                    && let Some(h) = &mut self.history
+                {
+                    h.reset();
+                }
+                r
+            }
+            ExternalSet::Undoable => {
+                let tr: Transaction<NoEffect> = Transaction::new(base, changes)
+                    .with_origin(Origin::Command("replaceAll".into()))
+                    .with_group(crate::transaction::GroupHint::Isolated);
+                self.apply_inner(tr, view).map(|(a, _)| a)
+            }
+        }
     }
 
     fn rebase<E>(&self, tr: &mut Transaction<E>) -> Result<(), Refusal> {
@@ -453,9 +501,23 @@ impl TextDocument {
             };
             let pause_ms = self.rules.undo_pause_ms.unwrap_or(u64::MAX);
             let version = self.version;
+            let new_text = self.text.clone();
             let history = self.history_mut();
             let local = history.mode() == UndoMode::Local;
+            let native = history.is_native();
             let recorded_specially = match &tr.origin {
+                Origin::Undo | Origin::Redo if native => {
+                    let undo = matches!(tr.origin, Origin::Undo);
+                    let own = history.applied_native_step(&old_text, &sel_before, &new_text, undo);
+                    if !own {
+                        history.record_native(&tr.origin, &old_text, &new_text, &tr.changes, &sel_before);
+                    }
+                    true
+                }
+                Origin::Input(_) | Origin::Command(_) if native => {
+                    history.record_native(&tr.origin, &old_text, &new_text, &tr.changes, &sel_before);
+                    true
+                }
                 Origin::Undo => {
                     closed.extend(history.close());
                     !local || history.applied_undo(&tr.changes, &old_text)
@@ -495,6 +557,12 @@ impl TextDocument {
             }
         } else if let (Some(v), Some(sel)) = (view.as_deref_mut(), tr.selection.clone()) {
             v.set_selection_unchecked(sel);
+            if let (Some(h), Some(before)) = (self.history.as_deref_mut(), &selection_before)
+                && h.is_native()
+                && before != v.selection()
+            {
+                h.moved_native(&self.text, before, v.selection());
+            }
         }
         let selection_changed = match (&view, &selection_before) {
             (Some(v), Some(b)) => b != v.selection(),

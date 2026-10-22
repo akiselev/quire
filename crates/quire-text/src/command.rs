@@ -493,7 +493,7 @@ impl TextDocument {
                     });
                     return r;
                 }
-                match self.undo_transaction(undo) {
+                match self.undo_transaction(sel, undo) {
                     Some(tr) => Resolved::tr(tr),
                     None => Resolved::default(),
                 }
@@ -635,11 +635,21 @@ impl TextDocument {
         r
     }
 
-    /// The local undo (or redo) transaction: the top of the stack, its selection clamped, the
-    /// author of the group it reverts.
-    pub fn undo_transaction(&self, undo: bool) -> Option<Transaction> {
+    /// The local undo (or redo) transaction for a view with selection `sel`: the top of the
+    /// stack, its selection clamped, the author of the group it reverts (GTK/Qt: the next step
+    /// of their walk).
+    pub fn undo_transaction(&self, sel: &Selection, undo: bool) -> Option<Transaction> {
         let h = self.history();
         let text = self.text();
+        if h.is_native() {
+            let (changes, s) = h.native_step(text, sel, undo)?;
+            return Some(
+                Transaction::new(self.version(), changes)
+                    .with_selection(s)
+                    .with_origin(if undo { Origin::Undo } else { Origin::Redo })
+                    .with_group(GroupHint::Isolated),
+            );
+        }
         let (top, author) = if undo {
             (h.peek_undo(), h.undo_author())
         } else {

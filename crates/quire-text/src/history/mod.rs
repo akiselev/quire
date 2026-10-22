@@ -23,6 +23,8 @@
 //! **Foreign changes** (remote, reload) are not undoable locally. The stacks are rebased over
 //! them ([`ChangeSet::map`]), so local undo skips them (CodeMirror's per-origin history).
 
+pub mod native;
+
 use crate::change::{Bias, ChangeSet};
 use crate::selection::Selection;
 use crate::text::Text;
@@ -39,6 +41,12 @@ pub enum UndoRules {
     /// non-typing edit its own group. quire's editor.
     #[default]
     Monaco,
+    /// GTK 4's (`GtkTextHistory`, svelters FX3): one step per word, each deletion its own step,
+    /// typing over a selection one closed step, a caret move ends merging. Local undo only.
+    Gtk,
+    /// Qt 6 widgets' (`QWidgetLineControl`, svelters FX3): a typing run one step, a BackSpace or
+    /// Delete run one step, separators at caret moves and pastes. Local undo only.
+    Qt,
 }
 
 /// Who owns undo.
@@ -106,6 +114,10 @@ pub struct History {
     open: Option<OpenGroup>,
     undo: Vec<UndoGroup>,
     redo: Vec<UndoGroup>,
+    /// GTK or Qt grouping (local mode); `None`: Monaco.
+    native: Option<native::NativeHistory>,
+    /// At most this many undo steps.
+    limit: Option<usize>,
 }
 
 /// What one local edit brings to the history.
@@ -139,6 +151,47 @@ impl History {
             open: None,
             undo: Vec::new(),
             redo: Vec::new(),
+            native: None,
+            limit: None,
+        }
+    }
+
+    /// An empty history with these rules. Host mode always groups as Monaco does.
+    pub fn with_rules(mode: UndoMode, rules: UndoRules, limit: Option<usize>) -> Self {
+        let native = match (mode, rules) {
+            (UndoMode::Local, UndoRules::Gtk) => {
+                Some(native::NativeHistory::new(native::NativeRules::Gtk))
+            }
+            (UndoMode::Local, UndoRules::Qt) => {
+                Some(native::NativeHistory::new(native::NativeRules::Qt))
+            }
+            _ => None,
+        };
+        History {
+            native,
+            limit,
+            ..History::new(mode)
+        }
+    }
+
+    /// The grouping rules in use.
+    pub fn rules(&self) -> UndoRules {
+        match &self.native {
+            None => UndoRules::Monaco,
+            Some(n) => match n.rules() {
+                native::NativeRules::Gtk => UndoRules::Gtk,
+                native::NativeRules::Qt => UndoRules::Qt,
+            },
+        }
+    }
+
+    /// Forgets every step (a text set from outside, GTK `set_text`).
+    pub fn reset(&mut self) {
+        self.open = None;
+        self.undo.clear();
+        self.redo.clear();
+        if let Some(n) = &mut self.native {
+            *n = native::NativeHistory::new(n.rules());
         }
     }
 
@@ -174,11 +227,17 @@ impl History {
 
     /// Whether `undo` would do something (local mode; the open group counts).
     pub fn can_undo(&self) -> bool {
+        if let Some(n) = &self.native {
+            return n.can_undo();
+        }
         self.mode == UndoMode::Local && (self.open.is_some() || !self.undo.is_empty())
     }
 
     /// Whether `redo` would do something (local mode).
     pub fn can_redo(&self) -> bool {
+        if let Some(n) = &self.native {
+            return n.can_redo();
+        }
         self.mode == UndoMode::Local && self.open.is_none() && !self.redo.is_empty()
     }
 
@@ -223,6 +282,9 @@ impl History {
     pub(crate) fn set_mode(&mut self, mode: UndoMode) -> Option<UndoGroupClosed> {
         let closed = self.close();
         self.mode = mode;
+        if mode == UndoMode::Host {
+            self.native = None;
+        }
         self.undo.clear();
         self.redo.clear();
         closed
@@ -238,6 +300,12 @@ impl History {
                 selection_other: g.selection_after.clone(),
                 author: g.author,
             });
+            if let Some(n) = self.limit
+                && self.undo.len() > n
+            {
+                let drop = self.undo.len() - n;
+                self.undo.drain(..drop);
+            }
         }
         Some(UndoGroupClosed {
             from: g.from,
@@ -354,6 +422,10 @@ impl History {
 
     /// A foreign change was applied: close the open group and rebase both stacks over it.
     pub(crate) fn applied_foreign(&mut self, changes: &ChangeSet) -> Option<UndoGroupClosed> {
+        if self.native.is_some() {
+            self.reset();
+            return None;
+        }
         let closed = self.close();
         rebase_stack(&mut self.undo, changes);
         rebase_stack(&mut self.redo, changes);
@@ -385,4 +457,113 @@ fn rebase_stack(stack: &mut Vec<UndoGroup>, remote: &ChangeSet) {
         i += 1;
         k
     });
+}
+
+/// A GTK/Qt snapshot of `text` with the primary range of `sel` (char offsets).
+fn snap(text: &Text, sel: &Selection) -> native::Snap {
+    let p = sel.primary();
+    native::Snap {
+        text: text.to_string(),
+        anchor: text.byte_to_char(p.anchor.min(text.len_bytes())),
+        caret: text.byte_to_char(p.head.min(text.len_bytes())),
+    }
+}
+
+fn input_edit_kind(origin: &Origin) -> native::EditKind {
+    use native::EditKind as K;
+    match origin {
+        Origin::Input(k) => match k {
+            InputKind::Typing
+            | InputKind::TypingFirstSpace
+            | InputKind::TypingConsecutiveSpace
+            | InputKind::Ime => K::Typing,
+            InputKind::Paste => K::Paste,
+            InputKind::DeletingLeft => K::Backspace,
+            InputKind::DeletingRight => K::Delete,
+            InputKind::DeletingWordLeft => K::WordBack,
+            InputKind::DeletingWordRight => K::WordForward,
+            InputKind::Cut => K::Cut,
+            InputKind::Other => K::Other,
+        },
+        _ => K::Other,
+    }
+}
+
+impl History {
+    /// Whether GTK or Qt rules are in use.
+    pub(crate) fn is_native(&self) -> bool {
+        self.native.is_some()
+    }
+
+    /// GTK/Qt: a local edit from `before` to `after` (texts), what made it, and the acting
+    /// view's selection before it.
+    pub(crate) fn record_native(
+        &mut self,
+        origin: &Origin,
+        before: &Text,
+        after: &Text,
+        changes: &ChangeSet,
+        sel_before: &Selection,
+    ) {
+        let Some(n) = &mut self.native else { return };
+        let edits = changes.edits();
+        let (Some(first), Some(last)) = (edits.first(), edits.last()) else {
+            return;
+        };
+        let (s, e) = (first.range.start, last.range.end);
+        let e_new = (e as isize + changes.len_after() as isize - changes.len() as isize) as usize;
+        let removed: Vec<char> = before.slice(s..e).chars().collect();
+        let inserted: Vec<char> = after.slice(s..e_new).chars().collect();
+        let at = before.byte_to_char(s);
+        n.edit(
+            &snap(before, sel_before),
+            at,
+            removed,
+            inserted,
+            input_edit_kind(origin),
+        );
+        if let Some(l) = self.limit {
+            n.limit(l);
+        }
+    }
+
+    /// GTK/Qt: the caret or selection moved without an edit.
+    pub(crate) fn moved_native(&mut self, text: &Text, before: &Selection, after: &Selection) {
+        if let Some(n) = &mut self.native {
+            n.moved(&snap(text, before), &snap(text, after));
+        }
+    }
+
+    /// GTK/Qt: the change and selection the next undo (or redo) applies to `text` with `sel`.
+    pub fn native_step(&self, text: &Text, sel: &Selection, undo: bool) -> Option<(ChangeSet, Selection)> {
+        let mut n = self.native.clone()?;
+        let now = snap(text, sel);
+        let to = if undo { n.undo(&now)? } else { n.redo(&now)? };
+        let changes = ChangeSet::between_trimmed(text, &to.text);
+        let after = changes.apply(text).ok()?;
+        let byte = |c: usize| after.char_to_byte(c);
+        Some((changes, Selection::single(byte(to.anchor), byte(to.caret))))
+    }
+
+    /// GTK/Qt: an undo (or redo) transaction was applied to `text` with `sel`; returns whether it
+    /// was the history's own step (the history moves on).
+    pub(crate) fn applied_native_step(
+        &mut self,
+        text: &Text,
+        sel: &Selection,
+        after: &Text,
+        undo: bool,
+    ) -> bool {
+        let Some(n) = &mut self.native else { return false };
+        let now = snap(text, sel);
+        let mut probe = n.clone();
+        let to = if undo { probe.undo(&now) } else { probe.redo(&now) };
+        match to {
+            Some(to) if to.text == after.to_string() => {
+                *n = probe;
+                true
+            }
+            _ => false,
+        }
+    }
 }
