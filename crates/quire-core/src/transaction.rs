@@ -41,6 +41,36 @@ pub enum Effect {
     /// It acts on the [`Document`](crate::Document) as `SetInsertSpaces` does, except that a
     /// read-only document allows it (it changes how the text is shown, not the text).
     SetWordWrap(crate::config::WordWrap),
+    /// Act on the view's suggest session.
+    Suggest(SuggestEffect),
+    /// Start, move or end the view's snippet session.
+    Snippet(Option<crate::completion::SnippetSession>),
+}
+
+/// What a suggest command does to the acting view's session.
+#[derive(Clone, PartialEq, Debug)]
+pub enum SuggestEffect {
+    /// Start a manual request (Ctrl+Space).
+    Trigger,
+    /// Close the list.
+    Hide,
+    /// Move the focus by one row (wrapping) or by a page.
+    Select {
+        /// Direction and amount.
+        delta: isize,
+        /// By a page (clamped).
+        page: bool,
+    },
+    /// Toggle the details panel.
+    ToggleDetails,
+    /// An item was accepted: end the session, then retrigger (`retrigger`, the item's command
+    /// was `editor.action.triggerSuggest`) or hand its command to the host.
+    Accepted {
+        /// Trigger again (automatic).
+        retrigger: bool,
+        /// A host command to run.
+        command: Option<crate::completion::CompletionCommand>,
+    },
 }
 
 impl From<NoEffect> for Effect {

@@ -48,38 +48,130 @@ pub struct RawBinding {
     pub when: Option<String>,
 }
 
-/// Conditions understood in `when` (a single name, optionally negated with `!`).
+/// A context key `when` clauses test (VS Code's names, as written in keybindings.json).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum When {
-    Always,
-    FindWidgetVisible(bool),
-    MultipleSelections(bool),
+pub enum ContextKey {
+    FindWidgetVisible,
+    MultipleSelections,
+    SuggestWidgetVisible,
+    SuggestWidgetHasFocusedSuggestion,
+    SuggestWidgetMultipleSuggestions,
+    AcceptSuggestionOnEnter,
+    SuggestionMakesTextEdit,
+    InSnippetMode,
+    HasNextTabstop,
+    HasPrevTabstop,
 }
 
-impl When {
-    fn parse(s: Option<&str>) -> Result<Self, String> {
-        let Some(s) = s.map(str::trim) else {
-            return Ok(Self::Always);
-        };
-        let (neg, name) = match s.strip_prefix('!') {
-            Some(rest) => (true, rest.trim()),
-            None => (false, s),
-        };
-        match name {
-            "" | "editorTextFocus" => Ok(Self::Always),
-            "findWidgetVisible" => Ok(Self::FindWidgetVisible(!neg)),
-            "editorHasMultipleSelections" => Ok(Self::MultipleSelections(!neg)),
-            other => Err(format!("unsupported when clause {other:?}")),
+impl ContextKey {
+    const ALL: [ContextKey; 10] = [
+        Self::FindWidgetVisible,
+        Self::MultipleSelections,
+        Self::SuggestWidgetVisible,
+        Self::SuggestWidgetHasFocusedSuggestion,
+        Self::SuggestWidgetMultipleSuggestions,
+        Self::AcceptSuggestionOnEnter,
+        Self::SuggestionMakesTextEdit,
+        Self::InSnippetMode,
+        Self::HasNextTabstop,
+        Self::HasPrevTabstop,
+    ];
+
+    /// The VS Code name.
+    pub fn name(self) -> &'static str {
+        match self {
+            Self::FindWidgetVisible => "findWidgetVisible",
+            Self::MultipleSelections => "editorHasMultipleSelections",
+            Self::SuggestWidgetVisible => "suggestWidgetVisible",
+            Self::SuggestWidgetHasFocusedSuggestion => "suggestWidgetHasFocusedSuggestion",
+            Self::SuggestWidgetMultipleSuggestions => "suggestWidgetMultipleSuggestions",
+            Self::AcceptSuggestionOnEnter => "acceptSuggestionOnEnter",
+            Self::SuggestionMakesTextEdit => "suggestionMakesTextEdit",
+            Self::InSnippetMode => "inSnippetMode",
+            Self::HasNextTabstop => "hasNextTabstop",
+            Self::HasPrevTabstop => "hasPrevTabstop",
         }
     }
 
-    /// Does the condition hold in `ctx`?
-    pub fn holds(self, ctx: &WhenContext) -> bool {
-        match self {
-            Self::Always => true,
-            Self::FindWidgetVisible(v) => ctx.find_widget_visible == v,
-            Self::MultipleSelections(v) => ctx.multiple_selections == v,
+    fn from_name(n: &str) -> Option<Self> {
+        Self::ALL.into_iter().find(|k| k.name() == n)
+    }
+}
+
+/// A `when` clause: a conjunction (`&&`) of terms, each a name, `!name`, or a parenthesised
+/// disjunction (`(a || !b)`). `editorTextFocus` and `textInputFocus` always hold (keys reach the
+/// keymap only while the editor has focus).
+#[derive(Clone, Debug, PartialEq, Eq, Default)]
+pub struct When {
+    /// Every term must hold; a term holds when any of its literals does.
+    pub all: Vec<Vec<(ContextKey, bool)>>,
+}
+
+impl When {
+    /// Always.
+    pub const ALWAYS: When = When { all: Vec::new() };
+
+    /// Parses a clause.
+    pub fn parse(s: Option<&str>) -> Result<Self, String> {
+        let Some(s) = s.map(str::trim) else {
+            return Ok(Self::default());
+        };
+        let mut all = Vec::new();
+        for term in s.split("&&") {
+            let term = term.trim();
+            let inner = term
+                .strip_prefix('(')
+                .and_then(|t| t.strip_suffix(')'))
+                .unwrap_or(term);
+            let mut any = Vec::new();
+            let mut always = false;
+            for lit in inner.split("||") {
+                let lit = lit.trim();
+                let (neg, name) = match lit.strip_prefix('!') {
+                    Some(rest) => (true, rest.trim()),
+                    None => (false, lit),
+                };
+                match name {
+                    "" | "editorTextFocus" | "textInputFocus" if !neg => always = true,
+                    n => match ContextKey::from_name(n) {
+                        Some(k) => any.push((k, !neg)),
+                        None => return Err(format!("unsupported when clause {lit:?}")),
+                    },
+                }
+            }
+            if !always {
+                all.push(any);
+            }
         }
+        Ok(When { all })
+    }
+
+    /// Whether this is [`When::ALWAYS`].
+    pub fn is_always(&self) -> bool {
+        self.all.is_empty()
+    }
+
+    /// Does the condition hold in `ctx`?
+    pub fn holds(&self, ctx: &WhenContext) -> bool {
+        self.all
+            .iter()
+            .all(|any| any.iter().any(|&(k, v)| ctx.get(k) == v))
+    }
+}
+
+impl std::fmt::Display for When {
+    /// The clause as keybindings.json writes it.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let lit = |(k, v): &(ContextKey, bool)| format!("{}{}", if *v { "" } else { "!" }, k.name());
+        let terms: Vec<String> = self
+            .all
+            .iter()
+            .map(|any| match &any[..] {
+                [one] => lit(one),
+                many => format!("({})", many.iter().map(lit).collect::<Vec<_>>().join(" || ")),
+            })
+            .collect();
+        f.write_str(&terms.join(" && "))
     }
 }
 
@@ -88,6 +180,66 @@ impl When {
 pub struct WhenContext {
     pub find_widget_visible: bool,
     pub multiple_selections: bool,
+    pub suggest_widget_visible: bool,
+    pub suggest_widget_has_focused_suggestion: bool,
+    pub suggest_widget_multiple_suggestions: bool,
+    pub accept_suggestion_on_enter: bool,
+    pub suggestion_makes_text_edit: bool,
+    pub in_snippet_mode: bool,
+    pub has_next_tabstop: bool,
+    pub has_prev_tabstop: bool,
+}
+
+impl WhenContext {
+    /// A context key's value.
+    pub fn get(&self, k: ContextKey) -> bool {
+        match k {
+            ContextKey::FindWidgetVisible => self.find_widget_visible,
+            ContextKey::MultipleSelections => self.multiple_selections,
+            ContextKey::SuggestWidgetVisible => self.suggest_widget_visible,
+            ContextKey::SuggestWidgetHasFocusedSuggestion => {
+                self.suggest_widget_has_focused_suggestion
+            }
+            ContextKey::SuggestWidgetMultipleSuggestions => self.suggest_widget_multiple_suggestions,
+            ContextKey::AcceptSuggestionOnEnter => self.accept_suggestion_on_enter,
+            ContextKey::SuggestionMakesTextEdit => self.suggestion_makes_text_edit,
+            ContextKey::InSnippetMode => self.in_snippet_mode,
+            ContextKey::HasNextTabstop => self.has_next_tabstop,
+            ContextKey::HasPrevTabstop => self.has_prev_tabstop,
+        }
+    }
+
+    /// Sets a context key.
+    pub fn set(&mut self, k: ContextKey, v: bool) {
+        let f = match k {
+            ContextKey::FindWidgetVisible => &mut self.find_widget_visible,
+            ContextKey::MultipleSelections => &mut self.multiple_selections,
+            ContextKey::SuggestWidgetVisible => &mut self.suggest_widget_visible,
+            ContextKey::SuggestWidgetHasFocusedSuggestion => {
+                &mut self.suggest_widget_has_focused_suggestion
+            }
+            ContextKey::SuggestWidgetMultipleSuggestions => {
+                &mut self.suggest_widget_multiple_suggestions
+            }
+            ContextKey::AcceptSuggestionOnEnter => &mut self.accept_suggestion_on_enter,
+            ContextKey::SuggestionMakesTextEdit => &mut self.suggestion_makes_text_edit,
+            ContextKey::InSnippetMode => &mut self.in_snippet_mode,
+            ContextKey::HasNextTabstop => &mut self.has_next_tabstop,
+            ContextKey::HasPrevTabstop => &mut self.has_prev_tabstop,
+        };
+        *f = v;
+    }
+
+    /// The default context with `when`'s first literal of every term made true (tests).
+    pub fn satisfying(when: &When) -> Self {
+        let mut c = WhenContext::default();
+        for any in &when.all {
+            if let Some(&(k, v)) = any.first() {
+                c.set(k, v);
+            }
+        }
+        c
+    }
 }
 
 /// One resolved binding.

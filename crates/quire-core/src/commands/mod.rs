@@ -22,6 +22,7 @@ mod lines;
 pub(crate) use quire_text::ops::model;
 mod motion;
 mod multi;
+pub(crate) mod suggest;
 pub(crate) use quire_text::words::vscode as words;
 
 pub(crate) use quire_text::ops::{RangeEdit, build, track};
@@ -466,6 +467,17 @@ pub(crate) fn run(
             isolated(edit_out(o, Origin::Input(InputKind::Typing)))
         }
         C::Save => Ok(CommandOutput::Request(HostRequest::Save)),
+        C::TriggerSuggest
+        | C::AcceptSelectedSuggestion
+        | C::HideSuggestWidget
+        | C::SelectNextSuggestion
+        | C::SelectPrevSuggestion
+        | C::SelectNextPageSuggestion
+        | C::SelectPrevPageSuggestion
+        | C::ToggleSuggestionDetails
+        | C::JumpToNextSnippetPlaceholder
+        | C::JumpToPrevSnippetPlaceholder
+        | C::LeaveSnippet => suggest::run(doc, view, cmd),
         C::CursorMove { .. }
         | C::SetSelection { .. }
         | C::SelectAll

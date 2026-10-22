@@ -318,6 +318,40 @@ pub enum EditorCommand {
     /// Clear the find query.
     #[cfg_attr(feature = "serde", serde(rename = "closeFindWidget"))]
     CloseFind,
+    /// Open the suggest list (Ctrl+Space): ask the host's providers (VS Code
+    /// `editor.action.triggerSuggest`, a manual trigger).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.triggerSuggest"))]
+    TriggerSuggest,
+    /// Insert the focused suggestion (Enter or Tab).
+    #[cfg_attr(feature = "serde", serde(rename = "acceptSelectedSuggestion"))]
+    AcceptSelectedSuggestion,
+    /// Close the suggest list (Escape).
+    #[cfg_attr(feature = "serde", serde(rename = "hideSuggestWidget"))]
+    HideSuggestWidget,
+    /// Focus the next suggestion (wraps around).
+    #[cfg_attr(feature = "serde", serde(rename = "selectNextSuggestion"))]
+    SelectNextSuggestion,
+    /// Focus the previous suggestion (wraps around).
+    #[cfg_attr(feature = "serde", serde(rename = "selectPrevSuggestion"))]
+    SelectPrevSuggestion,
+    /// Focus a page further down the list.
+    #[cfg_attr(feature = "serde", serde(rename = "selectNextPageSuggestion"))]
+    SelectNextPageSuggestion,
+    /// Focus a page further up the list.
+    #[cfg_attr(feature = "serde", serde(rename = "selectPrevPageSuggestion"))]
+    SelectPrevPageSuggestion,
+    /// Show or hide the details panel of the suggest list.
+    #[cfg_attr(feature = "serde", serde(rename = "toggleSuggestionDetails"))]
+    ToggleSuggestionDetails,
+    /// Select the next snippet placeholder (Tab in a snippet).
+    #[cfg_attr(feature = "serde", serde(rename = "jumpToNextSnippetPlaceholder"))]
+    JumpToNextSnippetPlaceholder,
+    /// Select the previous snippet placeholder (Shift+Tab in a snippet).
+    #[cfg_attr(feature = "serde", serde(rename = "jumpToPrevSnippetPlaceholder"))]
+    JumpToPrevSnippetPlaceholder,
+    /// Leave snippet mode, keeping the primary cursor (Escape in a snippet).
+    #[cfg_attr(feature = "serde", serde(rename = "leaveSnippet"))]
+    LeaveSnippet,
     /// Scroll a line into view.
     #[cfg_attr(feature = "serde", serde(rename = "revealLine"))]
     RevealLine {
@@ -394,6 +428,17 @@ impl EditorCommand {
             ReplaceAll { .. } => "editor.action.replaceAll",
             CloseFind => "closeFindWidget",
             RevealLine { .. } => "revealLine",
+            TriggerSuggest => "editor.action.triggerSuggest",
+            AcceptSelectedSuggestion => "acceptSelectedSuggestion",
+            HideSuggestWidget => "hideSuggestWidget",
+            SelectNextSuggestion => "selectNextSuggestion",
+            SelectPrevSuggestion => "selectPrevSuggestion",
+            SelectNextPageSuggestion => "selectNextPageSuggestion",
+            SelectPrevPageSuggestion => "selectPrevPageSuggestion",
+            ToggleSuggestionDetails => "toggleSuggestionDetails",
+            JumpToNextSnippetPlaceholder => "jumpToNextSnippetPlaceholder",
+            JumpToPrevSnippetPlaceholder => "jumpToPrevSnippetPlaceholder",
+            LeaveSnippet => "leaveSnippet",
         }
     }
 
@@ -481,6 +526,17 @@ impl EditorCommand {
             "editor.action.nextMatchFindAction" => FindNext,
             "editor.action.previousMatchFindAction" => FindPrevious,
             "closeFindWidget" => CloseFind,
+            "editor.action.triggerSuggest" => TriggerSuggest,
+            "acceptSelectedSuggestion" => AcceptSelectedSuggestion,
+            "hideSuggestWidget" => HideSuggestWidget,
+            "selectNextSuggestion" => SelectNextSuggestion,
+            "selectPrevSuggestion" => SelectPrevSuggestion,
+            "selectNextPageSuggestion" => SelectNextPageSuggestion,
+            "selectPrevPageSuggestion" => SelectPrevPageSuggestion,
+            "toggleSuggestionDetails" => ToggleSuggestionDetails,
+            "jumpToNextSnippetPlaceholder" => JumpToNextSnippetPlaceholder,
+            "jumpToPrevSnippetPlaceholder" => JumpToPrevSnippetPlaceholder,
+            "leaveSnippet" => LeaveSnippet,
             _ => return None,
         })
     }

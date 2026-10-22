@@ -100,6 +100,10 @@ pub struct EditorView {
     /// The compiled find query, reused across refreshes (compiling costs hundreds of
     /// allocations).
     find_regex: Option<(FindQuery, regex_automata::meta::Regex)>,
+    /// The suggest session and list state.
+    suggest: crate::completion::SuggestState,
+    /// The snippet session (snippet mode).
+    snippet: Option<crate::completion::SnippetSession>,
 }
 
 impl EditorView {
@@ -115,6 +119,8 @@ impl EditorView {
             session: None,
             find_dirty: Some(Vec::new()),
             find_regex: None,
+            suggest: crate::completion::SuggestState::default(),
+            snippet: None,
         }
     }
 
@@ -245,6 +251,14 @@ impl EditorView {
     pub fn set_selection(&mut self, doc: &Document, sel: Selection) {
         self.sync(doc);
         self.set_selection_raw(sel.clamped(doc.text()));
+        self.suggest.cancel();
+        if self
+            .snippet
+            .as_ref()
+            .is_some_and(|s| !s.contains_selection(self.text.selection()))
+        {
+            self.snippet = None;
+        }
     }
 
     pub(crate) fn set_selection_raw(&mut self, sel: Selection) {
@@ -356,6 +370,10 @@ impl EditorView {
                 close.start..close.start
             };
         }
+        self.suggest.map(c);
+        if let Some(sn) = &mut self.snippet {
+            sn.map(c);
+        }
         self.scroll.anchor = c.map_pos(self.scroll.anchor, Bias::Before);
         if let Some(Reveal::Pos { pos, .. }) = &mut self.reveal {
             *pos = c.map_pos(*pos, Bias::Before);
@@ -378,6 +396,8 @@ impl EditorView {
         self.scroll.anchor = text.clamp_to_boundary(self.scroll.anchor);
         self.reveal = None;
         self.auto_closed.clear();
+        self.suggest.cancel();
+        self.snippet = None;
     }
 
     /// After the document applied a transaction made through this view (the selection is
@@ -407,7 +427,127 @@ impl EditorView {
             }
             // Applied by the document.
             Effect::SetInsertSpaces(_) | Effect::SetWordWrap(_) => {}
+            Effect::Suggest(e) => {
+                use crate::completion::session::TriggerOptions;
+                use crate::transaction::SuggestEffect as S;
+                let sel = self.text.selection().clone();
+                match e {
+                    S::Trigger => self.suggest.trigger(doc, &sel, TriggerOptions::new(false)),
+                    S::Hide => self.suggest.cancel(),
+                    S::Select { delta, page } => self.suggest.select(*delta, *page),
+                    S::ToggleDetails => self.suggest.toggle_details(),
+                    S::Accepted { retrigger, command } => {
+                        self.suggest.cancel();
+                        if let Some(c) = command {
+                            self.suggest
+                                .push_output(crate::completion::SuggestOutput::Command(c.clone()));
+                        }
+                        if *retrigger {
+                            self.suggest.trigger(doc, &sel, TriggerOptions::new(true));
+                        }
+                    }
+                }
+            }
+            Effect::Snippet(s) => self.snippet = s.clone(),
         }
+    }
+
+    /// The suggest state (session, list, details).
+    pub fn suggest(&self) -> &crate::completion::SuggestState {
+        &self.suggest
+    }
+
+    /// Takes what the suggest session wants from the host: requests, resolves, commands.
+    pub fn take_suggest_outputs(&mut self) -> Vec<crate::completion::SuggestOutput> {
+        self.suggest.take_outputs()
+    }
+
+    /// The host's answer to a [`CompletionRequest`](crate::completion::CompletionRequest):
+    /// one list per source, ranges in bytes at `at`. Mapped forward if the text moved on;
+    /// refused when stale or superseded (nothing changes then).
+    pub fn set_completions(
+        &mut self,
+        doc: &Document,
+        id: crate::completion::CompletionRequestId,
+        at: crate::Version,
+        lists: Vec<crate::completion::CompletionList>,
+    ) -> Result<(), crate::completion::CompletionRefusal> {
+        self.sync(doc);
+        let sel = self.text.selection().clone();
+        self.suggest.set_completions(doc, &sel, id, at, lists)
+    }
+
+    /// The host's answer to a resolve request: detail, documentation and additional edits of
+    /// `resolved` replace the item's. `false` when the request is no longer current.
+    pub fn resolve_completion_item(
+        &mut self,
+        id: crate::completion::CompletionRequestId,
+        source: &crate::SourceId,
+        index: usize,
+        resolved: crate::completion::CompletionItem,
+    ) -> bool {
+        self.suggest.resolve_item(id, source, index, resolved)
+    }
+
+    /// Starts a suggest request at the primary cursor (VS Code `SuggestController.triggerSuggest`;
+    /// `auto`: as quick suggestions do, an empty answer closes it).
+    pub fn trigger_suggest(&mut self, doc: &Document, auto: bool) {
+        self.sync(doc);
+        let sel = self.text.selection().clone();
+        self.suggest
+            .trigger(doc, &sel, crate::completion::session::TriggerOptions::new(auto));
+    }
+
+    /// Focuses a row of the suggest list (the mouse).
+    pub fn suggest_focus_row(&mut self, row: usize) {
+        self.suggest.focus_row(row);
+    }
+
+    /// Scrolls the suggest list (the mouse wheel).
+    pub fn suggest_scroll_to(&mut self, top: usize) {
+        self.suggest.set_scroll_top(top);
+    }
+
+    /// Closes the suggest list (focus lost; VS Code cancels on blur).
+    pub fn cancel_suggest(&mut self) {
+        self.suggest.cancel();
+    }
+
+    /// The snippet session (snippet mode: `inSnippetMode`).
+    pub fn snippet(&self) -> Option<&crate::completion::SnippetSession> {
+        self.snippet.as_ref()
+    }
+
+    /// After a transaction through this view that is not a suggest or snippet command: the
+    /// suggest session follows the edit, the snippet session ends when the selection leaves
+    /// its placeholders.
+    pub(crate) fn after_change_for_sessions(
+        &mut self,
+        doc: &Document,
+        origin: &crate::transaction::Origin,
+        changed_text: bool,
+    ) {
+        use crate::completion::session::ChangeKind;
+        use crate::transaction::{InputKind as K, Origin as O};
+        let kind = match origin {
+            O::Input(K::Typing | K::TypingFirstSpace | K::TypingConsecutiveSpace) => {
+                ChangeKind::Typed
+            }
+            O::Input(K::Ime) => ChangeKind::CompositionEnd,
+            O::Input(K::DeletingLeft) => ChangeKind::DeletedLeft,
+            O::Command(id) if id == "cursorMove" => ChangeKind::CursorMoved,
+            _ => ChangeKind::Other,
+        };
+        let sel = self.text.selection().clone();
+        if let Some(sn) = &self.snippet
+            && (matches!(origin, O::Undo | O::Redo) || !sn.contains_selection(&sel))
+        {
+            self.snippet = None;
+        }
+        let composing = self.text.composing();
+        let in_snippet = self.snippet.is_some();
+        self.suggest
+            .after_change(doc, &sel, kind, changed_text, composing, in_snippet);
     }
 
     /// Sets (and runs) or clears the find query.

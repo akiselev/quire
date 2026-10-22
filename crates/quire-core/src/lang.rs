@@ -169,6 +169,33 @@ fn js_to_rust(src: &str) -> String {
     out
 }
 
+/// A JavaScript regex (as snippet transforms write them) with JavaScript flags (`i`, `m`, `s`;
+/// `g`, `u`, `y`, `d`, `v` accepted), under the rule limits. `None` when either is invalid.
+pub(crate) fn build_js_regex(src: &str, flags: &str) -> Option<fancy_regex::Regex> {
+    let mut seen = String::new();
+    let mut inline = String::new();
+    for f in flags.chars() {
+        if !"dgimsuvy".contains(f) || seen.contains(f) {
+            return None;
+        }
+        seen.push(f);
+        if "ims".contains(f) {
+            inline.push(f);
+        }
+    }
+    let src = if inline.is_empty() {
+        js_to_rust(src)
+    } else {
+        format!("(?{inline}){}", js_to_rust(src))
+    };
+    fancy_regex::RegexBuilder::new(&src)
+        .backtrack_limit(BACKTRACK_LIMIT)
+        .delegate_size_limit(DELEGATE_SIZE_LIMIT)
+        .delegate_dfa_size_limit(DELEGATE_SIZE_LIMIT)
+        .build()
+        .ok()
+}
+
 fn build(src: &str, backtrack_limit: usize) -> Option<fancy_regex::Regex> {
     fancy_regex::RegexBuilder::new(&js_to_rust(src))
         .backtrack_limit(backtrack_limit)

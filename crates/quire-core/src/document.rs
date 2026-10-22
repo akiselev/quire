@@ -194,6 +194,8 @@ pub struct Document {
     /// Indentation levels behind `indent_folds`, followed incrementally once computed.
     indent_levels: OnceLock<crate::folding::IndentLevels>,
     degraded: Option<Degraded>,
+    /// The host's completion providers (none: nothing triggers automatically).
+    completion_sources: Vec<crate::completion::CompletionSource>,
 }
 
 impl Document {
@@ -221,6 +223,7 @@ impl Document {
             doc: TextDocument::from_text(text, Arc::new(doc_rules(&config, UndoMode::Local))),
             edit_rules: edit_rules(&config),
             config,
+            completion_sources: Vec::new(),
         }
     }
 
@@ -433,6 +436,18 @@ impl Document {
         self.doc.anchor(pos, bias)
     }
 
+    /// Declares the host's completion providers and their trigger characters (VS Code's
+    /// registered `CompletionItemProvider`s). With none, typing never requests completions;
+    /// `editor.action.triggerSuggest` still asks the host.
+    pub fn set_completion_sources(&mut self, sources: Vec<crate::completion::CompletionSource>) {
+        self.completion_sources = sources;
+    }
+
+    /// The host's completion providers.
+    pub fn completion_sources(&self) -> &[crate::completion::CompletionSource] {
+        &self.completion_sources
+    }
+
     /// Where an anchor is now.
     pub fn resolve_anchor(&self, a: &Anchor) -> Result<usize, Stale> {
         self.doc.resolve_anchor(a)
@@ -558,6 +573,12 @@ impl Document {
         let config_changed = self.apply_doc_effects(&effects);
         for e in &effects {
             view.apply_effect(e, self);
+        }
+        let session_fx = effects
+            .iter()
+            .any(|e| matches!(e, Effect::Suggest(_) | Effect::Snippet(_)));
+        if !session_fx {
+            view.after_change_for_sessions(self, &applied.origin, applied.changed_text());
         }
         let selection_changed = selection_before != *view.selection();
         self.update_probe();

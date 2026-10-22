@@ -236,6 +236,8 @@ pub struct EditorConfig {
     /// marker (VS Code `editor.stopRenderingLineAfter`, 10 000). Editing the whole line still
     /// works. `usize::MAX` renders every line in full.
     pub stop_rendering_line_after: usize,
+    /// Completion options (VS Code `editor.suggest.*`, `editor.quickSuggestions`, ...).
+    pub suggest: crate::completion::SuggestConfig,
 }
 
 impl Default for EditorConfig {
@@ -294,6 +296,7 @@ impl Default for EditorConfig {
             word_wrap: WordWrap::Off,
             wrapping_indent: WrappingIndent::Same,
             stop_rendering_line_after: 10_000,
+            suggest: crate::completion::SuggestConfig::default(),
         }
     }
 }

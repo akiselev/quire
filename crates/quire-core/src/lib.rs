@@ -16,6 +16,7 @@ pub use quire_text::{change, columns, history, recent, selection, text, version,
 
 pub mod command;
 mod commands;
+pub mod completion;
 pub mod config;
 pub mod diagnostics;
 pub mod document;
@@ -42,7 +43,7 @@ pub use quire_text::{Anchor, Snapshot};
 pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};
-pub use transaction::{AuthorId, Effect, GroupHint, InputKind, Origin, Transaction};
+pub use transaction::{AuthorId, Effect, GroupHint, InputKind, Origin, SuggestEffect, Transaction};
 pub use version::Version;
 pub use view::{AutoClosed, EditorView, Preedit, Reveal, Scroll, SyncOutcome};
 
