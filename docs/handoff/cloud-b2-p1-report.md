@@ -179,7 +179,7 @@ unslotted) and without sccache. Timings are "cloud, not a gate".
 | 1b | item 1, `2f49f16` | pass | 456 pass, 6 ignored | 2 m 18 s (warm) |
 | 2 | item 2, `f21aa8f` | pass | 485 pass, 6 ignored | 59 s (warm) |
 | 3 | item 3, `e167301` | pass | 515 pass, 6 ignored | 3 m 26 s (after `cargo clean`) |
-| 4 | item 4, `6dfc1cc` | CHECK4 | CHECK4T | CHECK4TIME |
+| 4 | item 4, `6dfc1cc` | pass | 547 pass, 6 ignored | 3 m 30 s (after `cargo clean`) |
 
 Before runs 3 and 4 the container had less than 25 GB free (20 GB and 22 GB), so I ran
 `scripts/cargo.sh clean` (11.2 and 8.7 GiB freed) to keep CLAUDE.md's rule.
