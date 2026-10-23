@@ -242,6 +242,8 @@ pub struct EditorConfig {
     pub hover: crate::hover::HoverConfig,
     /// Parameter hints options (VS Code `editor.parameterHints.*`).
     pub parameter_hints: crate::parameter_hints::ParameterHintsConfig,
+    /// Inlay hint options (VS Code `editor.inlayHints.*`).
+    pub inlay_hints: crate::inlay_hints::InlayHintsConfig,
 }
 
 impl Default for EditorConfig {
@@ -303,6 +305,7 @@ impl Default for EditorConfig {
             suggest: crate::completion::SuggestConfig::default(),
             hover: crate::hover::HoverConfig::default(),
             parameter_hints: crate::parameter_hints::ParameterHintsConfig::default(),
+            inlay_hints: crate::inlay_hints::InlayHintsConfig::default(),
         }
     }
 }

@@ -200,6 +200,8 @@ pub struct Document {
     hover_sources: Vec<crate::SourceId>,
     /// The host's signature help providers (none: parameter hints never trigger).
     signature_help_sources: Vec<crate::parameter_hints::SignatureHelpSource>,
+    /// The host's inlay hint providers (none: no inlay hints).
+    inlay_hint_sources: Vec<crate::SourceId>,
 }
 
 impl Document {
@@ -230,6 +232,7 @@ impl Document {
             completion_sources: Vec::new(),
             hover_sources: Vec::new(),
             signature_help_sources: Vec::new(),
+            inlay_hint_sources: Vec::new(),
         }
     }
 
@@ -463,6 +466,17 @@ impl Document {
     /// The host's hover providers.
     pub fn hover_sources(&self) -> &[crate::SourceId] {
         &self.hover_sources
+    }
+
+    /// Declares the host's inlay hint providers (VS Code's registered `InlayHintsProvider`s).
+    /// With none, views ask for no inlay hints and show none.
+    pub fn set_inlay_hint_sources(&mut self, sources: Vec<crate::SourceId>) {
+        self.inlay_hint_sources = sources;
+    }
+
+    /// The host's inlay hint providers.
+    pub fn inlay_hint_sources(&self) -> &[crate::SourceId] {
+        &self.inlay_hint_sources
     }
 
     /// Declares the host's signature help providers with their trigger and retrigger characters

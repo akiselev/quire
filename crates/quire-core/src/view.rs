@@ -108,6 +108,8 @@ pub struct EditorView {
     hover: crate::hover::HoverState,
     /// The parameter hints.
     parameter_hints: crate::parameter_hints::ParameterHintsState,
+    /// The inlay hints (VS Code `InlayHintsController`).
+    inlay_hints: crate::inlay_hints::InlayHintsState,
 }
 
 impl EditorView {
@@ -127,6 +129,7 @@ impl EditorView {
             snippet: None,
             hover: crate::hover::HoverState::default(),
             parameter_hints: crate::parameter_hints::ParameterHintsState::default(),
+            inlay_hints: crate::inlay_hints::InlayHintsState::default(),
         }
     }
 
@@ -391,6 +394,7 @@ impl EditorView {
             sn.map(c);
         }
         self.hover.map(c);
+        self.inlay_hints.map(c);
         self.scroll.anchor = c.map_pos(self.scroll.anchor, Bias::Before);
         if let Some(Reveal::Pos { pos, .. }) = &mut self.reveal {
             *pos = c.map_pos(*pos, Bias::Before);
@@ -417,6 +421,7 @@ impl EditorView {
         self.snippet = None;
         self.hover.hide();
         self.parameter_hints.cancel();
+        self.inlay_hints.clamped();
     }
 
     /// After the document applied a transaction made through this view (the selection is
@@ -604,17 +609,22 @@ impl EditorView {
         let head = self.text.selection().primary().head;
         self.hover.tick(doc, now);
         self.parameter_hints.tick(doc, head, now);
+        self.inlay_hints.tick(doc, head, now);
     }
 
     /// The earliest host time at which [`EditorView::tick`] has work; `Some(0)` when a timer
     /// waits to be placed on the clock.
     pub fn next_deadline(&self) -> Option<u64> {
-        if self.hover.needs_tick() || self.parameter_hints.needs_tick() {
+        if self.hover.needs_tick()
+            || self.parameter_hints.needs_tick()
+            || self.inlay_hints.needs_tick()
+        {
             return Some(0);
         }
         [
             self.hover.next_deadline(),
             self.parameter_hints.next_deadline(),
+            self.inlay_hints.next_deadline(),
         ]
         .into_iter()
         .flatten()
@@ -628,6 +638,68 @@ impl EditorView {
             let head = self.text.selection().primary().head;
             self.parameter_hints.tick(doc, head, n);
         }
+    }
+
+    /// The inlay hints (held hints, pending request).
+    pub fn inlay_hints(&self) -> &crate::inlay_hints::InlayHintsState {
+        &self.inlay_hints
+    }
+
+    /// The inlay hints showing in `line`.
+    pub fn line_inlay_hints(
+        &mut self,
+        doc: &Document,
+        line: usize,
+    ) -> Vec<crate::inlay_hints::LineHint> {
+        self.sync(doc);
+        self.inlay_hints.line_hints(doc, line)
+    }
+
+    /// Takes what the inlay hints want from the host.
+    pub fn take_inlay_hints_outputs(&mut self) -> Vec<crate::inlay_hints::InlayHintsOutput> {
+        self.inlay_hints.take_outputs()
+    }
+
+    /// The host's answer to an [`InlayHintsRequest`](crate::inlay_hints::InlayHintsRequest):
+    /// every provider's hints in the requested ranges, positions in bytes at `at`, mapped
+    /// forward if the text moved on; refused when stale or superseded.
+    pub fn set_inlay_hints(
+        &mut self,
+        doc: &Document,
+        id: crate::inlay_hints::InlayHintsRequestId,
+        at: crate::Version,
+        hints: Vec<crate::inlay_hints::InlayHint>,
+    ) -> Result<(), crate::hover::AnswerRefusal> {
+        self.sync(doc);
+        self.inlay_hints.set_inlay_hints(doc, id, at, hints)
+    }
+
+    /// The host's providers changed their hints (VS Code `onDidChangeInlayHints`): they are
+    /// asked again.
+    pub fn refresh_inlay_hints(&mut self) {
+        self.inlay_hints.refresh();
+    }
+
+    /// The lines on screen (the widget sets them each frame): hints are asked for them and
+    /// the lines around.
+    pub fn set_visible_lines(&mut self, lines: std::ops::Range<usize>) {
+        self.inlay_hints.set_visible_lines(lines);
+    }
+
+    /// Ctrl+Alt held or released (`editor.inlayHints.enabled` `onUnlessPressed` and
+    /// `offUnlessPressed`).
+    pub fn set_inlay_hints_modifier(&mut self, doc: &Document, pressed: bool) {
+        self.inlay_hints.set_modifier_pressed(doc, pressed);
+    }
+
+    /// The transaction a double click on inlay hint `i` applies (its text edits), if any.
+    pub fn inlay_hint_edits(
+        &mut self,
+        doc: &Document,
+        i: usize,
+    ) -> Option<crate::transaction::Transaction> {
+        self.sync(doc);
+        self.inlay_hints.edits_transaction(doc, i)
     }
 
     /// The suggest state (session, list, details).

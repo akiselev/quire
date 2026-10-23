@@ -23,6 +23,8 @@ pub mod document;
 pub mod find;
 pub mod folding;
 pub mod hover;
+pub mod injected;
+pub mod inlay_hints;
 mod lang;
 pub mod large;
 pub mod parameter_hints;
