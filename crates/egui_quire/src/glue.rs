@@ -177,15 +177,6 @@ pub fn diagnostics(doc: &Document) -> impl Iterator<Item = &quire_core::Diagnost
     doc.diagnostics().all().map(|(_, d)| d)
 }
 
-/// Diagnostics overlapping `range` (touching counts, so empty ranges are found).
-pub fn diagnostics_at(doc: &Document, pos: usize) -> Vec<&quire_core::Diagnostic> {
-    doc.diagnostics()
-        .all()
-        .map(|(_, d)| d)
-        .filter(|d| d.range.start <= pos && pos <= d.range.end.max(d.range.start + 1))
-        .collect()
-}
-
 /// Find matches of the view (sorted) and the index of the one at the primary selection
 /// (`EditorView::find_current_match`).
 pub fn find_matches<'v>(

@@ -166,6 +166,15 @@ pub struct EditorText {
     pub suggest_loading: String,
     /// Shown when a manual request found nothing (VS Code "No suggestions.").
     pub suggest_empty: String,
+    /// The hover's "Loading..." (VS Code `modesContentHover.loading`).
+    pub hover_loading: String,
+    /// The hover parts' copy button (VS Code "Copy").
+    pub hover_copy: String,
+    /// The parameter hints' announcement, `{0}` the parameter (VS Code "{0}, hint").
+    pub parameter_hint: String,
+    /// The parameter hints' arrows (VS Code "Previous signature" / "Next signature").
+    pub previous_signature: String,
+    pub next_signature: String,
 }
 
 impl Default for EditorText {
@@ -189,6 +198,11 @@ impl Default for EditorText {
             suggest_label: "Suggest".into(),
             suggest_loading: "Loading...".into(),
             suggest_empty: "No suggestions.".into(),
+            hover_loading: "Loading...".into(),
+            hover_copy: "Copy".into(),
+            parameter_hint: "{0}, hint".into(),
+            previous_signature: "Previous signature".into(),
+            next_signature: "Next signature".into(),
         }
     }
 }

@@ -43,6 +43,10 @@ SOURCES = [
     "src/vs/workbench/contrib/codeEditor/browser/toggleWordWrap.ts",
     "src/vs/editor/contrib/suggest/browser/suggestController.ts",
     "src/vs/editor/contrib/snippet/browser/snippetController2.ts",
+    "src/vs/editor/contrib/hover/browser/hoverActionIds.ts",
+    "src/vs/editor/contrib/hover/browser/hoverActions.ts",
+    "src/vs/editor/contrib/parameterHints/browser/provideSignatureHelp.ts",
+    "src/vs/editor/contrib/parameterHints/browser/parameterHints.ts",
 ]
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -95,6 +99,8 @@ IMPLICIT = {
     "!(accessibilityModeEnabled && isWindows)": "quire has no screen-reader word-navigation mode",
     "EditorContextKeys.hasCompletionItemProvider": "the editor always asks; a host without providers "
     "does not answer",
+    "EditorContextKeys.hasSignatureHelpProvider": "the command does nothing without declared "
+    "signature help sources (`Document::set_signature_help_sources`)",
 }
 # Context keys quire's `When` models (keymap.rs), as written in keybindings.json.
 MODELED = {
@@ -108,6 +114,9 @@ MODELED = {
     "SnippetController2.InSnippetMode": "inSnippetMode",
     "SnippetController2.HasNextTabstop": "hasNextTabstop",
     "SnippetController2.HasPrevTabstop": "hasPrevTabstop",
+    "Context.Visible": "parameterHintsVisible",
+    "Context.MultipleSignatures": "parameterHintsMultipleSignatures",
+    "EditorContextKeys.hoverFocused": "editorHoverFocused",
 }
 
 # Contexts quire does not model, with what quire does instead.

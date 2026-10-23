@@ -61,10 +61,13 @@ pub enum ContextKey {
     InSnippetMode,
     HasNextTabstop,
     HasPrevTabstop,
+    ParameterHintsVisible,
+    ParameterHintsMultipleSignatures,
+    HoverFocused,
 }
 
 impl ContextKey {
-    const ALL: [ContextKey; 10] = [
+    const ALL: [ContextKey; 13] = [
         Self::FindWidgetVisible,
         Self::MultipleSelections,
         Self::SuggestWidgetVisible,
@@ -75,6 +78,9 @@ impl ContextKey {
         Self::InSnippetMode,
         Self::HasNextTabstop,
         Self::HasPrevTabstop,
+        Self::ParameterHintsVisible,
+        Self::ParameterHintsMultipleSignatures,
+        Self::HoverFocused,
     ];
 
     /// The VS Code name.
@@ -90,6 +96,9 @@ impl ContextKey {
             Self::InSnippetMode => "inSnippetMode",
             Self::HasNextTabstop => "hasNextTabstop",
             Self::HasPrevTabstop => "hasPrevTabstop",
+            Self::ParameterHintsVisible => "parameterHintsVisible",
+            Self::ParameterHintsMultipleSignatures => "parameterHintsMultipleSignatures",
+            Self::HoverFocused => "editorHoverFocused",
         }
     }
 
@@ -192,6 +201,9 @@ pub struct WhenContext {
     pub in_snippet_mode: bool,
     pub has_next_tabstop: bool,
     pub has_prev_tabstop: bool,
+    pub parameter_hints_visible: bool,
+    pub parameter_hints_multiple_signatures: bool,
+    pub hover_focused: bool,
 }
 
 impl WhenContext {
@@ -212,6 +224,11 @@ impl WhenContext {
             ContextKey::InSnippetMode => self.in_snippet_mode,
             ContextKey::HasNextTabstop => self.has_next_tabstop,
             ContextKey::HasPrevTabstop => self.has_prev_tabstop,
+            ContextKey::ParameterHintsVisible => self.parameter_hints_visible,
+            ContextKey::ParameterHintsMultipleSignatures => {
+                self.parameter_hints_multiple_signatures
+            }
+            ContextKey::HoverFocused => self.hover_focused,
         }
     }
 
@@ -232,6 +249,11 @@ impl WhenContext {
             ContextKey::InSnippetMode => &mut self.in_snippet_mode,
             ContextKey::HasNextTabstop => &mut self.has_next_tabstop,
             ContextKey::HasPrevTabstop => &mut self.has_prev_tabstop,
+            ContextKey::ParameterHintsVisible => &mut self.parameter_hints_visible,
+            ContextKey::ParameterHintsMultipleSignatures => {
+                &mut self.parameter_hints_multiple_signatures
+            }
+            ContextKey::HoverFocused => &mut self.hover_focused,
         };
         *f = v;
     }

@@ -196,6 +196,10 @@ pub struct Document {
     degraded: Option<Degraded>,
     /// The host's completion providers (none: nothing triggers automatically).
     completion_sources: Vec<crate::completion::CompletionSource>,
+    /// The host's hover providers (none: hovers show diagnostics only).
+    hover_sources: Vec<crate::SourceId>,
+    /// The host's signature help providers (none: parameter hints never trigger).
+    signature_help_sources: Vec<crate::parameter_hints::SignatureHelpSource>,
 }
 
 impl Document {
@@ -224,6 +228,8 @@ impl Document {
             edit_rules: edit_rules(&config),
             config,
             completion_sources: Vec::new(),
+            hover_sources: Vec::new(),
+            signature_help_sources: Vec::new(),
         }
     }
 
@@ -448,6 +454,32 @@ impl Document {
         &self.completion_sources
     }
 
+    /// Declares the host's hover providers (VS Code's registered `HoverProvider`s). With none, a
+    /// hover asks nothing and shows diagnostics only.
+    pub fn set_hover_sources(&mut self, sources: Vec<crate::SourceId>) {
+        self.hover_sources = sources;
+    }
+
+    /// The host's hover providers.
+    pub fn hover_sources(&self) -> &[crate::SourceId] {
+        &self.hover_sources
+    }
+
+    /// Declares the host's signature help providers with their trigger and retrigger characters
+    /// (VS Code's registered `SignatureHelpProvider`s). With none, parameter hints never
+    /// trigger, `editor.action.triggerParameterHints` included.
+    pub fn set_signature_help_sources(
+        &mut self,
+        sources: Vec<crate::parameter_hints::SignatureHelpSource>,
+    ) {
+        self.signature_help_sources = sources;
+    }
+
+    /// The host's signature help providers.
+    pub fn signature_help_sources(&self) -> &[crate::parameter_hints::SignatureHelpSource] {
+        &self.signature_help_sources
+    }
+
     /// Where an anchor is now.
     pub fn resolve_anchor(&self, a: &Anchor) -> Result<usize, Stale> {
         self.doc.resolve_anchor(a)
@@ -549,8 +581,14 @@ impl Document {
                 if !matches!(tr.origin, Origin::Undo | Origin::Redo) {
                     tr.author = author;
                 }
+                let applied = self.apply(tr, view)?;
+                if let EditorCommand::Type { text } = cmd
+                    && applied.changed_text()
+                {
+                    view.after_type(self, text, time_ms);
+                }
                 Ok(Executed {
-                    applied: Some(self.apply(tr, view)?),
+                    applied: Some(applied),
                     request: None,
                 })
             }
@@ -567,20 +605,30 @@ impl Document {
     pub fn apply(&mut self, tr: Transaction, view: &mut EditorView) -> Result<Applied, Refusal> {
         view.sync(self);
         let selection_before = view.selection().clone();
+        let now = tr.time_ms;
         let (applied, effects) = self.doc.apply_with(tr, view.text_view_mut())?;
         self.after_apply(&applied);
         view.after_apply(&applied);
         let config_changed = self.apply_doc_effects(&effects);
         for e in &effects {
-            view.apply_effect(e, self);
+            view.apply_effect(e, self, now);
         }
-        let session_fx = effects
-            .iter()
-            .any(|e| matches!(e, Effect::Suggest(_) | Effect::Snippet(_)));
-        if !session_fx {
-            view.after_change_for_sessions(self, &applied.origin, applied.changed_text());
-        }
+        let session_fx = effects.iter().any(|e| {
+            matches!(
+                e,
+                Effect::Suggest(_) | Effect::Snippet(_) | Effect::Hover(_) | Effect::ParameterHints(_)
+            )
+        });
         let selection_changed = selection_before != *view.selection();
+        if !session_fx {
+            view.after_change_for_sessions(
+                self,
+                &applied.origin,
+                applied.changed_text(),
+                selection_changed,
+                now,
+            );
+        }
         self.update_probe();
         Ok(Applied::from_text(
             applied,

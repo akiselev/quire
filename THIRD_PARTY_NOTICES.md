@@ -13,7 +13,11 @@ scorer, completion model, suggest session and snippet parser and session in
 `src/vs/editor/contrib/suggest/browser/**`, `src/vs/editor/contrib/snippet/browser/**`). The
 tests `crates/quire-core/tests/{suggest_filters,suggest_model,suggest_session,snippet_parser,snippet_session}.rs`
 are translated from `src/vs/base/test/common/filters.test.ts` and
-`src/vs/editor/contrib/{suggest,snippet}/test/**`.
+`src/vs/editor/contrib/{suggest,snippet}/test/**`. The hover and parameter hints models in
+`crates/quire-core/src/{hover,parameter_hints}.rs` are translated from
+`src/vs/editor/contrib/{hover,parameterHints}/browser/**`, and their tests
+`crates/quire-core/tests/{hover,parameter_hints}.rs` from
+`src/vs/editor/contrib/{hover,parameterHints}/test/**`.
 `crates/egui_quire/keymaps/vscode-default.json` is a subset of VS Code's default editor key
 bindings (JSON has no comments, so its notice is this entry).
 

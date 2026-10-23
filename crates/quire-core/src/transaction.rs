@@ -45,6 +45,34 @@ pub enum Effect {
     Suggest(SuggestEffect),
     /// Start, move or end the view's snippet session.
     Snippet(Option<crate::completion::SnippetSession>),
+    /// Act on the view's hover.
+    Hover(HoverEffect),
+    /// Act on the view's parameter hints.
+    ParameterHints(ParameterHintsEffect),
+}
+
+/// What a hover command does to the acting view.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum HoverEffect {
+    /// `editor.action.showHover`: focus a shown hover, else show one at the primary cursor now.
+    ShowOrFocus,
+    /// Hide it.
+    Hide,
+    /// Scroll the focused hover.
+    Scroll(crate::hover::HoverScroll),
+}
+
+/// What a parameter hints command does to the acting view.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ParameterHintsEffect {
+    /// Ask now (an `Invoke` trigger without delay).
+    Trigger,
+    /// Close.
+    Close,
+    /// The next signature.
+    Next,
+    /// The previous signature.
+    Previous,
 }
 
 /// What a suggest command does to the acting view's session.

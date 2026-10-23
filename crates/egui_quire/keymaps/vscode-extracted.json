@@ -163,6 +163,61 @@
     }
    ]
   },
+  "closeParameterHints": {
+   "expected": {
+    "linux": [
+     {
+      "key": "escape",
+      "when": "parameterHintsVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "parameterHintsVisible"
+     }
+    ],
+    "mac": [
+     {
+      "key": "escape",
+      "when": "parameterHintsVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "parameterHintsVisible"
+     }
+    ],
+    "win": [
+     {
+      "key": "escape",
+      "when": "parameterHintsVisible"
+     },
+     {
+      "key": "shift+escape",
+      "when": "parameterHintsVisible"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "escape",
+      "shift+escape"
+     ],
+     "mac": [
+      "escape",
+      "shift+escape"
+     ],
+     "modeled": true,
+     "quire_when": "parameterHintsVisible",
+     "reason": "",
+     "source": "src/vs/editor/contrib/parameterHints/browser/parameterHints.ts:106",
+     "when": "EditorContextKeys.focus && Context.Visible",
+     "win": [
+      "escape",
+      "shift+escape"
+     ]
+    }
+   ]
+  },
   "cursorBottom": {
    "expected": {
     "linux": [
@@ -1903,6 +1958,116 @@
     }
    ]
   },
+  "editor.action.goToBottomHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "end",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "ctrl+down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "end",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "cmd+down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "end",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "ctrl+down",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "end",
+      "ctrl+down"
+     ],
+     "mac": [
+      "end",
+      "cmd+down"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:403",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "end",
+      "ctrl+down"
+     ]
+    }
+   ]
+  },
+  "editor.action.goToTopHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "home",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "ctrl+up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "home",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "cmd+up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "home",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "ctrl+up",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "home",
+      "ctrl+up"
+     ],
+     "mac": [
+      "home",
+      "cmd+up"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:369",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "home",
+      "ctrl+up"
+     ]
+    }
+   ]
+  },
   "editor.action.indentLines": {
    "expected": {
     "linux": [
@@ -2294,6 +2459,116 @@
     }
    ]
   },
+  "editor.action.pageDownHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pagedown",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "pagedown",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "pagedown",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+down",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pagedown",
+      "alt+down"
+     ],
+     "mac": [
+      "pagedown",
+      "alt+down"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:336",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "pagedown",
+      "alt+down"
+     ]
+    }
+   ]
+  },
+  "editor.action.pageUpHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "pageup",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "pageup",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "pageup",
+      "when": "editorHoverFocused"
+     },
+     {
+      "key": "alt+up",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "pageup",
+      "alt+up"
+     ],
+     "mac": [
+      "pageup",
+      "alt+up"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:303",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "pageup",
+      "alt+up"
+     ]
+    }
+   ]
+  },
   "editor.action.previousMatchFindAction": {
    "expected": {
     "linux": [
@@ -2395,6 +2670,166 @@
     }
    ]
   },
+  "editor.action.scrollDownHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "down",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "down",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "down"
+     ],
+     "mac": [
+      "down"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:207",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "down"
+     ]
+    }
+   ]
+  },
+  "editor.action.scrollLeftHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "left",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "left",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "left",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "left"
+     ],
+     "mac": [
+      "left"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:239",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "left"
+     ]
+    }
+   ]
+  },
+  "editor.action.scrollRightHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "right",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "right",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "right",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "right"
+     ],
+     "mac": [
+      "right"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:271",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "right"
+     ]
+    }
+   ]
+  },
+  "editor.action.scrollUpHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "mac": [
+     {
+      "key": "up",
+      "when": "editorHoverFocused"
+     }
+    ],
+    "win": [
+     {
+      "key": "up",
+      "when": "editorHoverFocused"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "up"
+     ],
+     "mac": [
+      "up"
+     ],
+     "modeled": true,
+     "quire_when": "editorHoverFocused",
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:175",
+     "when": "EditorContextKeys.hoverFocused",
+     "win": [
+      "up"
+     ]
+    }
+   ]
+  },
   "editor.action.selectAll": {
    "expected": {
     "linux": [
@@ -2431,6 +2866,46 @@
      "when": "",
      "win": [
       "ctrl+a"
+     ]
+    }
+   ]
+  },
+  "editor.action.showHover": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+k ctrl+i",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "cmd+k cmd+i",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+k ctrl+i",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+k ctrl+i"
+     ],
+     "mac": [
+      "cmd+k cmd+i"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/hover/browser/hoverActions.ts:32",
+     "when": "EditorContextKeys.editorTextFocus",
+     "win": [
+      "ctrl+k ctrl+i"
      ]
     }
    ]
@@ -2511,6 +2986,46 @@
      "when": "",
      "win": [
       "alt+z"
+     ]
+    }
+   ]
+  },
+  "editor.action.triggerParameterHints": {
+   "expected": {
+    "linux": [
+     {
+      "key": "ctrl+shift+space",
+      "when": null
+     }
+    ],
+    "mac": [
+     {
+      "key": "shift+cmd+space",
+      "when": null
+     }
+    ],
+    "win": [
+     {
+      "key": "ctrl+shift+space",
+      "when": null
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "ctrl+shift+space"
+     ],
+     "mac": [
+      "shift+cmd+space"
+     ],
+     "modeled": true,
+     "quire_when": null,
+     "reason": "",
+     "source": "src/vs/editor/contrib/parameterHints/browser/parameterHints.ts:79",
+     "when": "EditorContextKeys.editorTextFocus && EditorContextKeys.hasSignatureHelpProvider",
+     "win": [
+      "ctrl+shift+space"
      ]
     }
    ]
@@ -3392,6 +3907,126 @@
      "win": [
       "up",
       "ctrl+up"
+     ]
+    }
+   ]
+  },
+  "showNextParameterHint": {
+   "expected": {
+    "linux": [
+     {
+      "key": "down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ],
+    "mac": [
+     {
+      "key": "down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "ctrl+n",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ],
+    "win": [
+     {
+      "key": "down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+down",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "down",
+      "alt+down"
+     ],
+     "mac": [
+      "down",
+      "alt+down",
+      "ctrl+n"
+     ],
+     "modeled": true,
+     "quire_when": "parameterHintsVisible && parameterHintsMultipleSignatures",
+     "reason": "",
+     "source": "src/vs/editor/contrib/parameterHints/browser/parameterHints.ts:131",
+     "when": "EditorContextKeys.focus && Context.Visible && Context.MultipleSignatures",
+     "win": [
+      "down",
+      "alt+down"
+     ]
+    }
+   ]
+  },
+  "showPrevParameterHint": {
+   "expected": {
+    "linux": [
+     {
+      "key": "up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ],
+    "mac": [
+     {
+      "key": "up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "ctrl+p",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ],
+    "win": [
+     {
+      "key": "up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     },
+     {
+      "key": "alt+up",
+      "when": "parameterHintsVisible && parameterHintsMultipleSignatures"
+     }
+    ]
+   },
+   "rules": [
+    {
+     "linux": [
+      "up",
+      "alt+up"
+     ],
+     "mac": [
+      "up",
+      "alt+up",
+      "ctrl+p"
+     ],
+     "modeled": true,
+     "quire_when": "parameterHintsVisible && parameterHintsMultipleSignatures",
+     "reason": "",
+     "source": "src/vs/editor/contrib/parameterHints/browser/parameterHints.ts:118",
+     "when": "EditorContextKeys.focus && Context.Visible && Context.MultipleSignatures",
+     "win": [
+      "up",
+      "alt+up"
      ]
     }
    ]

@@ -60,10 +60,27 @@ pub enum EditorEvent {
     /// Redo in `UndoMode::Host`.
     RedoRequested,
     FocusChanged(bool),
-    /// The pointer rested over `pos` (host may answer with hover content).
+    /// The hover asks the host's providers for content at `pos` (VS Code `provideHover`; the
+    /// mouse rested there for half of `editor.hover.delay`, or `editor.action.showHover` ran).
+    /// Answer, now or later, with `EditorView::set_hover(doc, id, version, hovers)`.
     HoverAt {
+        id: quire_core::hover::HoverRequestId,
         pos: usize,
         version: Version,
+    },
+    /// A link in a hover or in the parameter hints was clicked; the host opens `href`.
+    HoverLinkActivated {
+        href: String,
+    },
+    /// The parameter hints ask the host's providers for signature help (VS Code
+    /// `provideSignatureHelp`). Answer with `EditorView::set_signature_help(doc, id, version,
+    /// help)`.
+    SignatureHelpRequested {
+        id: quire_core::parameter_hints::SignatureHelpRequestId,
+        /// The primary cursor, in bytes at `version`.
+        pos: usize,
+        version: Version,
+        context: quire_core::parameter_hints::SignatureHelpContext,
     },
     /// Ctrl+click (Cmd+click on macOS) on the word `range`.
     LinkActivated {
@@ -161,7 +178,14 @@ pub(crate) struct Mem {
     pub focused: bool,
     pub last_press: Option<(f64, Pos2, u32)>,
     pub drag: Option<Drag>,
-    pub hover: Option<(usize, f64, bool)>,
+    /// The mouse side of the hover (VS Code `ContentHoverController`).
+    pub hover_mouse: HoverMouse,
+    /// The hover's rectangle and size last frame, and its scroll offset.
+    pub hover_rect: Option<Rect>,
+    pub hover_size: Option<Vec2>,
+    pub hover_offset: Vec2,
+    /// The parameter hints' size last frame.
+    pub parameter_hints_size: Option<Vec2>,
     pub find: FindBar,
     pub a11y_page_start: usize,
     /// Live-region text announced after the last page shift.
@@ -173,7 +197,6 @@ pub(crate) struct Mem {
     pub seen_version: Option<Version>,
     /// Visible columns per line, for the horizontal extent.
     pub widths: crate::widths::LineWidths,
-    pub diag_hover: Option<Range<usize>>,
     /// Last frame's text area and primary caret (layer coordinates), for anchor queries.
     pub last_text_rect: Option<Rect>,
     pub last_caret: Option<Rect>,
@@ -201,6 +224,17 @@ pub(crate) struct Mem {
     pub column: Option<(u64, (RowCol, RowCol))>,
     /// `CodeEditor::measure`'s last wrapped row count: (hash of what it depends on, rows).
     pub measured: Option<(u64, usize)>,
+}
+
+/// VS Code `ContentHoverController`'s mouse state.
+#[derive(Clone, Debug, Default)]
+pub(crate) struct HoverMouse {
+    /// The last pointer position and modifiers seen over the editor.
+    pub last: Option<(Pos2, egui::Modifiers)>,
+    /// `_reactToEditorMouseMoveRunner`: react to the last mouse move at this time.
+    pub runner: Option<f64>,
+    /// The scroll offset the hover was shown at (scrolling hides it).
+    pub scroll: Option<Vec2>,
 }
 
 #[derive(Clone, Debug)]
@@ -658,14 +692,28 @@ impl<'a> CodeEditor<'a> {
             crate::find_bar::show(&mut frame, ui, text);
         }
 
-        // The suggest list (a foreground area at the caret).
+        // Hover and parameter hints timers run on the host clock (egui's input time).
+        frame.hover_scroll_check();
+        let now_ms = (ctx.input(|i| i.time) * 1000.0) as u64;
+        frame.view.tick(frame.doc, now_ms);
+
+        // The parameter hints (above the caret) and the suggest list (below it).
         if focused {
+            crate::parameter_hints_widget::show(&mut frame, ui, caret_rect, text);
             crate::suggest_widget::show(&mut frame, ui, caret_rect, text);
         }
         frame.drain_suggest();
 
-        // Diagnostics hover.
-        frame.diagnostic_hover(ui, &response);
+        // The hover (diagnostics and the providers' content).
+        crate::hover_widget::show(&mut frame, ui, text);
+        frame.drain_hints();
+        match frame.view.next_deadline() {
+            Some(0) => ctx.request_repaint(),
+            Some(t) => ctx.request_repaint_after(std::time::Duration::from_millis(
+                t.saturating_sub(now_ms).max(1),
+            )),
+            None => {}
+        }
 
         // IME output, like TextEdit (screen coordinates).
         if focused
@@ -692,7 +740,9 @@ impl<'a> CodeEditor<'a> {
                 || frame.mem.find.open
                 || frame.mem.pending_chord.is_some()
                 || frame.view.suggest().is_visible()
-                || frame.view.snippet().is_some();
+                || frame.view.snippet().is_some()
+                || frame.view.parameter_hints().is_visible()
+                || frame.view.hover().is_visible();
             ctx.memory_mut(|m| {
                 m.set_focus_lock_filter(
                     id,
@@ -1385,6 +1435,53 @@ impl FrameCx<'_> {
             in_snippet_mode: snippet.is_some(),
             has_next_tabstop: snippet.is_some_and(|s| s.has_next()),
             has_prev_tabstop: snippet.is_some_and(|s| s.has_prev()),
+            parameter_hints_visible: self.view.parameter_hints().is_visible(),
+            parameter_hints_multiple_signatures: self.view.parameter_hints().multiple_signatures(),
+            hover_focused: self.view.hover().is_focused(),
+        }
+    }
+
+    /// What the hover and the parameter hints want from the host, as events.
+    pub(crate) fn drain_hints(&mut self) {
+        use quire_core::hover::HoverOutput;
+        use quire_core::parameter_hints::ParameterHintsOutput;
+        for o in self.view.take_hover_outputs() {
+            match o {
+                HoverOutput::Request(r) => self.out.events.push(EditorEvent::HoverAt {
+                    id: r.id,
+                    pos: r.pos,
+                    version: r.version,
+                }),
+            }
+        }
+        for o in self.view.take_parameter_hints_outputs() {
+            match o {
+                ParameterHintsOutput::Request(r) => {
+                    self.out.events.push(EditorEvent::SignatureHelpRequested {
+                        id: r.id,
+                        pos: r.pos,
+                        version: r.version,
+                        context: r.context,
+                    })
+                }
+            }
+        }
+    }
+
+    /// VS Code `_onEditorScrollChanged`: scrolling the editor hides the hover.
+    fn hover_scroll_check(&mut self) {
+        let now = self.mem.scroll;
+        if self.view.hover().is_visible() {
+            match self.mem.hover_mouse.scroll {
+                Some(s) if s != now => {
+                    self.view.hide_hover();
+                    self.mem.hover_mouse.scroll = None;
+                }
+                Some(_) => {}
+                None => self.mem.hover_mouse.scroll = Some(now),
+            }
+        } else {
+            self.mem.hover_mouse.scroll = None;
         }
     }
 
@@ -1507,7 +1604,28 @@ impl FrameCx<'_> {
         if pending.is_some() && key == Key::Escape {
             return true;
         }
-        match map.lookup_seq(os, pending, key, mods, &self.when_context()) {
+        let lookup = map.lookup_seq(os, pending, key, mods, &self.when_context());
+        let hover_cmd = matches!(&lookup, KeyLookup::Bound(b) if is_hover_command(&b.action));
+        if self.view.hover().is_focused() {
+            // Keys go to the focused hover: its scroll commands, Escape hides it
+            // (ContentHoverWidgetWrapper's keydown); other keys do nothing.
+            if hover_cmd && let KeyLookup::Bound(b) = &lookup
+                && let KeyAction::Command(c) = b.action.clone()
+            {
+                self.dispatch(c);
+            } else if key == Key::Escape {
+                self.view.hide_hover();
+            } else if let KeyLookup::Prefix(c) = lookup {
+                self.mem.pending_chord = Some(c);
+            }
+            return true;
+        }
+        // ContentHoverController._onKeyDown: any key but a chord prefix or a hover command
+        // hides the hover (and still does what it does).
+        if self.view.hover().is_visible() && !hover_cmd && !matches!(lookup, KeyLookup::Prefix(_)) {
+            self.view.hide_hover();
+        }
+        match lookup {
             KeyLookup::Bound(b) => match b.action.clone() {
                 KeyAction::Command(c) => self.dispatch(c),
                 KeyAction::Widget(a) => self.widget_action(a),
@@ -1518,6 +1636,138 @@ impl FrameCx<'_> {
             KeyLookup::Unbound => return pending.is_some(),
         }
         true
+    }
+
+    /// Hover-related input: the mouse side of VS Code's `ContentHoverController`.
+    fn hover_mouse(&mut self, ui: &Ui, response: &Response, ptr: Option<Pos2>, pressed: bool, down: bool) {
+        use quire_core::hover::{
+            EventModifiers, HoverAnchor, HoverStartMode, HoverStartSource, MultiCursorModifier,
+            should_show_hover,
+        };
+        let cfg = self.doc.config().hover.clone();
+        let now = self.now();
+        let now_ms = Some((now * 1000.0) as u64);
+        let mods = ui.input(|i| i.modifiers);
+        let on_hover = ptr.is_some_and(|p| crate::hover_widget::contains(self, p));
+        // _onEditorMouseDown
+        if pressed && !on_hover && response.contains_pointer() {
+            self.view.hide_hover();
+        }
+        // Dragging to select hides the hover and suppresses new ones.
+        if down && !on_hover && self.mem.drag.is_some() {
+            self.mem.hover_mouse.runner = None;
+            self.view.hide_hover();
+            return;
+        }
+        let inside = ptr.is_some_and(|p| self.geom.rect.contains(p)) && response.contains_pointer();
+        let Some(p) = ptr.filter(|_| inside || on_hover) else {
+            // _onEditorMouseLeave
+            if self.mem.hover_mouse.last.take().is_some() {
+                self.mem.hover_mouse.runner = None;
+                let keep = self.view.hover().is_focused()
+                    || (cfg.sticky
+                        && self
+                            .view
+                            .hover()
+                            .shown()
+                            .is_some_and(|r| r.source == HoverStartSource::Keyboard));
+                if !keep {
+                    self.view.hide_hover();
+                }
+            }
+            return;
+        };
+        let moved = self.mem.hover_mouse.last.is_none_or(|(lp, lm)| lp != p || lm != mods);
+        let prev = self.mem.hover_mouse.last.map(|(lp, _)| lp);
+        self.mem.hover_mouse.last = Some((p, mods));
+        let ev_mods = EventModifiers {
+            ctrl: mods.ctrl,
+            alt: mods.alt,
+            meta: mods.mac_cmd,
+        };
+        let react = |f: &mut Self, p: Pos2, prev: Option<Pos2>| {
+            if should_show_hover(cfg.enabled, MultiCursorModifier::Alt, ev_mods) {
+                let anchor = f.hover_anchor_at(p).map(|pos| HoverAnchor { range: pos..pos });
+                // ContentHoverWidget.isMouseGettingCloser
+                let closer = cfg.sticky
+                    && match (f.mem.hover_rect, prev) {
+                        (Some(r), Some(q)) => r.distance_to_pos(p) < r.distance_to_pos(q),
+                        _ => false,
+                    };
+                let doc = &*f.doc;
+                if f.view.start_hover(
+                    doc,
+                    anchor,
+                    HoverStartMode::Delayed,
+                    HoverStartSource::Mouse,
+                    false,
+                    closer,
+                    now_ms,
+                ) {
+                    return;
+                }
+            }
+            f.view.hide_hover();
+        };
+        if let Some(t) = self.mem.hover_mouse.runner
+            && now >= t
+        {
+            self.mem.hover_mouse.runner = None;
+            react(self, p, prev);
+            return;
+        }
+        if !moved {
+            if let Some(t) = self.mem.hover_mouse.runner {
+                self.ctx
+                    .request_repaint_after(std::time::Duration::from_secs_f64((t - now).max(0.001)));
+            }
+            return;
+        }
+        // _onEditorMouseMove / _shouldKeepCurrentHover
+        let visible = self.view.hover().is_visible();
+        let keep = self.view.hover().is_focused()
+            || (cfg.sticky && on_hover)
+            || (cfg.sticky
+                && self
+                    .view
+                    .hover()
+                    .shown()
+                    .is_some_and(|r| r.source == HoverStartSource::Keyboard));
+        if keep {
+            self.mem.hover_mouse.runner = None;
+            return;
+        }
+        if visible && cfg.sticky && cfg.hiding_delay > 0 {
+            if self.mem.hover_mouse.runner.is_none() {
+                let t = now + cfg.hiding_delay as f64 / 1000.0;
+                self.mem.hover_mouse.runner = Some(t);
+                self.ctx
+                    .request_repaint_after(std::time::Duration::from_millis(cfg.hiding_delay));
+            }
+            return;
+        }
+        react(self, p, prev);
+    }
+
+    /// The position a hover at `p` is about: on text, or within half a character after a
+    /// line's end (VS Code's CONTENT_TEXT / CONTENT_EMPTY targets).
+    fn hover_anchor_at(&mut self, p: Pos2) -> Option<usize> {
+        if !self.geom.text.contains(p) {
+            return None;
+        }
+        let (line, _) = self.line_row_at(p.y);
+        let bottom = self.geom.line_top(self.mem, line) + self.mem.heights.get(line);
+        if p.y > bottom {
+            return None;
+        }
+        let pos = self.pos_at(p);
+        let (_, x, _) = self.pos_row(pos);
+        let text = glue::text(self.doc);
+        let line_end = text.line_range(text.byte_to_line(pos)).end;
+        if pos >= line_end && p.x > x + self.geom.adv * 0.5 {
+            return None;
+        }
+        Some(pos)
     }
 
     /// Copy the selection (ranges joined by newlines). With every range empty and
@@ -1903,7 +2153,10 @@ impl FrameCx<'_> {
                 o.input_options.max_click_dist,
             )
         });
-        let Some(ptr) = ptr else { return };
+        let Some(ptr) = ptr else {
+            self.hover_mouse(ui, response, None, pressed, down);
+            return;
+        };
         let in_text = self.geom.text.contains(ptr) || self.geom.gutter.contains(ptr);
 
         if response.secondary_clicked() {
@@ -2043,33 +2296,8 @@ impl FrameCx<'_> {
             self.ctx.set_cursor_icon(egui::CursorIcon::Text);
         }
 
-        // Hover: emit HoverAt once the pointer has rested over a position for 0.5 s.
-        if response.hovered() && self.geom.text.contains(ptr) && !down {
-            let pos = self.pos_at(ptr);
-            match self.mem.hover {
-                Some((p, since, emitted)) if p == pos => {
-                    if !emitted && time - since >= 0.5 {
-                        self.out.events.push(EditorEvent::HoverAt {
-                            pos,
-                            version: glue::version(self.doc),
-                        });
-                        self.mem.hover = Some((p, since, true));
-                    } else if !emitted {
-                        ui.ctx()
-                            .request_repaint_after(std::time::Duration::from_secs_f64(
-                                (0.5 - (time - since)).max(0.01),
-                            ));
-                    }
-                }
-                _ => {
-                    self.mem.hover = Some((pos, time, false));
-                    ui.ctx()
-                        .request_repaint_after(std::time::Duration::from_millis(500));
-                }
-            }
-        } else {
-            self.mem.hover = None;
-        }
+        let hover_ptr = ui.input(|i| i.pointer.hover_pos());
+        self.hover_mouse(ui, response, hover_ptr, pressed, down);
     }
 
     /// X11/Wayland PRIMARY paste: egui-winit turns a middle click into `MiddleClickPaste` with
@@ -2250,87 +2478,20 @@ impl FrameCx<'_> {
     }
 }
 
-/// (colour, message, actions as (title, command id, args JSON)).
-type HoverItem = (Color32, String, Vec<(String, String, String)>);
-
-impl FrameCx<'_> {
-    /// Hover text for diagnostics under the pointer, with their actions as buttons. The hover
-    /// target stays alive while its tooltip is open so the buttons can be reached.
-    fn diagnostic_hover(&mut self, ui: &mut Ui, response: &Response) {
-        let wid = self.id.with("quire.diag");
-        let ptr = ui.input(|i| i.pointer.hover_pos());
-        let mut target = None;
-        if let Some(p) = ptr
-            && response.hovered()
-            && self.geom.text.contains(p)
-            && self.mem.drag.is_none()
-        {
-            let pos = self.pos_at(p);
-            target = glue::diagnostics_at(self.doc, pos)
-                .first()
-                .map(|d| d.range.clone());
-        }
-        if target.is_none() && egui::Tooltip::was_tooltip_open_last_frame(self.ctx, wid) {
-            target = self.mem.diag_hover.clone();
-        }
-        self.mem.diag_hover = target.clone();
-        let Some(range) = target else { return };
-        let text = glue::text(self.doc);
-        let start = range.start.min(text.len_bytes());
-        let line = text.byte_to_line(start);
-        let ls = text.line_to_byte(line);
-        let line_len = glue::line_str(text, line).len();
-        let end = range.end.clamp(start, ls + line_len);
-        let vl = self.layout_line(line);
-        let left = self.geom.text_left(self.mem);
-        let top = self.geom.line_top(self.mem, line);
-        let (r0, x0) = vl.locate(start - ls, false);
-        let (r1, x1) = vl.locate(end - ls, true);
-        let row_top = top + r0 as f32 * self.geom.row_h;
-        let x0 = left + x0;
-        let x1 = if r1 == r0 {
-            (left + x1).max(x0 + self.geom.adv)
-        } else {
-            left + vl.row_x0(r0) + vl.row_layout(r0).width()
-        };
-        let rect = Rect::from_min_max(pos2(x0, row_top), pos2(x1, row_top + self.geom.row_h));
-        let items: Vec<HoverItem> = glue::diagnostics_at(self.doc, start)
-            .into_iter()
-            .map(|d| {
-                let c = match d.severity {
-                    glue::Severity::Error => self.theme.error,
-                    glue::Severity::Warning => self.theme.warning,
-                    glue::Severity::Info => self.theme.info,
-                    glue::Severity::Hint => self.theme.hint,
-                };
-                let acts = d
-                    .actions
-                    .iter()
-                    .map(|a| (a.title.clone(), a.command_id.clone(), a.args_json.clone()))
-                    .collect();
-                (c, d.message.clone(), acts)
-            })
-            .collect();
-        let mut chosen = None;
-        ui.interact(rect, wid, Sense::hover()).on_hover_ui(|ui| {
-            for (c, msg, acts) in &items {
-                ui.colored_label(*c, msg);
-                if !acts.is_empty() {
-                    ui.horizontal(|ui| {
-                        for (title, command_id, args) in acts {
-                            if ui.button(title).clicked() {
-                                chosen = Some((command_id.clone(), args.clone()));
-                            }
-                        }
-                    });
-                }
-            }
-        });
-        if let Some((command_id, args)) = chosen {
-            let args = serde_json::from_str(&args).unwrap_or(serde_json::Value::Null);
-            self.out
-                .events
-                .push(EditorEvent::DiagnosticAction { command_id, args });
-        }
-    }
+/// The hover commands that do not hide the hover (VS Code `_isPotentialKeyboardShortcut`).
+fn is_hover_command(a: &KeyAction) -> bool {
+    matches!(
+        a,
+        KeyAction::Command(
+            EditorCommand::ShowHover
+                | EditorCommand::ScrollUpHover
+                | EditorCommand::ScrollDownHover
+                | EditorCommand::ScrollLeftHover
+                | EditorCommand::ScrollRightHover
+                | EditorCommand::PageUpHover
+                | EditorCommand::PageDownHover
+                | EditorCommand::GoToTopHover
+                | EditorCommand::GoToBottomHover
+        )
+    )
 }

@@ -104,6 +104,10 @@ pub struct EditorView {
     suggest: crate::completion::SuggestState,
     /// The snippet session (snippet mode).
     snippet: Option<crate::completion::SnippetSession>,
+    /// The hover.
+    hover: crate::hover::HoverState,
+    /// The parameter hints.
+    parameter_hints: crate::parameter_hints::ParameterHintsState,
 }
 
 impl EditorView {
@@ -121,6 +125,8 @@ impl EditorView {
             find_regex: None,
             suggest: crate::completion::SuggestState::default(),
             snippet: None,
+            hover: crate::hover::HoverState::default(),
+            parameter_hints: crate::parameter_hints::ParameterHintsState::default(),
         }
     }
 
@@ -223,6 +229,11 @@ impl EditorView {
     /// Sets focus; returns whether it changed. On a change the caller closes the document's undo
     /// group ([`Document::close_undo_group`]), one of Monaco's closing rules.
     pub fn set_focused(&mut self, f: bool) -> bool {
+        if !f {
+            // VS Code: parameter hints cancel on blur; the hover goes with the editor's focus.
+            self.parameter_hints.cancel();
+            self.hover.hide();
+        }
         self.text.set_focused(f)
     }
 
@@ -250,8 +261,13 @@ impl EditorView {
     /// document's text; the view is synced first.
     pub fn set_selection(&mut self, doc: &Document, sel: Selection) {
         self.sync(doc);
+        let before = self.text.selection().clone();
         self.set_selection_raw(sel.clamped(doc.text()));
         self.suggest.cancel();
+        if before != *self.text.selection() {
+            // A selection set through the API (VS Code source "api"): hints follow it.
+            self.parameter_hints.on_change(doc, None);
+        }
         if self
             .snippet
             .as_ref()
@@ -374,6 +390,7 @@ impl EditorView {
         if let Some(sn) = &mut self.snippet {
             sn.map(c);
         }
+        self.hover.map(c);
         self.scroll.anchor = c.map_pos(self.scroll.anchor, Bias::Before);
         if let Some(Reveal::Pos { pos, .. }) = &mut self.reveal {
             *pos = c.map_pos(*pos, Bias::Before);
@@ -398,6 +415,8 @@ impl EditorView {
         self.auto_closed.clear();
         self.suggest.cancel();
         self.snippet = None;
+        self.hover.hide();
+        self.parameter_hints.cancel();
     }
 
     /// After the document applied a transaction made through this view (the selection is
@@ -409,7 +428,7 @@ impl EditorView {
         self.after_selection_set();
     }
 
-    pub(crate) fn apply_effect(&mut self, e: &Effect, doc: &Document) {
+    pub(crate) fn apply_effect(&mut self, e: &Effect, doc: &Document, now: Option<u64>) {
         match e {
             Effect::ScrollIntoView { pos, center } => {
                 self.reveal = Some(Reveal::Pos {
@@ -449,6 +468,165 @@ impl EditorView {
                 }
             }
             Effect::Snippet(s) => self.snippet = s.clone(),
+            Effect::Hover(h) => {
+                use crate::hover::{HoverAnchor, HoverStartMode, HoverStartSource};
+                use crate::transaction::HoverEffect as H;
+                match h {
+                    // ShowOrFocusHoverAction with the default `focus: focusIfVisible`.
+                    H::ShowOrFocus if self.hover.is_visible() => self.hover.focus(),
+                    H::ShowOrFocus => {
+                        let p = self.text.selection().primary().head;
+                        self.hover.start(
+                            doc,
+                            Some(HoverAnchor { range: p..p }),
+                            HoverStartMode::Immediate,
+                            HoverStartSource::Keyboard,
+                            false,
+                            false,
+                            now,
+                        );
+                    }
+                    H::Hide => self.hover.hide(),
+                    H::Scroll(s) => self.hover.request_scroll(*s),
+                }
+            }
+            Effect::ParameterHints(p) => {
+                use crate::parameter_hints::SignatureHelpTriggerKind as K;
+                use crate::transaction::ParameterHintsEffect as P;
+                let cycle = doc.config().parameter_hints.cycle;
+                match p {
+                    P::Trigger => self.parameter_hints.trigger(doc, K::Invoke, Some(0), now),
+                    P::Close => self.parameter_hints.cancel(),
+                    P::Next => self.parameter_hints.next(cycle),
+                    P::Previous => self.parameter_hints.previous(cycle),
+                }
+                if let Some(n) = now {
+                    let head = self.text.selection().primary().head;
+                    self.parameter_hints.tick(doc, head, n);
+                }
+            }
+        }
+    }
+
+    /// The hover (shown result, computation in flight).
+    pub fn hover(&self) -> &crate::hover::HoverState {
+        &self.hover
+    }
+
+    /// Starts, updates or hides the hover for a mouse position or the cursor (VS Code
+    /// `ContentHoverWidgetWrapper._startShowingOrUpdateHover`; see
+    /// [`HoverState::start`](crate::hover::HoverState::start)). The view is synced first.
+    #[allow(clippy::too_many_arguments)]
+    pub fn start_hover(
+        &mut self,
+        doc: &Document,
+        anchor: Option<crate::hover::HoverAnchor>,
+        mode: crate::hover::HoverStartMode,
+        source: crate::hover::HoverStartSource,
+        focus: bool,
+        getting_closer: bool,
+        now: Option<u64>,
+    ) -> bool {
+        self.sync(doc);
+        self.hover
+            .start(doc, anchor, mode, source, focus, getting_closer, now)
+    }
+
+    /// Hides the hover.
+    pub fn hide_hover(&mut self) {
+        self.hover.hide();
+    }
+
+    /// Takes what the hover wants from the host.
+    pub fn take_hover_outputs(&mut self) -> Vec<crate::hover::HoverOutput> {
+        self.hover.take_outputs()
+    }
+
+    /// Takes the focused hover's pending scroll request (the widget scrolls it).
+    pub fn take_hover_scroll(&mut self) -> Option<crate::hover::HoverScroll> {
+        self.hover.take_scroll()
+    }
+
+    /// The host's answer to a [`HoverRequest`](crate::hover::HoverRequest): hovers with ranges
+    /// in bytes at `at`, mapped forward if the text moved on; refused when stale or superseded.
+    pub fn set_hover(
+        &mut self,
+        doc: &Document,
+        id: crate::hover::HoverRequestId,
+        at: crate::Version,
+        hovers: Vec<crate::hover::Hover>,
+    ) -> Result<(), crate::hover::AnswerRefusal> {
+        self.sync(doc);
+        self.hover.set_hover(doc, id, at, hovers)
+    }
+
+    /// The parameter hints (shown signature help, pending request).
+    pub fn parameter_hints(&self) -> &crate::parameter_hints::ParameterHintsState {
+        &self.parameter_hints
+    }
+
+    /// Sets the delay parameter hints triggers wait (default 120 ms).
+    pub fn set_parameter_hints_delay(&mut self, ms: u64) {
+        self.parameter_hints.set_delay(ms);
+    }
+
+    /// Cancels the parameter hints (VS Code `ParameterHintsModel.cancel`).
+    pub fn cancel_parameter_hints(&mut self) {
+        self.parameter_hints.cancel();
+    }
+
+    /// Takes what the parameter hints want from the host.
+    pub fn take_parameter_hints_outputs(
+        &mut self,
+    ) -> Vec<crate::parameter_hints::ParameterHintsOutput> {
+        self.parameter_hints.take_outputs()
+    }
+
+    /// The host's answer to a
+    /// [`SignatureHelpRequest`](crate::parameter_hints::SignatureHelpRequest): the first
+    /// provider's non-empty answer, or `None` (closes the hints).
+    pub fn set_signature_help(
+        &mut self,
+        doc: &Document,
+        id: crate::parameter_hints::SignatureHelpRequestId,
+        at: crate::Version,
+        help: Option<crate::parameter_hints::SignatureHelp>,
+    ) -> Result<(), crate::hover::AnswerRefusal> {
+        self.sync(doc);
+        self.parameter_hints.set_signature_help(doc, id, at, help)
+    }
+
+    /// Runs the hover's and parameter hints' timers due at `now` (host clock, ms). The widget
+    /// calls it every frame; a host driving the view without the widget calls it at
+    /// [`EditorView::next_deadline`].
+    pub fn tick(&mut self, doc: &Document, now: u64) {
+        self.sync(doc);
+        let head = self.text.selection().primary().head;
+        self.hover.tick(doc, now);
+        self.parameter_hints.tick(doc, head, now);
+    }
+
+    /// The earliest host time at which [`EditorView::tick`] has work; `Some(0)` when a timer
+    /// waits to be placed on the clock.
+    pub fn next_deadline(&self) -> Option<u64> {
+        if self.hover.needs_tick() || self.parameter_hints.needs_tick() {
+            return Some(0);
+        }
+        [
+            self.hover.next_deadline(),
+            self.parameter_hints.next_deadline(),
+        ]
+        .into_iter()
+        .flatten()
+        .min()
+    }
+
+    /// VS Code `ParameterHintsModel.onDidType`, after a `type` command through this view.
+    pub(crate) fn after_type(&mut self, doc: &Document, text: &str, now: Option<u64>) {
+        self.parameter_hints.on_did_type(doc, text, now);
+        if let Some(n) = now {
+            let head = self.text.selection().primary().head;
+            self.parameter_hints.tick(doc, head, n);
         }
     }
 
@@ -529,6 +707,8 @@ impl EditorView {
         doc: &Document,
         origin: &crate::transaction::Origin,
         changed_text: bool,
+        selection_changed: bool,
+        now: Option<u64>,
     ) {
         use crate::completion::session::ChangeKind;
         use crate::transaction::{InputKind as K, Origin as O};
@@ -546,6 +726,14 @@ impl EditorView {
             && (matches!(origin, O::Undo | O::Redo) || !sn.contains_selection(&sel))
         {
             self.snippet = None;
+        }
+        // ParameterHintsModel: the mouse cancels; other cursor and content changes retrigger
+        // while the hints are triggered. Selections set by the widget for the mouse arrive as
+        // `setSelection`.
+        if matches!(origin, O::Command(id) if id == "setSelection") {
+            self.parameter_hints.cancel();
+        } else if changed_text || selection_changed {
+            self.parameter_hints.on_change(doc, now);
         }
         let composing = self.text.composing();
         let in_snippet = self.snippet.is_some();

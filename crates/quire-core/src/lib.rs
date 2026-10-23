@@ -22,8 +22,10 @@ pub mod diagnostics;
 pub mod document;
 pub mod find;
 pub mod folding;
+pub mod hover;
 mod lang;
 pub mod large;
+pub mod parameter_hints;
 pub mod syntax;
 pub mod transaction;
 pub mod view;
@@ -43,7 +45,10 @@ pub use quire_text::{Anchor, Snapshot};
 pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};
-pub use transaction::{AuthorId, Effect, GroupHint, InputKind, Origin, SuggestEffect, Transaction};
+pub use transaction::{
+    AuthorId, Effect, GroupHint, HoverEffect, InputKind, Origin, ParameterHintsEffect, SuggestEffect,
+    Transaction,
+};
 pub use version::Version;
 pub use view::{AutoClosed, EditorView, Preedit, Reveal, Scroll, SyncOutcome};
 
