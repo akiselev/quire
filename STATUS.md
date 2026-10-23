@@ -1,19 +1,21 @@
 # quire status
 
-## Handoff (2026-10-22)
+## Handoff (2026-10-22, wind-down)
 
-- QE0, QE1, QE2 gates passed (161ef59). QE4 complete on 4452869 (full check.sh from a clean build).
-- TC0 (`quire-text`) landed: full check.sh pass; allocation and timing gates pass (docs/handoff/tc0.md).
-- P1 part 1 (completion and snippets) landed: full check.sh pass (389 pass, 6 ignored);
-  docs/handoff/p1-completion.md. Pending approval: nested snippets replace the session (VS Code
-  merges); 50 snippet tests are "todo" in VSCODE-MAP.
-- Handoffs: docs/handoff/{core,core2,core3,core4,widget,widget2,widget3,widget4,syntax,qe4,wrapfu,tc0,p1-completion}.md.
-- Open proposals: `editor.action.toggleWordWrap` (needs user approval); F1 first find off the UI
-  thread (deferred); height-index splice on line-count change (internal, wrap-on Enter p99).
-- Known limits: `CodeEditor::measure` ignores wrap; insertCursorAbove/Below and column select use
-  document lines under wrap; wrapped moves are recorded as setSelection; IME composition line laid
-  out uncached.
-- Next for this machine: berth BD6 macOS half (brief from main-cadatomic).
+- master: TC0 (quire-text, 6f35566), TC0b (fe4919f), P1 part 1 completion and snippets (3b4b15a),
+  licence MIT OR Apache-2.0 restored (2b53b5c). Last full check.sh: 389 pass / 6 ignored (3b4b15a).
+- **Not landed:** P1 part 2, hover and signature help, on branch `p1-hover` at 7fb2955 (base
+  3b4b15a). Filtered tests pass; handoff in that branch's docs/handoff/p1-hover.md. Stopped because
+  free disk fell to 6 GB from other lanes' builds. To land: >= 25 GB free, rebase on master, one
+  check.sh, fast-forward.
+- Decided for P1 part 2 (main-cadatomic): EditorEvent::HoverLinkActivated { href }; parameter-hints
+  retrigger after cancel is "ours (async host provider)"; hover code fences monospace, no colour;
+  no cancellation event.
+- Queued: SnippetSession.merge (14 VSCODE-MAP rows "ours (queued)"), then P1 part 3 inlay hints,
+  part 4 semantic tokens; choice placeholders and snippet variables (todo); TC0 step 5 (widget
+  wrapped motions on VisualLines); F1 off-thread first find.
+- Rules for agents: CLAUDE.md (disk 15 GB, check.sh 25 GB and once per lane, never pkill by
+  pattern, no credentials in commits).
 
 ## Milestones
 
