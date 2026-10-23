@@ -143,6 +143,20 @@ pub enum EditorEvent {
     InlayHintLocationActivated {
         location: quire_core::inlay_hints::InlayHintLocation,
     },
+    /// The document asks the host's semantic tokens providers for its tokens (VS Code
+    /// `provideDocumentSemanticTokens`; `previous` goes to that provider only). Answer with
+    /// `Document::set_semantic_tokens(id, replies)`.
+    SemanticTokensRequested {
+        id: quire_core::semantic_tokens::SemanticTokensRequestId,
+        version: Version,
+        previous: Option<(quire_core::SourceId, String)>,
+    },
+    /// The document no longer needs a provider's result (VS Code
+    /// `releaseDocumentSemanticTokens`).
+    SemanticTokensReleased {
+        source: quire_core::SourceId,
+        result_id: Option<String>,
+    },
 }
 
 /// What one frame of the editor produced.
@@ -722,6 +736,7 @@ impl<'a> CodeEditor<'a> {
         let pressed = m.ctrl && m.alt && !(m.shift || m.mac_cmd);
         frame.view.set_inlay_hints_modifier(frame.doc, pressed);
         frame.view.tick(frame.doc, now_ms);
+        frame.doc.tick_semantic_tokens(now_ms);
 
         // The parameter hints (above the caret) and the suggest list (below it).
         if focused {
@@ -733,7 +748,16 @@ impl<'a> CodeEditor<'a> {
         // The hover (diagnostics and the providers' content).
         crate::hover_widget::show(&mut frame, ui, text);
         frame.drain_hints();
-        match frame.view.next_deadline() {
+        let semantic = frame.doc.semantic_tokens();
+        let deadline = if semantic.needs_tick() {
+            Some(0)
+        } else {
+            [frame.view.next_deadline(), semantic.next_deadline()]
+                .into_iter()
+                .flatten()
+                .min()
+        };
+        match deadline {
             Some(0) => ctx.request_repaint(),
             Some(t) => ctx.request_repaint_after(std::time::Duration::from_millis(
                 t.saturating_sub(now_ms).max(1),
@@ -1503,6 +1527,19 @@ impl FrameCx<'_> {
                     version: r.version,
                 }),
             }
+        }
+        for o in self.doc.take_semantic_tokens_outputs() {
+            use quire_core::semantic_tokens::SemanticTokensOutput as S;
+            self.out.events.push(match o {
+                S::Request(r) => EditorEvent::SemanticTokensRequested {
+                    id: r.id,
+                    version: r.version,
+                    previous: r.previous,
+                },
+                S::Release { source, result_id } => {
+                    EditorEvent::SemanticTokensReleased { source, result_id }
+                }
+            });
         }
         for o in self.view.take_inlay_hints_outputs() {
             match o {

@@ -202,6 +202,8 @@ pub struct Document {
     signature_help_sources: Vec<crate::parameter_hints::SignatureHelpSource>,
     /// The host's inlay hint providers (none: no inlay hints).
     inlay_hint_sources: Vec<crate::SourceId>,
+    /// Semantic tokens: providers, requests, the tokens (VS Code `ModelSemanticColoring`).
+    semantic: crate::semantic_tokens::SemanticTokensState,
 }
 
 impl Document {
@@ -233,6 +235,7 @@ impl Document {
             hover_sources: Vec::new(),
             signature_help_sources: Vec::new(),
             inlay_hint_sources: Vec::new(),
+            semantic: Default::default(),
         }
     }
 
@@ -436,6 +439,8 @@ impl Document {
     /// `EditorConfig::undo_pause_ms` at the host's clock `now_ms`.
     pub fn tick(&mut self, now_ms: u64) -> Option<UndoGroupClosed> {
         let c = self.doc.tick(now_ms);
+        let v = self.version();
+        self.semantic.tick(v, now_ms);
         self.update_probe();
         c
     }
@@ -466,6 +471,101 @@ impl Document {
     /// The host's hover providers.
     pub fn hover_sources(&self) -> &[crate::SourceId] {
         &self.hover_sources
+    }
+
+    /// Declares the host's semantic tokens providers with their legends (VS Code's registered
+    /// `DocumentSemanticTokensProvider`s). The first declaration asks for tokens at once.
+    pub fn set_semantic_tokens_sources(
+        &mut self,
+        sources: Vec<crate::semantic_tokens::SemanticTokensSource>,
+    ) {
+        self.semantic.set_sources(sources);
+    }
+
+    /// The semantic tokens (providers, pending request, the tokens held).
+    pub fn semantic_tokens(&self) -> &crate::semantic_tokens::SemanticTokensState {
+        &self.semantic
+    }
+
+    /// Takes what the semantic tokens want from the host.
+    pub fn take_semantic_tokens_outputs(
+        &mut self,
+    ) -> Vec<crate::semantic_tokens::SemanticTokensOutput> {
+        self.semantic.take_outputs()
+    }
+
+    /// The host's answer to a
+    /// [`SemanticTokensRequest`](crate::semantic_tokens::SemanticTokensRequest): one reply per
+    /// provider. Refused when the document no longer waits for it.
+    pub fn set_semantic_tokens(
+        &mut self,
+        id: crate::semantic_tokens::SemanticTokensRequestId,
+        replies: Vec<(crate::SourceId, crate::semantic_tokens::SemanticTokensReply)>,
+    ) -> Result<(), crate::hover::AnswerRefusal> {
+        let r = self.semantic.set_semantic_tokens(id, replies);
+        self.update_probe();
+        r
+    }
+
+    /// The host's provider `source` has new tokens (VS Code `onDidChangeSemanticTokens`).
+    pub fn refresh_semantic_tokens(&mut self, source: &crate::SourceId) {
+        self.semantic.refresh(source);
+    }
+
+    /// Replaces the semantic tokens directly (VS Code `tokenization.setSemanticTokens`): for
+    /// hosts with their own token source.
+    pub fn set_semantic_token_pieces(
+        &mut self,
+        pieces: Option<Vec<crate::semantic_tokens::SparseMultilineTokens>>,
+        complete: bool,
+    ) {
+        self.semantic.set_tokens(pieces, complete);
+    }
+
+    /// Runs the semantic tokens request due at `now` (host clock, ms). The widget calls it
+    /// every frame; [`Document::tick`] calls it too.
+    pub fn tick_semantic_tokens(&mut self, now_ms: u64) {
+        let v = self.version();
+        self.semantic.tick(v, now_ms);
+        self.update_probe();
+    }
+
+    /// The tokens of `line` as `(start byte, style)`, semantic tokens laid over the
+    /// highlighter's (VS Code `getLineTokens` with `addSparseTokens`).
+    pub fn line_tokens(&self, line: usize) -> Vec<crate::syntax::Token> {
+        use crate::syntax::{Token, TokenStyle};
+        let base = self.tokens.line(line);
+        if self.semantic.store().is_empty() || line >= self.text().len_lines() {
+            return base.to_vec();
+        }
+        let len = self.text().line(line).len_bytes() as u32;
+        let mut a: Vec<(u32, u32)> = Vec::with_capacity(base.len() + 1);
+        let mut prev: Option<(u32, u32)> = None;
+        if base.first().is_none_or(|t| t.start > 0) {
+            prev = Some((0, 0));
+        }
+        for t in base {
+            let st = t.start.min(len);
+            if let Some((ps, pm)) = prev
+                && st > ps
+            {
+                a.push((st, pm));
+            }
+            prev = Some((st, t.style.0));
+        }
+        if let Some((ps, pm)) = prev
+            && len > ps
+        {
+            a.push((len, pm));
+        }
+        let merged = self.semantic.merge_line(line, &a);
+        let mut out = Vec::with_capacity(merged.len());
+        let mut start = 0;
+        for (end, md) in merged {
+            out.push(Token::new(start, TokenStyle(md)));
+            start = end;
+        }
+        out
     }
 
     /// Declares the host's inlay hint providers (VS Code's registered `InlayHintsProvider`s).
@@ -693,6 +793,24 @@ impl Document {
             .expect("a text change is recorded")
             .line_edits;
         self.tokens.shift(line_edits);
+        // Semantic tokens follow the edits (VS Code `acceptEdit`, in reverse document order).
+        let edits: Vec<crate::semantic_tokens::TokenEdit> = line_edits
+            .iter()
+            .zip(applied.changes.edits())
+            .map(|(le, e)| crate::semantic_tokens::TokenEdit {
+                range: crate::semantic_tokens::LineRange::new(
+                    le.start_line as i64 + 1,
+                    le.start_col as u32,
+                    le.end_line as i64 + 1,
+                    le.end_col as u32,
+                ),
+                eol_count: le.inserted_lines as u32,
+                first_line_length: le.inserted_first_len as u32,
+                last_line_length: le.inserted_last_len as u32,
+                first_char: e.insert.chars().next().unwrap_or('\0'),
+            })
+            .collect();
+        self.semantic.accept_change(edits);
         if let Some(f) = &mut self.syntax_folds {
             crate::folding::map_fold_ranges(f, line_edits);
         }

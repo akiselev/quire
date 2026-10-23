@@ -28,6 +28,7 @@ pub mod inlay_hints;
 mod lang;
 pub mod large;
 pub mod parameter_hints;
+pub mod semantic_tokens;
 pub mod syntax;
 pub mod transaction;
 pub mod view;

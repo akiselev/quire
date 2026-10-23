@@ -1921,6 +1921,257 @@
      }
     ]
    ]
+  },
+  {
+   "suite": "tokensStore.test.ts",
+   "vscode_path": "src/vs/editor/test/common/model/tokensStore.test.ts",
+   "file": "crates/quire-core/tests/semantic_tokens_store.rs",
+   "tests": [
+    [
+     "TokensStore > issue #86303 - color shifting between different tokens",
+     {
+      "test": "color_shifting_between_different_tokens_86303"
+     }
+    ],
+    [
+     "TokensStore > deleting a newline",
+     {
+      "test": "deleting_a_newline"
+     }
+    ],
+    [
+     "TokensStore > inserting a newline",
+     {
+      "test": "inserting_a_newline"
+     }
+    ],
+    [
+     "TokensStore > deleting a newline 2",
+     {
+      "test": "deleting_a_newline_2"
+     }
+    ],
+    [
+     "TokensStore > issue #179268: a complex edit",
+     {
+      "test": "a_complex_edit_179268"
+     }
+    ],
+    [
+     "TokensStore > issue #91936: Semantic token color highlighting fails on line with selected text",
+     {
+      "test": "semantic_color_fails_on_line_with_selected_text_91936"
+     }
+    ],
+    [
+     "TokensStore > issue #147944: Language id \"vs.editor.nullLanguage\" is not configured nor known",
+     {
+      "na": "word definitions of the null language (language configuration service)"
+     }
+    ],
+    [
+     "TokensStore > partial tokens 1",
+     {
+      "test": "partial_tokens_1"
+     }
+    ],
+    [
+     "TokensStore > partial tokens 2",
+     {
+      "test": "partial_tokens_2"
+     }
+    ],
+    [
+     "TokensStore > partial tokens 3",
+     {
+      "test": "partial_tokens_3"
+     }
+    ],
+    [
+     "TokensStore > issue #94133: Semantic colors stick around when using (only) range provider",
+     {
+      "test": "semantic_colors_stick_around_with_range_provider_94133"
+     }
+    ],
+    [
+     "TokensStore > bug",
+     {
+      "test": "bug"
+     }
+    ],
+    [
+     "TokensStore > issue #95949: Identifiers are colored in bold when targetting keywords",
+     {
+      "test": "identifiers_bold_when_targetting_keywords_95949"
+     }
+    ],
+    [
+     "TokensStore > BUG: setPartial with startLineNumber > 1 and token removal creates invalid state",
+     {
+      "test": "set_partial_start_line_over_1_and_removal"
+     }
+    ],
+    [
+     "TokensStore > BUG: setPartial with split that creates empty first piece with invalid line numbers",
+     {
+      "test": "set_partial_split_with_empty_first_piece"
+     }
+    ],
+    [
+     "TokensStore > addSparseTokens skips overlapping semantic tokens that produce backward endOffsets",
+     {
+      "test": "overlapping_semantic_tokens_no_backward_end_offsets"
+     }
+    ],
+    [
+     "TokensStore > piece with startLineNumber 0 and endLineNumber -1 after encompassing deletion",
+     {
+      "test": "piece_emptied_by_encompassing_deletion"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "semanticTokensProviderStyling.test.ts",
+   "vscode_path": "src/vs/editor/test/common/services/semanticTokensProviderStyling.test.ts",
+   "file": "crates/quire-core/tests/semantic_tokens.rs",
+   "tests": [
+    [
+     "ModelService > issue #134973: invalid semantic tokens should be handled better",
+     {
+      "test": "invalid_semantic_tokens_handled_better_134973"
+     }
+    ],
+    [
+     "ModelService > issue #148651: VSCode UI process can hang if a semantic token with negative values is returned by language service",
+     {
+      "test": "negative_values_from_the_language_service_148651"
+     }
+    ],
+    [
+     "ModelService > issue #149130: vscode freezes because of Bracket Pair Colorization",
+     {
+      "test": "bracket_pair_colorization_freeze_149130"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "documentSemanticTokens.test.ts",
+   "vscode_path": "src/vs/editor/contrib/semanticTokens/test/browser/documentSemanticTokens.test.ts",
+   "file": "crates/quire-core/tests/semantic_tokens.rs",
+   "tests": [
+    [
+     "ModelSemanticColoring > theme listeners do not grow with semantic coloring models",
+     {
+      "na": "theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types)"
+     }
+    ],
+    [
+     "ModelSemanticColoring > theme changes clear semantic tokens and refetch with the new styling",
+     {
+      "na": "theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types)"
+     }
+    ],
+    [
+     "ModelSemanticColoring > theme changes do not register models disposed by token listeners",
+     {
+      "na": "theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types)"
+     }
+    ],
+    [
+     "ModelSemanticColoring > theme changes continue refreshing models after a provider release error",
+     {
+      "na": "theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types)"
+     }
+    ],
+    [
+     "ModelSemanticColoring > enabling semantic coloring through a theme immediately fetches only attached models",
+     {
+      "na": "theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types)"
+     }
+    ],
+    [
+     "ModelSemanticColoring > DocumentSemanticTokens should be fetched when the result is empty if there are pending changes",
+     {
+      "test": "fetched_again_when_the_result_is_empty_with_pending_changes"
+     }
+    ],
+    [
+     "ModelSemanticColoring > issue #149412: VS Code hangs when bad semantic token data is received",
+     {
+      "test": "bad_semantic_token_data_does_not_hang_149412"
+     }
+    ],
+    [
+     "ModelSemanticColoring > issue #322571: semantic token edits cannot delete more data than the previous result contains",
+     {
+      "test": "edits_cannot_delete_more_than_the_previous_result_322571"
+     }
+    ],
+    [
+     "ModelSemanticColoring > invalid semantic token edits without a previous result are not retried",
+     {
+      "test": "invalid_edits_without_a_previous_result_are_not_retried"
+     }
+    ],
+    [
+     "ModelSemanticColoring > issue #161573: onDidChangeSemanticTokens doesn't consistently trigger provideDocumentSemanticTokens",
+     {
+      "test": "provider_change_during_a_request_triggers_another_161573"
+     }
+    ],
+    [
+     "ModelSemanticColoring > DocumentSemanticTokens should be pick the token provider with actual items",
+     {
+      "test": "picks_the_provider_with_actual_items"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "getSemanticTokens.test.ts",
+   "vscode_path": "src/vs/editor/contrib/semanticTokens/test/browser/getSemanticTokens.test.ts",
+   "file": "crates/quire-core/tests/semantic_tokens.rs",
+   "tests": [
+    [
+     "getSemanticTokens > issue #136540: semantic highlighting flickers",
+     {
+      "test": "a_failing_provider_fails_the_request_136540"
+     }
+    ]
+   ]
+  },
+  {
+   "suite": "semanticTokensDto.test.ts",
+   "vscode_path": "src/vs/editor/test/common/services/semanticTokensDto.test.ts",
+   "file": "crates/quire-core/tests/semantic_tokens.rs",
+   "tests": [
+    [
+     "SemanticTokensDto > full encoding",
+     {
+      "na": "the extension host's binary transport of semantic tokens (quire takes them as Rust values)"
+     }
+    ],
+    [
+     "SemanticTokensDto > delta encoding",
+     {
+      "na": "the extension host's binary transport of semantic tokens (quire takes them as Rust values)"
+     }
+    ],
+    [
+     "SemanticTokensDto > partial array buffer",
+     {
+      "na": "the extension host's binary transport of semantic tokens (quire takes them as Rust values)"
+     }
+    ],
+    [
+     "SemanticTokensDto > issue #94521: unusual backing array buffer",
+     {
+      "na": "the extension host's binary transport of semantic tokens (quire takes them as Rust values)"
+     }
+    ]
+   ]
   }
  ],
  "departures": [

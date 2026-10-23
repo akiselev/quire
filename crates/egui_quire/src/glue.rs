@@ -162,6 +162,14 @@ pub fn line_runs(
     if line >= tokens.len_lines() {
         return 0;
     }
+    // Semantic tokens laid over the highlighter's (VS Code `addSparseTokens`).
+    if !doc.semantic_tokens().store().is_empty() {
+        let toks = doc.line_tokens(line);
+        for t in &toks {
+            out.push((t.start as usize, theme.token_color(t.style.ty() as usize)));
+        }
+        return hash_one(&toks);
+    }
     let toks = tokens.line(line);
     if toks.is_empty() {
         return 0;

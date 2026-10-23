@@ -1405,6 +1405,67 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition | `crates/quire-core/tests/line_projection.rs` `injected_text_3_input_offset_of_output_position` | pass |
 | Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset | `crates/quire-core/tests/line_projection.rs` `injected_text_3_inverse` | pass |
 
+## tokensStore.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| TokensStore > issue #86303 - color shifting between different tokens | `crates/quire-core/tests/semantic_tokens_store.rs` `color_shifting_between_different_tokens_86303` | pass |
+| TokensStore > deleting a newline | `crates/quire-core/tests/semantic_tokens_store.rs` `deleting_a_newline` | pass |
+| TokensStore > inserting a newline | `crates/quire-core/tests/semantic_tokens_store.rs` `inserting_a_newline` | pass |
+| TokensStore > deleting a newline 2 | `crates/quire-core/tests/semantic_tokens_store.rs` `deleting_a_newline_2` | pass |
+| TokensStore > issue #179268: a complex edit | `crates/quire-core/tests/semantic_tokens_store.rs` `a_complex_edit_179268` | pass |
+| TokensStore > issue #91936: Semantic token color highlighting fails on line with selected text | `crates/quire-core/tests/semantic_tokens_store.rs` `semantic_color_fails_on_line_with_selected_text_91936` | pass |
+| TokensStore > issue #147944: Language id "vs.editor.nullLanguage" is not configured nor known | N/A: word definitions of the null language (language configuration service) | — |
+| TokensStore > partial tokens 1 | `crates/quire-core/tests/semantic_tokens_store.rs` `partial_tokens_1` | pass |
+| TokensStore > partial tokens 2 | `crates/quire-core/tests/semantic_tokens_store.rs` `partial_tokens_2` | pass |
+| TokensStore > partial tokens 3 | `crates/quire-core/tests/semantic_tokens_store.rs` `partial_tokens_3` | pass |
+| TokensStore > issue #94133: Semantic colors stick around when using (only) range provider | `crates/quire-core/tests/semantic_tokens_store.rs` `semantic_colors_stick_around_with_range_provider_94133` | pass |
+| TokensStore > bug | `crates/quire-core/tests/semantic_tokens_store.rs` `bug` | pass |
+| TokensStore > issue #95949: Identifiers are colored in bold when targetting keywords | `crates/quire-core/tests/semantic_tokens_store.rs` `identifiers_bold_when_targetting_keywords_95949` | pass |
+| TokensStore > BUG: setPartial with startLineNumber > 1 and token removal creates invalid state | `crates/quire-core/tests/semantic_tokens_store.rs` `set_partial_start_line_over_1_and_removal` | pass |
+| TokensStore > BUG: setPartial with split that creates empty first piece with invalid line numbers | `crates/quire-core/tests/semantic_tokens_store.rs` `set_partial_split_with_empty_first_piece` | pass |
+| TokensStore > addSparseTokens skips overlapping semantic tokens that produce backward endOffsets | `crates/quire-core/tests/semantic_tokens_store.rs` `overlapping_semantic_tokens_no_backward_end_offsets` | pass |
+| TokensStore > piece with startLineNumber 0 and endLineNumber -1 after encompassing deletion | `crates/quire-core/tests/semantic_tokens_store.rs` `piece_emptied_by_encompassing_deletion` | pass |
+
+## semanticTokensProviderStyling.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| ModelService > issue #134973: invalid semantic tokens should be handled better | `crates/quire-core/tests/semantic_tokens.rs` `invalid_semantic_tokens_handled_better_134973` | pass |
+| ModelService > issue #148651: VSCode UI process can hang if a semantic token with negative values is returned by language service | `crates/quire-core/tests/semantic_tokens.rs` `negative_values_from_the_language_service_148651` | pass |
+| ModelService > issue #149130: vscode freezes because of Bracket Pair Colorization | `crates/quire-core/tests/semantic_tokens.rs` `bracket_pair_colorization_freeze_149130` | pass |
+
+## documentSemanticTokens.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| ModelSemanticColoring > theme listeners do not grow with semantic coloring models | N/A: theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types) | — |
+| ModelSemanticColoring > theme changes clear semantic tokens and refetch with the new styling | N/A: theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types) | — |
+| ModelSemanticColoring > theme changes do not register models disposed by token listeners | N/A: theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types) | — |
+| ModelSemanticColoring > theme changes continue refreshing models after a provider release error | N/A: theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types) | — |
+| ModelSemanticColoring > enabling semantic coloring through a theme immediately fetches only attached models | N/A: theme service listeners and theme-dependent styling (quire's semantic styles do not depend on the theme; the widget's theme colours token types) | — |
+| ModelSemanticColoring > DocumentSemanticTokens should be fetched when the result is empty if there are pending changes | `crates/quire-core/tests/semantic_tokens.rs` `fetched_again_when_the_result_is_empty_with_pending_changes` | pass |
+| ModelSemanticColoring > issue #149412: VS Code hangs when bad semantic token data is received | `crates/quire-core/tests/semantic_tokens.rs` `bad_semantic_token_data_does_not_hang_149412` | pass |
+| ModelSemanticColoring > issue #322571: semantic token edits cannot delete more data than the previous result contains | `crates/quire-core/tests/semantic_tokens.rs` `edits_cannot_delete_more_than_the_previous_result_322571` | pass |
+| ModelSemanticColoring > invalid semantic token edits without a previous result are not retried | `crates/quire-core/tests/semantic_tokens.rs` `invalid_edits_without_a_previous_result_are_not_retried` | pass |
+| ModelSemanticColoring > issue #161573: onDidChangeSemanticTokens doesn't consistently trigger provideDocumentSemanticTokens | `crates/quire-core/tests/semantic_tokens.rs` `provider_change_during_a_request_triggers_another_161573` | pass |
+| ModelSemanticColoring > DocumentSemanticTokens should be pick the token provider with actual items | `crates/quire-core/tests/semantic_tokens.rs` `picks_the_provider_with_actual_items` | pass |
+
+## getSemanticTokens.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| getSemanticTokens > issue #136540: semantic highlighting flickers | `crates/quire-core/tests/semantic_tokens.rs` `a_failing_provider_fails_the_request_136540` | pass |
+
+## semanticTokensDto.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| SemanticTokensDto > full encoding | N/A: the extension host's binary transport of semantic tokens (quire takes them as Rust values) | — |
+| SemanticTokensDto > delta encoding | N/A: the extension host's binary transport of semantic tokens (quire takes them as Rust values) | — |
+| SemanticTokensDto > partial array buffer | N/A: the extension host's binary transport of semantic tokens (quire takes them as Rust values) | — |
+| SemanticTokensDto > issue #94521: unusual backing array buffer | N/A: the extension host's binary transport of semantic tokens (quire takes them as Rust values) | — |
+
 ## Per suite
 
 | suite | tests | pass | ours | bug | N/A |
@@ -1440,12 +1501,17 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | suggestModel.test.ts | 32 | 20 | 0 | 0 | 12 |
 | wordDistance.test.ts | 1 | 0 | 1 | 0 | 0 |
 | lineBreakData.test.ts | 9 | 9 | 0 | 0 | 0 |
+| tokensStore.test.ts | 17 | 16 | 0 | 0 | 1 |
+| semanticTokensProviderStyling.test.ts | 3 | 3 | 0 | 0 | 0 |
+| documentSemanticTokens.test.ts | 11 | 6 | 0 | 0 | 5 |
+| getSemanticTokens.test.ts | 1 | 1 | 0 | 0 | 0 |
+| semanticTokensDto.test.ts | 4 | 0 | 0 | 0 | 4 |
 
 ## Totals
 
-- VS Code tests listed: 1245
-- translated: 739 (pass 712, fail ours 27, fail bug 0)
-- N/A: 469
+- VS Code tests listed: 1281
+- translated: 765 (pass 738, fail ours 27, fail bug 0)
+- N/A: 479
 - todo (not yet ported, outside the translated count): 37
 
 ## Departures without a VS Code test
