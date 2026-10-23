@@ -1860,6 +1860,67 @@
      }
     ]
    ]
+  },
+  {
+   "suite": "lineBreakData.test.ts",
+   "vscode_path": "src/vs/editor/test/common/viewModel/lineBreakData.test.ts",
+   "file": "crates/quire-core/tests/line_projection.rs",
+   "tests": [
+    [
+     "Editor ViewModel - LineBreakData > Basic",
+     {
+      "test": "basic"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 1 > getInputOffsetOfOutputPosition",
+     {
+      "test": "injected_text_1_input_offset_of_output_position"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 1 > getOutputPositionOfInputOffset",
+     {
+      "test": "injected_text_1_output_position_of_input_offset"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 1 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset",
+     {
+      "test": "injected_text_1_inverse"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 1 > normalization",
+     {
+      "test": "injected_text_1_normalization"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 2 > getInputOffsetOfOutputPosition",
+     {
+      "test": "injected_text_2_input_offset_of_output_position"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 2 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset",
+     {
+      "test": "injected_text_2_inverse"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition",
+     {
+      "test": "injected_text_3_input_offset_of_output_position"
+     }
+    ],
+    [
+     "Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset",
+     {
+      "test": "injected_text_3_inverse"
+     }
+    ]
+   ]
   }
  ],
  "departures": [

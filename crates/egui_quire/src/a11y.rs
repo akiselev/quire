@@ -120,11 +120,13 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
             let row = vl.row_layout(k);
             let x0 = vl.row_x0(k);
             let char_xs = row.char_xs();
+            // Injected text (inlay hints, the preedit) is not part of the document's text.
             let mut chars: Vec<(char, f32, f32)> = row
                 .text()
-                .chars()
+                .char_indices()
                 .enumerate()
-                .map(|(i, c)| (c, x0 + char_xs[i], char_xs[i + 1] - char_xs[i]))
+                .filter(|&(_, (b, _))| !vl.is_injected(k, b))
+                .map(|(i, (_, c))| (c, x0 + char_xs[i], char_xs[i + 1] - char_xs[i]))
                 .collect();
             if k + 1 == vl.n_rows() && !last_line {
                 chars.push(('\n', x0 + row.width(), 0.0));
@@ -140,7 +142,11 @@ pub(crate) fn update(f: &mut FrameCx<'_>, ui: &mut Ui, name: &str, strings: &Edi
                     chars: chars[c0..c1].to_vec(),
                 });
             }
-            char0 += row.text().chars().count();
+            char0 += row
+                .text()
+                .char_indices()
+                .filter(|&(b, _)| !vl.is_injected(k, b))
+                .count();
         }
         runs.push(out);
     }

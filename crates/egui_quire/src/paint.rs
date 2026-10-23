@@ -19,27 +19,16 @@ pub(crate) struct VisLine {
     doc_len: usize,
     top: f32,
     layout: VisualLine,
-    /// Byte column where an IME preedit was spliced in, and its byte length.
-    preedit: Option<(usize, usize)>,
 }
 
 impl VisLine {
-    /// Column in the layout of a document byte column on this line, accounting for an inline
-    /// preedit (text after the caret is shifted by it).
-    fn map(&self, col: usize) -> usize {
-        match self.preedit {
-            Some((at, len)) if col > at => col + len,
-            _ => col,
-        }
-    }
-
     /// One rect per row covering document columns `a..b` of this line (relative to `left`);
     /// `extra` widens the last row's rect (a range that continues past the line end).
     fn span_rects(&self, a: usize, b: usize, left: f32, row_h: f32, extra: f32) -> SpanRects<'_> {
         SpanRects {
             v: self,
-            a: self.map(a),
-            b: self.map(b),
+            a,
+            b,
             k: 0,
             left,
             row_h,
@@ -130,29 +119,14 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
                 continue; // folded away
             }
             let start = text.line_to_byte(line);
-            if let Some(p) = preedit.as_ref().filter(|_| line == head_line) {
-                let doc_len = text.line(line).len_bytes();
-                let col = primary.head - start;
-                let (layout, at) = f.layout_preedit_line(line, col, &p.text);
-                vis.push(VisLine {
-                    line,
-                    start,
-                    doc_len,
-                    top: 0.0,
-                    layout,
-                    preedit: Some((at, p.text.len())),
-                });
-            } else {
-                let layout = f.layout_line(line);
-                vis.push(VisLine {
-                    line,
-                    start,
-                    doc_len: layout.full_len(),
-                    top: 0.0,
-                    layout,
-                    preedit: None,
-                });
-            }
+            let layout = f.layout_line(line);
+            vis.push(VisLine {
+                line,
+                start,
+                doc_len: layout.full_len(),
+                top: 0.0,
+                layout,
+            });
             changed |= f.mem.heights.get(line) != before;
         }
         if !changed {
@@ -324,13 +298,13 @@ pub(crate) fn paint(f: &mut FrameCx<'_>, ui: &Ui) -> Option<Rect> {
         let up = f.upstream(head);
         let (row, x_rel, top) = match vis.iter().find(|v| v.line == line) {
             Some(v) => {
-                let (row, x) = match (v.preedit, &preedit) {
+                let (row, x) = match &preedit {
                     // Caret inside the preedit: at its cursor (end of the active range, else end).
-                    (Some((at, _)), Some(p)) if i == sel.primary_index() => {
+                    Some(p) if i == sel.primary_index() => {
                         let bytes = p.active.as_ref().map_or(p.text.len(), |r| r.end);
-                        v.layout.locate(at + bytes, false)
+                        v.layout.locate_injected(col, bytes)
                     }
-                    _ => v.layout.locate(v.map(col), up),
+                    _ => v.layout.locate(col, up),
                 };
                 (row, x, v.top)
             }

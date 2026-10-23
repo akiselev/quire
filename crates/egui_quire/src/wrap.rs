@@ -15,6 +15,7 @@ use std::sync::Arc;
 use egui::text::TextFormat;
 use egui::{Color32, Context};
 use quire_core::WrappingIndent;
+use quire_core::injected::{LineProjection, PositionAffinity};
 
 use crate::galley_cache::{GalleyCache, GalleyKey, hash_one};
 use crate::layout::{self, LineLayout, LineShaper, Mono};
@@ -189,7 +190,10 @@ enum Rows {
 }
 
 /// A document line as laid out on screen: one row, or several when wrapped; possibly only a
-/// prefix of the line (long lines), followed by a marker.
+/// prefix of the line (long lines), followed by a marker; possibly with injected text (inlay
+/// hints, the IME preedit). Columns in its API are document byte columns of the line; with
+/// injected text they are mapped as VS Code's `ModelLineProjectionData` does (a column at an
+/// injection shows before it).
 #[derive(Clone, Debug)]
 pub struct VisualLine {
     rows: Rows,
@@ -197,14 +201,26 @@ pub struct VisualLine {
     full_len: usize,
     /// x range of the marker after a cut line's last row (row-relative, indent included).
     marker: Option<(f32, f32)>,
+    /// The injected text in the rows (offsets are document columns).
+    inj: Option<Arc<LineProjection>>,
 }
 
 impl VisualLine {
     fn new(rows: Rows, full_len: usize, adv: f32) -> Self {
+        Self::with_injections(rows, full_len, adv, None)
+    }
+
+    fn with_injections(
+        rows: Rows,
+        full_len: usize,
+        adv: f32,
+        inj: Option<Arc<LineProjection>>,
+    ) -> Self {
         let mut v = Self {
             rows,
             full_len,
             marker: None,
+            inj,
         };
         if full_len > v.rendered_len() {
             let k = v.n_rows() - 1;
@@ -212,6 +228,67 @@ impl VisualLine {
             v.marker = Some((end + adv * 0.5, end + adv * 2.5));
         }
         v
+    }
+
+    /// The layout column (in the text with injections) of document column `col`.
+    fn to_layout(&self, col: usize) -> usize {
+        match &self.inj {
+            Some(p) => {
+                p.translate_to_output_position(col, PositionAffinity::None)
+                    .offset
+            }
+            None => col,
+        }
+    }
+
+    /// The document column shown at layout column `l` (inside injected text: its column).
+    fn to_doc(&self, l: usize) -> usize {
+        match &self.inj {
+            Some(p) => p.translate_to_input_offset(0, l),
+            None => l,
+        }
+    }
+
+    /// Whether layout byte `l` of row `k`'s text (relative to the row) is injected text.
+    pub fn is_injected(&self, k: usize, l: usize) -> bool {
+        self.inj
+            .as_ref()
+            .is_some_and(|p| p.injection_containing(self.row_start_l(k) + l).is_some())
+    }
+
+    /// The injection under `x` on row `k` (its index in [`VisualLine::injections`]).
+    pub fn injection_at(&self, k: usize, x: f32) -> Option<usize> {
+        let p = self.inj.as_ref()?;
+        let k = k.min(self.n_rows() - 1);
+        let (rs, re) = (self.row_start_l(k), self.row_end_l(k));
+        let x0 = self.row_x0(k);
+        let layout = self.row_layout(k);
+        for (i, inj) in p.injections.iter().enumerate() {
+            let a = p.injection_start(i);
+            let b = a + inj.len;
+            if b <= rs || a >= re || inj.len == 0 {
+                continue;
+            }
+            let xa = x0 + layout.x_of(a.max(rs) - rs);
+            let xb = x0 + layout.x_of(b.min(re) - rs);
+            if x >= xa && x < xb {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    /// Layout column where row `k` starts.
+    fn row_start_l(&self, k: usize) -> usize {
+        match &self.rows {
+            Rows::One(_) => 0,
+            Rows::Many(w) => w.rows[k].start,
+        }
+    }
+
+    /// Layout column where row `k` ends.
+    fn row_end_l(&self, k: usize) -> usize {
+        self.row_start_l(k) + self.row_layout(k).text().len()
     }
 
     pub fn n_rows(&self) -> usize {
@@ -223,15 +300,12 @@ impl VisualLine {
 
     /// Byte offset where row `k` starts.
     pub fn row_start(&self, k: usize) -> usize {
-        match &self.rows {
-            Rows::One(_) => 0,
-            Rows::Many(w) => w.rows[k].start,
-        }
+        self.to_doc(self.row_start_l(k))
     }
 
     /// Byte offset where row `k` ends (the next row's start, or the end of the rendered text).
     pub fn row_end(&self, k: usize) -> usize {
-        self.row_start(k) + self.row_layout(k).text().len()
+        self.to_doc(self.row_end_l(k))
     }
 
     /// x where row `k`'s text starts (the wrapping indent for rows after the first).
@@ -273,7 +347,8 @@ impl VisualLine {
         {
             return m1;
         }
-        let (rs, re) = (self.row_start(k), self.row_end(k));
+        let (rs, re) = (self.row_start_l(k), self.row_end_l(k));
+        let col = self.to_layout(col);
         self.row_x0(k) + self.row_layout(k).x_of(col.clamp(rs, re) - rs)
     }
 
@@ -283,6 +358,7 @@ impl VisualLine {
         match &self.rows {
             Rows::One(_) => 0,
             Rows::Many(w) => {
+                let col = self.to_layout(col);
                 let k = w.rows.partition_point(|r| r.start <= col).max(1) - 1;
                 if upstream && k > 0 && w.rows[k].start == col {
                     k - 1
@@ -299,6 +375,21 @@ impl VisualLine {
         (k, self.x_in_row(k, col))
     }
 
+    /// (row, x) of byte `extra` of the text injected at document column `col` (the IME
+    /// preedit's caret).
+    pub fn locate_injected(&self, col: usize, extra: usize) -> (usize, f32) {
+        let l = self.to_layout(col) + extra;
+        let k = match &self.rows {
+            Rows::One(_) => 0,
+            Rows::Many(w) => w.rows.partition_point(|r| r.start <= l).max(1) - 1,
+        };
+        let (rs, re) = (self.row_start_l(k), self.row_end_l(k));
+        (
+            k,
+            self.row_x0(k) + self.row_layout(k).x_of(l.clamp(rs, re) - rs),
+        )
+    }
+
     /// The byte nearest to `x` on row `k`, and whether it is the end of a row that is not the
     /// last (the caret then belongs at that row's end, not the next row's start).
     pub fn hit(&self, k: usize, x: f32) -> (usize, bool) {
@@ -309,12 +400,12 @@ impl VisualLine {
         {
             return (self.full_len, false);
         }
-        let (rs, re) = (self.row_start(k), self.row_end(k));
+        let (rs, re) = (self.row_start_l(k), self.row_end_l(k));
         let c = rs + self.row_layout(k).col_at(x - self.row_x0(k));
         if !last && c >= re {
-            (re, true)
+            (self.to_doc(re), true)
         } else {
-            (c.min(re), false)
+            (self.to_doc(c.min(re)), false)
         }
     }
 
@@ -533,8 +624,8 @@ pub(crate) fn shape_line(
     VisualLine::new(Rows::Many(rows), full_len, adv)
 }
 
-/// Lay out `text` with formats `spans` through the caches (the IME preedit line; `style`
-/// hashes the formats), wrapped when `wrap` is set and the text is wider than a row. `full_len`
+/// Lay out `text` with formats `spans` through the caches (a line with injected text `inj`;
+/// `style` hashes the formats), wrapped when `wrap` is set and the text is wider than a row. `full_len`
 /// is the bytes of the line as shown (more than `text` when the line is cut to a prefix).
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn shape_formatted(
@@ -546,6 +637,7 @@ pub(crate) fn shape_formatted(
     style: u64,
     wrap: Option<Wrap>,
     full_len: usize,
+    inj: Option<Arc<LineProjection>>,
 ) -> VisualLine {
     let (ctx, mono, ts) = (sh.ctx, sh.mono, sh.tab_size);
     let adv = mono.advance();
@@ -577,9 +669,9 @@ pub(crate) fn shape_formatted(
                     Some(&one),
                 ))
             });
-            VisualLine::new(Rows::Many(rows), full_len, adv)
+            VisualLine::with_injections(Rows::Many(rows), full_len, adv, inj)
         }
-        _ => VisualLine::new(Rows::One(one), full_len, adv),
+        _ => VisualLine::with_injections(Rows::One(one), full_len, adv, inj),
     }
 }
 

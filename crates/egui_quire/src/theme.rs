@@ -29,6 +29,13 @@ pub struct EditorTheme {
     pub warning: Color32,
     pub info: Color32,
     pub hint: Color32,
+    /// Inlay hints (VS Code `editorInlayHint.foreground` / `.background`).
+    pub inlay_hint_foreground: Color32,
+    pub inlay_hint_background: Color32,
+    /// Type hints (`editorInlayHint.typeForeground` / `.typeBackground`); `None`: the above.
+    pub inlay_hint_type: Option<(Color32, Color32)>,
+    /// Parameter hints (`editorInlayHint.parameterForeground` / `.parameterBackground`).
+    pub inlay_hint_parameter: Option<(Color32, Color32)>,
     /// Foreground per token type (index = the token type of the style; see `quire_core` tokens).
     /// Missing entries use `foreground`.
     pub token_colors: Vec<Color32>,
@@ -61,6 +68,15 @@ impl EditorTheme {
             warning: v.warn_fg_color,
             info: Color32::from_rgb(55, 148, 255),
             hint: v.weak_text_color(),
+            inlay_hint_foreground: Color32::from_rgb(150, 150, 150),
+            // badge background at 10 %
+            inlay_hint_background: if v.dark_mode {
+                Color32::from_rgba_unmultiplied(77, 77, 77, 26)
+            } else {
+                Color32::from_rgba_unmultiplied(196, 196, 196, 26)
+            },
+            inlay_hint_type: None,
+            inlay_hint_parameter: None,
             token_colors: default_token_colors(v.dark_mode, fg),
             blink_on: v.text_cursor.on_duration,
             blink_off: v.text_cursor.off_duration,
@@ -74,6 +90,20 @@ impl EditorTheme {
             .get(token_type)
             .copied()
             .unwrap_or(self.foreground)
+    }
+
+    /// (foreground, background) of an inlay hint of `kind`.
+    pub fn inlay_hint_colors(
+        &self,
+        kind: Option<quire_core::inlay_hints::InlayHintKind>,
+    ) -> (Color32, Color32) {
+        use quire_core::inlay_hints::InlayHintKind as K;
+        let base = (self.inlay_hint_foreground, self.inlay_hint_background);
+        match kind {
+            Some(K::Type) => self.inlay_hint_type.unwrap_or(base),
+            Some(K::Parameter) => self.inlay_hint_parameter.unwrap_or(base),
+            None => base,
+        }
     }
 
     /// Hash of everything that affects line galleys (font is keyed separately).

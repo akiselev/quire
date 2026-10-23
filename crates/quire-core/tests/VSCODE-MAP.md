@@ -1391,6 +1391,20 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 |---|---|---|
 | suggest, word distance > Suggest locality bonus can boost current word #90515 | `crates/quire-core/tests/suggest_session.rs` | fail (ours: no word-distance locality bonus (editor.suggest.localityBonus, default off, not implemented)) |
 
+## lineBreakData.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Editor ViewModel - LineBreakData > Basic | `crates/quire-core/tests/line_projection.rs` `basic` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 1 > getInputOffsetOfOutputPosition | `crates/quire-core/tests/line_projection.rs` `injected_text_1_input_offset_of_output_position` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 1 > getOutputPositionOfInputOffset | `crates/quire-core/tests/line_projection.rs` `injected_text_1_output_position_of_input_offset` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 1 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset | `crates/quire-core/tests/line_projection.rs` `injected_text_1_inverse` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 1 > normalization | `crates/quire-core/tests/line_projection.rs` `injected_text_1_normalization` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 2 > getInputOffsetOfOutputPosition | `crates/quire-core/tests/line_projection.rs` `injected_text_2_input_offset_of_output_position` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 2 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset | `crates/quire-core/tests/line_projection.rs` `injected_text_2_inverse` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition | `crates/quire-core/tests/line_projection.rs` `injected_text_3_input_offset_of_output_position` | pass |
+| Editor ViewModel - LineBreakData > Injected Text 3 > getInputOffsetOfOutputPosition is inverse of getOutputPositionOfInputOffset | `crates/quire-core/tests/line_projection.rs` `injected_text_3_inverse` | pass |
+
 ## Per suite
 
 | suite | tests | pass | ours | bug | N/A |
@@ -1425,11 +1439,12 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | snippetSession.test.ts | 47 | 24 | 0 | 0 | 12 | (todo 11)
 | suggestModel.test.ts | 32 | 20 | 0 | 0 | 12 |
 | wordDistance.test.ts | 1 | 0 | 1 | 0 | 0 |
+| lineBreakData.test.ts | 9 | 9 | 0 | 0 | 0 |
 
 ## Totals
 
-- VS Code tests listed: 1236
-- translated: 730 (pass 703, fail ours 27, fail bug 0)
+- VS Code tests listed: 1245
+- translated: 739 (pass 712, fail ours 27, fail bug 0)
 - N/A: 469
 - todo (not yet ported, outside the translated count): 37
 

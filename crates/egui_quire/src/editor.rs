@@ -123,6 +123,26 @@ pub enum EditorEvent {
         command_id: String,
         args: serde_json::Value,
     },
+    /// The inlay hints ask the host's providers for the hints in `ranges` (VS Code
+    /// `provideInlayHints`). Answer, now or later, with
+    /// `EditorView::set_inlay_hints(doc, id, version, hints)`.
+    InlayHintsRequested {
+        id: quire_core::inlay_hints::InlayHintsRequestId,
+        /// Whole-line byte ranges at `version`.
+        ranges: Vec<Range<usize>>,
+        version: Version,
+    },
+    /// Ctrl+click (Cmd+click) on an inlay hint label part with a command, for the host's
+    /// registry.
+    InlayHintCommand {
+        command_id: String,
+        args: serde_json::Value,
+    },
+    /// Ctrl+click (Cmd+click) on an inlay hint label part with a location: the host goes to it
+    /// (VS Code `goToDefinitionWithLocation`).
+    InlayHintLocationActivated {
+        location: quire_core::inlay_hints::InlayHintLocation,
+    },
 }
 
 /// What one frame of the editor produced.
@@ -695,6 +715,12 @@ impl<'a> CodeEditor<'a> {
         // Hover and parameter hints timers run on the host clock (egui's input time).
         frame.hover_scroll_check();
         let now_ms = (ctx.input(|i| i.time) * 1000.0) as u64;
+        // Inlay hints: the lines on screen, and Ctrl+Alt for the `UnlessPressed` modes.
+        let lines = frame.visible_lines();
+        frame.view.set_visible_lines(lines);
+        let m = ctx.input(|i| i.modifiers);
+        let pressed = m.ctrl && m.alt && !(m.shift || m.mac_cmd);
+        frame.view.set_inlay_hints_modifier(frame.doc, pressed);
         frame.view.tick(frame.doc, now_ms);
 
         // The parameter hints (above the caret) and the suggest list (below it).
@@ -807,6 +833,30 @@ fn estimate_rows(cols: u32, wrap: u32, stop_after: usize) -> u32 {
 /// The rendered part of a document line (`slice`, without its break): all of it, or its first
 /// `stop` chars when it may be longer (E3 F2). A line split across rope chunks is joined in
 /// `buf`.
+/// Text shown in a line that is not in the document.
+#[derive(Clone, Debug)]
+pub(crate) struct Injected {
+    /// The byte column of the line it shows at.
+    pub col: usize,
+    pub text: String,
+    pub what: InjectedWhat,
+    pub stops: quire_core::injected::CursorStops,
+}
+
+/// What injected text is.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub(crate) enum InjectedWhat {
+    /// The IME preedit.
+    Preedit,
+    /// Piece `piece` of inlay hint `hint` (label part `part`).
+    Hint {
+        hint: usize,
+        piece: usize,
+        part: Option<usize>,
+        kind: Option<quire_core::inlay_hints::InlayHintKind>,
+    },
+}
+
 fn rendered_str<'t>(slice: quire_core::TextSlice<'t>, stop: usize, buf: &'t mut String) -> &'t str {
     if slice.len_bytes() > stop {
         // Possibly more chars than the prefix: copy at most `stop` of them.
@@ -1454,6 +1504,17 @@ impl FrameCx<'_> {
                 }),
             }
         }
+        for o in self.view.take_inlay_hints_outputs() {
+            match o {
+                quire_core::inlay_hints::InlayHintsOutput::Request(r) => {
+                    self.out.events.push(EditorEvent::InlayHintsRequested {
+                        id: r.id,
+                        ranges: r.ranges,
+                        version: r.version,
+                    })
+                }
+            }
+        }
         for o in self.view.take_parameter_hints_outputs() {
             match o {
                 ParameterHintsOutput::Request(r) => {
@@ -2020,11 +2081,16 @@ impl FrameCx<'_> {
         self.mem.upstream = (!heads.is_empty()).then(|| (self.selection_key(), heads));
     }
 
-    /// Lay out line `line` through the cache. A cache hit allocates nothing: a line split across
-    /// rope chunks is joined in a reused buffer, and token runs go to a reused vector (E1).
-    /// A line longer than `stop_rendering_line_after` chars lays out only that prefix (E3 F2).
-    /// Laying out a line measures its rows into the height index.
+    /// Lay out line `line` through the cache, with its injected text (inlay hints; the IME
+    /// preedit at the primary caret). Without injected text, a cache hit allocates nothing: a
+    /// line split across rope chunks is joined in a reused buffer, and token runs go to a
+    /// reused vector (E1). A line longer than `stop_rendering_line_after` chars lays out only
+    /// that prefix (E3 F2). Laying out a line measures its rows into the height index.
     pub fn layout_line(&mut self, line: usize) -> VisualLine {
+        let injected = self.line_injected(line);
+        if !injected.is_empty() {
+            return self.layout_injected_line(line, injected);
+        }
         let text = glue::text(self.doc);
         let slice = text.line(line);
         let full_len = slice.len_bytes();
@@ -2058,44 +2124,133 @@ impl FrameCx<'_> {
         layout
     }
 
-    /// Line `line` with the IME preedit `pre` spliced in at byte `col`, underlined, through the
-    /// caches (keyed by the line, the preedit and where it goes). A line longer than
-    /// `stop_rendering_line_after` lays out only its prefix, with the preedit inside it: at the
-    /// prefix's end when the caret is past it. Returns the layout and the byte column the
-    /// preedit went to. Laying it out measures the line's rows.
-    pub fn layout_preedit_line(
-        &mut self,
-        line: usize,
-        col: usize,
-        pre: &str,
-    ) -> (VisualLine, usize) {
+    /// The text injected into line `line`, sorted by column: the IME preedit at the primary
+    /// caret, then the inlay hints' pieces.
+    pub(crate) fn line_injected(&mut self, line: usize) -> Vec<Injected> {
+        let mut out = Vec::new();
+        let text = glue::text(self.doc);
+        if let Some(p) = glue::preedit(self.view) {
+            let head = glue::selection(self.view)
+                .primary()
+                .head
+                .min(text.len_bytes());
+            if text.byte_to_line(head) == line {
+                out.push(Injected {
+                    col: head - text.line_to_byte(line),
+                    text: p.text.clone(),
+                    what: InjectedWhat::Preedit,
+                    stops: quire_core::injected::CursorStops::Both,
+                });
+            }
+        }
+        if !self.view.inlay_hints().is_empty() {
+            let start = text.line_to_byte(line);
+            for h in self.view.line_inlay_hints(self.doc, line) {
+                for (k, p) in h.pieces.into_iter().enumerate() {
+                    out.push(Injected {
+                        col: h.pos - start,
+                        text: p.text,
+                        what: InjectedWhat::Hint {
+                            hint: h.hint,
+                            piece: k,
+                            part: p.part,
+                            kind: h.kind,
+                        },
+                        stops: p.cursor_stops,
+                    });
+                }
+            }
+        }
+        out.sort_by_key(|i| i.col);
+        out
+    }
+
+    /// Line `line` with `injected` spliced in, through the caches (keyed by the line and the
+    /// injected text). A line longer than `stop_rendering_line_after` lays out only its
+    /// prefix; injections past it go to its end. Laying it out measures the line's rows.
+    fn layout_injected_line(&mut self, line: usize, injected: Vec<Injected>) -> VisualLine {
         use egui::text::TextFormat;
+        use quire_core::injected::{Injection, LineProjection};
         let text = glue::text(self.doc);
         let slice = text.line(line);
         let full_len = slice.len_bytes();
         let mut buf = std::mem::take(&mut self.mem.line_buf);
+        let mut runs = std::mem::take(&mut self.mem.runs_buf);
         let s = rendered_str(slice, self.geom.stop_after, &mut buf);
-        let mut at = col.min(s.len());
-        while !s.is_char_boundary(at) {
-            at -= 1;
-        }
-        let spliced: String = [&s[..at], pre, &s[at..]].concat();
-        self.mem.line_buf = buf;
+        let base_hash = glue::line_runs(self.doc, line, self.theme, &mut runs);
         let theme = self.theme;
         let font = theme.font.clone();
         let plain = TextFormat::simple(font.clone(), theme.foreground);
-        let under = TextFormat {
-            underline: egui::Stroke::new(1.0, theme.preedit_underline),
-            ..TextFormat::simple(font, theme.foreground)
+        let run_fmt = |c: Color32| TextFormat::simple(font.clone(), c);
+        let base_at = |col: usize| {
+            let i = runs.partition_point(|&(st, _)| st <= col);
+            if i == 0 {
+                plain.clone()
+            } else {
+                run_fmt(runs[i - 1].1)
+            }
         };
-        let spans = [(at, under), (at + pre.len(), plain.clone())];
+        let mut out = String::with_capacity(s.len() + 16);
+        let mut spans: Vec<(usize, TextFormat)> = Vec::new();
+        let mut injections = Vec::with_capacity(injected.len());
+        let mut doc_at = 0usize;
+        let mut ri = 0usize;
+        let mut emit_doc =
+            |out: &mut String, spans: &mut Vec<(usize, TextFormat)>, a: usize, b: usize| {
+                while ri < runs.len() && runs[ri].0 < b {
+                    let st = runs[ri].0.max(a);
+                    spans.push((out.len() + st - a, run_fmt(runs[ri].1)));
+                    ri += 1;
+                }
+                out.push_str(&s[a..b]);
+            };
+        for inj in &injected {
+            let mut col = inj.col.min(s.len());
+            while !s.is_char_boundary(col) {
+                col -= 1;
+            }
+            emit_doc(&mut out, &mut spans, doc_at, col);
+            doc_at = col;
+            let fmt = match inj.what {
+                InjectedWhat::Preedit => TextFormat {
+                    underline: egui::Stroke::new(1.0, theme.preedit_underline),
+                    ..plain.clone()
+                },
+                InjectedWhat::Hint { kind, .. } => {
+                    let (fg, bg) = theme.inlay_hint_colors(kind);
+                    TextFormat {
+                        background: bg,
+                        ..TextFormat::simple(font.clone(), fg)
+                    }
+                }
+            };
+            spans.push((out.len(), fmt));
+            out.push_str(&inj.text);
+            spans.push((out.len(), base_at(col)));
+            injections.push(Injection {
+                offset: col,
+                len: inj.text.len(),
+                cursor_stops: inj.stops,
+            });
+        }
+        emit_doc(&mut out, &mut spans, doc_at, s.len());
+        spans.sort_by_key(|(st, _)| *st);
+        self.mem.line_buf = buf;
+        self.mem.runs_buf = runs;
         let style = crate::galley_cache::hash_one((
-            "quire.preedit",
-            at,
-            pre.len(),
+            "quire.injected",
+            base_hash,
+            injected
+                .iter()
+                .map(|i| (i.col, i.text.len(), i.what))
+                .collect::<Vec<_>>(),
             theme.preedit_underline,
-            theme.foreground,
+            theme.inlay_hint_colors(None),
+            theme.inlay_hint_colors(Some(quire_core::inlay_hints::InlayHintKind::Type)),
+            theme.inlay_hint_colors(Some(quire_core::inlay_hints::InlayHintKind::Parameter)),
         )) ^ self.mem.style_salt;
+        let extra: usize = injections.iter().map(|i| i.len).sum();
+        let proj = std::sync::Arc::new(LineProjection::unwrapped(full_len, injections));
         let mut shaper = LineShaper {
             cache: &mut self.mem.galleys,
             ctx: self.ctx,
@@ -2107,15 +2262,16 @@ impl FrameCx<'_> {
         let layout = wrap::shape_formatted(
             &mut shaper,
             &mut self.mem.wraps,
-            &spliced,
+            &out,
             &spans,
             &plain,
             style,
             self.geom.wrap,
-            full_len + pre.len(),
+            full_len + extra,
+            Some(proj),
         );
         self.note_rows(line, layout.n_rows());
-        (layout, at)
+        layout
     }
 
     /// Record a laid-out line's measured rows in the height index (not for folded lines).
@@ -2140,6 +2296,59 @@ impl FrameCx<'_> {
             Unit::Char => pos..pos,
             Unit::Word => glue::word_range_at(self.doc, pos),
             Unit::Line => glue::line_range_at(self.doc, pos),
+        }
+    }
+
+    /// The inlay hint (and label part) under `p`.
+    fn hint_under(&mut self, p: Pos2) -> Option<(usize, Option<usize>)> {
+        if self.view.inlay_hints().is_empty() || !self.geom.text.contains(p) {
+            return None;
+        }
+        let (line, row) = self.line_row_at(p.y);
+        if line >= glue::text(self.doc).len_lines() {
+            return None;
+        }
+        let injected = self.line_injected(line);
+        if injected.is_empty() {
+            return None;
+        }
+        let vl = self.layout_line(line);
+        let i = vl.injection_at(row, p.x - self.geom.text_left(self.mem))?;
+        match injected.get(i)?.what {
+            InjectedWhat::Hint { hint, part, .. } => Some((hint, part)),
+            InjectedWhat::Preedit => None,
+        }
+    }
+
+    /// The tooltip of an inlay hint (the label part's, else the hint's) at the pointer
+    /// (VS Code `InlayHintsHover`).
+    fn hint_tooltip(&mut self, ui: &Ui, response: &Response, hint: usize, part: Option<usize>) {
+        use quire_core::parameter_hints::Documentation;
+        let Some(h) = self.view.inlay_hints().hint(hint) else {
+            return;
+        };
+        let tip = part
+            .and_then(|k| h.label.get(k)?.tooltip.clone())
+            .or_else(|| h.tooltip.clone());
+        let Some(tip) = tip else {
+            return;
+        };
+        let style = crate::markdown::Style {
+            code_font: self.theme.font.clone(),
+            code_bg: ui.visuals().code_bg_color,
+            dim: ui.visuals().weak_text_color(),
+        };
+        let mut link = None;
+        response.clone().on_hover_ui_at_pointer(|ui| match &tip {
+            Documentation::Plain(s) => {
+                ui.label(s.as_str());
+            }
+            Documentation::Markdown(s) => link = crate::markdown::show(ui, s, &style),
+        });
+        if let Some(href) = link {
+            self.out
+                .events
+                .push(EditorEvent::HoverLinkActivated { href });
         }
     }
 
@@ -2178,6 +2387,36 @@ impl FrameCx<'_> {
         if response.secondary_clicked() {
             let pos = self.pos_at(ptr);
             self.out.events.push(EditorEvent::ContextMenu { pos });
+        }
+
+        // Inlay hints: Ctrl+click runs a label part's command or opens its location, a double
+        // click applies the hint's edits, the mouse over a hint shows its tooltip.
+        let under_hint = self.hint_under(ptr);
+        if let Some((hint, part)) = under_hint {
+            if pressed && response.hovered() && mods.command && !mods.shift && !mods.alt {
+                let p = part.and_then(|k| self.view.inlay_hints().hint(hint)?.label.get(k));
+                if let Some(p) = p {
+                    if let Some(location) = p.location.clone() {
+                        self.out
+                            .events
+                            .push(EditorEvent::InlayHintLocationActivated { location });
+                        self.mem.last_press = None;
+                        return;
+                    }
+                    if let Some(c) = &p.command {
+                        self.out.events.push(EditorEvent::InlayHintCommand {
+                            command_id: c.id.clone(),
+                            args: serde_json::from_str(&c.args_json)
+                                .unwrap_or(serde_json::Value::Null),
+                        });
+                        self.mem.last_press = None;
+                        return;
+                    }
+                }
+            }
+            if !down {
+                self.hint_tooltip(ui, response, hint, part);
+            }
         }
 
         if pressed && response.hovered() && in_text {
@@ -2259,6 +2498,19 @@ impl FrameCx<'_> {
             self.set_selection(new);
             if up && unit == Unit::Char {
                 self.set_upstream(vec![pos]);
+            }
+            // VS Code `_installDblClickGesture`: after the double click's word selection, the
+            // hint's edits apply.
+            if count == 2
+                && !self.read_only
+                && let Some((hint, _)) = under_hint
+                && let Some(tr) = self.view.inlay_hint_edits(self.doc, hint)
+            {
+                self.mem.drag = None;
+                let tr = tr.with_author(self.author);
+                if let Ok(a) = self.doc.apply(tr, self.view) {
+                    self.push_applied(a);
+                }
             }
         } else if down
             && let Some(Drag {
