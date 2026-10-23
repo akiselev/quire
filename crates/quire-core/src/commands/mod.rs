@@ -22,6 +22,7 @@ mod lines;
 pub(crate) use quire_text::ops::model;
 mod motion;
 mod multi;
+pub(crate) mod hints;
 pub(crate) mod suggest;
 pub(crate) use quire_text::words::vscode as words;
 
@@ -478,6 +479,20 @@ pub(crate) fn run(
         | C::JumpToNextSnippetPlaceholder
         | C::JumpToPrevSnippetPlaceholder
         | C::LeaveSnippet => suggest::run(doc, view, cmd),
+        C::ShowHover
+        | C::HideHover
+        | C::ScrollUpHover
+        | C::ScrollDownHover
+        | C::ScrollLeftHover
+        | C::ScrollRightHover
+        | C::PageUpHover
+        | C::PageDownHover
+        | C::GoToTopHover
+        | C::GoToBottomHover
+        | C::TriggerParameterHints
+        | C::CloseParameterHints
+        | C::ShowPrevParameterHint
+        | C::ShowNextParameterHint => Ok(hints::run(doc, view, cmd)),
         C::CursorMove { .. }
         | C::SetSelection { .. }
         | C::SelectAll

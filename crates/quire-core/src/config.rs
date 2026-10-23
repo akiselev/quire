@@ -238,6 +238,10 @@ pub struct EditorConfig {
     pub stop_rendering_line_after: usize,
     /// Completion options (VS Code `editor.suggest.*`, `editor.quickSuggestions`, ...).
     pub suggest: crate::completion::SuggestConfig,
+    /// Hover options (VS Code `editor.hover.*`).
+    pub hover: crate::hover::HoverConfig,
+    /// Parameter hints options (VS Code `editor.parameterHints.*`).
+    pub parameter_hints: crate::parameter_hints::ParameterHintsConfig,
 }
 
 impl Default for EditorConfig {
@@ -297,6 +301,8 @@ impl Default for EditorConfig {
             wrapping_indent: WrappingIndent::Same,
             stop_rendering_line_after: 10_000,
             suggest: crate::completion::SuggestConfig::default(),
+            hover: crate::hover::HoverConfig::default(),
+            parameter_hints: crate::parameter_hints::ParameterHintsConfig::default(),
         }
     }
 }

@@ -352,6 +352,50 @@ pub enum EditorCommand {
     /// Leave snippet mode, keeping the primary cursor (Escape in a snippet).
     #[cfg_attr(feature = "serde", serde(rename = "leaveSnippet"))]
     LeaveSnippet,
+    /// Show the hover at the primary cursor, or focus it when shown (VS Code
+    /// `editor.action.showHover`, Ctrl+K Ctrl+I).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.showHover"))]
+    ShowHover,
+    /// Hide the hover.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.hideHover"))]
+    HideHover,
+    /// Scroll the focused hover up a line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.scrollUpHover"))]
+    ScrollUpHover,
+    /// Scroll the focused hover down a line.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.scrollDownHover"))]
+    ScrollDownHover,
+    /// Scroll the focused hover left.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.scrollLeftHover"))]
+    ScrollLeftHover,
+    /// Scroll the focused hover right.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.scrollRightHover"))]
+    ScrollRightHover,
+    /// Scroll the focused hover up a page.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.pageUpHover"))]
+    PageUpHover,
+    /// Scroll the focused hover down a page.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.pageDownHover"))]
+    PageDownHover,
+    /// Scroll the focused hover to its top.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.goToTopHover"))]
+    GoToTopHover,
+    /// Scroll the focused hover to its bottom.
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.goToBottomHover"))]
+    GoToBottomHover,
+    /// Ask the host for signature help at the primary cursor (VS Code
+    /// `editor.action.triggerParameterHints`, Ctrl+Shift+Space).
+    #[cfg_attr(feature = "serde", serde(rename = "editor.action.triggerParameterHints"))]
+    TriggerParameterHints,
+    /// Close the parameter hints (Escape).
+    #[cfg_attr(feature = "serde", serde(rename = "closeParameterHints"))]
+    CloseParameterHints,
+    /// Show the previous signature (Up).
+    #[cfg_attr(feature = "serde", serde(rename = "showPrevParameterHint"))]
+    ShowPrevParameterHint,
+    /// Show the next signature (Down).
+    #[cfg_attr(feature = "serde", serde(rename = "showNextParameterHint"))]
+    ShowNextParameterHint,
     /// Scroll a line into view.
     #[cfg_attr(feature = "serde", serde(rename = "revealLine"))]
     RevealLine {
@@ -439,6 +483,20 @@ impl EditorCommand {
             JumpToNextSnippetPlaceholder => "jumpToNextSnippetPlaceholder",
             JumpToPrevSnippetPlaceholder => "jumpToPrevSnippetPlaceholder",
             LeaveSnippet => "leaveSnippet",
+            ShowHover => "editor.action.showHover",
+            HideHover => "editor.action.hideHover",
+            ScrollUpHover => "editor.action.scrollUpHover",
+            ScrollDownHover => "editor.action.scrollDownHover",
+            ScrollLeftHover => "editor.action.scrollLeftHover",
+            ScrollRightHover => "editor.action.scrollRightHover",
+            PageUpHover => "editor.action.pageUpHover",
+            PageDownHover => "editor.action.pageDownHover",
+            GoToTopHover => "editor.action.goToTopHover",
+            GoToBottomHover => "editor.action.goToBottomHover",
+            TriggerParameterHints => "editor.action.triggerParameterHints",
+            CloseParameterHints => "closeParameterHints",
+            ShowPrevParameterHint => "showPrevParameterHint",
+            ShowNextParameterHint => "showNextParameterHint",
         }
     }
 
@@ -537,6 +595,20 @@ impl EditorCommand {
             "jumpToNextSnippetPlaceholder" => JumpToNextSnippetPlaceholder,
             "jumpToPrevSnippetPlaceholder" => JumpToPrevSnippetPlaceholder,
             "leaveSnippet" => LeaveSnippet,
+            "editor.action.showHover" => ShowHover,
+            "editor.action.hideHover" => HideHover,
+            "editor.action.scrollUpHover" => ScrollUpHover,
+            "editor.action.scrollDownHover" => ScrollDownHover,
+            "editor.action.scrollLeftHover" => ScrollLeftHover,
+            "editor.action.scrollRightHover" => ScrollRightHover,
+            "editor.action.pageUpHover" => PageUpHover,
+            "editor.action.pageDownHover" => PageDownHover,
+            "editor.action.goToTopHover" => GoToTopHover,
+            "editor.action.goToBottomHover" => GoToBottomHover,
+            "editor.action.triggerParameterHints" => TriggerParameterHints,
+            "closeParameterHints" => CloseParameterHints,
+            "showPrevParameterHint" => ShowPrevParameterHint,
+            "showNextParameterHint" => ShowNextParameterHint,
             _ => return None,
         })
     }
