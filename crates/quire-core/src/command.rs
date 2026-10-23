@@ -385,7 +385,10 @@ pub enum EditorCommand {
     GoToBottomHover,
     /// Ask the host for signature help at the primary cursor (VS Code
     /// `editor.action.triggerParameterHints`, Ctrl+Shift+Space).
-    #[cfg_attr(feature = "serde", serde(rename = "editor.action.triggerParameterHints"))]
+    #[cfg_attr(
+        feature = "serde",
+        serde(rename = "editor.action.triggerParameterHints")
+    )]
     TriggerParameterHints,
     /// Close the parameter hints (Escape).
     #[cfg_attr(feature = "serde", serde(rename = "closeParameterHints"))]

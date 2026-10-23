@@ -20,9 +20,9 @@ mod fold;
 mod indentation;
 mod lines;
 pub(crate) use quire_text::ops::model;
+pub(crate) mod hints;
 mod motion;
 mod multi;
-pub(crate) mod hints;
 pub(crate) mod suggest;
 pub(crate) use quire_text::words::vscode as words;
 

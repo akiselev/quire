@@ -51,6 +51,37 @@ fn docs(ui: &mut Ui, d: &Documentation, style: &markdown::Style) -> Option<Strin
     }
 }
 
+/// VS Code's chevron buttons, painted (the default fonts have no arrow glyphs).
+fn arrow(ui: &mut Ui, up: bool, label: &str) -> egui::Response {
+    let size = vec2(16.0, 14.0);
+    let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
+    let resp = resp.on_hover_text(label);
+    let label = label.to_string();
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
+    let v = ui.style().interact(&resp);
+    let c = rect.center();
+    let (dx, dy) = (4.0, 2.5);
+    let pts = if up {
+        vec![
+            pos2(c.x - dx, c.y + dy),
+            pos2(c.x + dx, c.y + dy),
+            pos2(c.x, c.y - dy),
+        ]
+    } else {
+        vec![
+            pos2(c.x - dx, c.y - dy),
+            pos2(c.x + dx, c.y - dy),
+            pos2(c.x, c.y + dy),
+        ]
+    };
+    ui.painter().add(egui::Shape::convex_polygon(
+        pts,
+        v.fg_stroke.color,
+        egui::Stroke::NONE,
+    ));
+    resp
+}
+
 pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<Rect>, text: &EditorText) {
     let Some(h) = f.view.parameter_hints().active().cloned() else {
         f.mem.parameter_hints_size = None;
@@ -94,7 +125,10 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<Rect>, text: 
     job.append(&sig.label[range.end..], 0.0, fmt(fg, false));
     job.wrap.max_width = 480.0;
 
-    let size = f.mem.parameter_hints_size.unwrap_or(vec2(300.0, f.geom.row_h * 2.0));
+    let size = f
+        .mem
+        .parameter_hints_size
+        .unwrap_or(vec2(300.0, f.geom.row_h * 2.0));
     let screen = f.ctx.content_rect();
     // Preference ABOVE, then BELOW.
     let y = if caret.top() - size.y >= screen.top() {
@@ -140,18 +174,21 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &mut Ui, caret: Option<Rect>, text: 
                 tip.horizontal_top(|ui| {
                     if multiple {
                         ui.vertical(|ui| {
-                            if ui.small_button("▲").on_hover_text(&text.previous_signature).clicked() {
+                            if arrow(ui, true, &text.previous_signature).clicked() {
                                 nav = Some(EditorCommand::ShowPrevParameterHint);
                             }
                             ui.label(RichText::new(&counter).color(style.dim).small());
-                            if ui.small_button("▼").on_hover_text(&text.next_signature).clicked() {
+                            if arrow(ui, false, &text.next_signature).clicked() {
                                 nav = Some(EditorCommand::ShowNextParameterHint);
                             }
                         });
                     }
                     ui.vertical(|ui| {
                         ui.add(egui::Label::new(job.clone()));
-                        let param_doc = sig.parameters.get(idx).and_then(|p| p.documentation.clone());
+                        let param_doc = sig
+                            .parameters
+                            .get(idx)
+                            .and_then(|p| p.documentation.clone());
                         if param_doc.is_some() || sig.documentation.is_some() {
                             ui.separator();
                         }

@@ -31,7 +31,9 @@ struct St {
 
 impl St {
     fn new(text: &str) -> Self {
-        let doc = Document::new(text, Default::default());
+        let mut doc = Document::new(text, Default::default());
+        // A host with a hover provider (HoverAt is a request to it).
+        doc.set_hover_sources(vec!["test".into()]);
         let views = vec![EditorView::new(&doc), EditorView::new(&doc)];
         Self {
             doc,
@@ -742,7 +744,8 @@ fn diagnostic_hover_shows_message_and_action() {
     h.run_steps(60);
     let btn = h.get_by_label("Prefix with _");
     assert!(
-        h.query_by_label("unused variable x").is_some(),
+        // The message, and the hover's Tooltip node named after it.
+        h.query_all_by_label("unused variable x").count() >= 1,
         "message in the hover"
     );
     btn.click();
@@ -874,7 +877,8 @@ fn idle_requests_no_frames_after_the_blink_stops() {
         h.step();
     }
     let r = h.state().rects[0];
-    h.event(Event::PointerMoved(pos2(r.center().x, r.top() + 30.0)));
+    // Over text: past a line's end there is no hover (VS Code).
+    h.event(Event::PointerMoved(pos2(r.left() + 100.0, r.top() + 30.0)));
     // The blink stops 5 s after the last interaction; the hover fires after 0.5 s.
     h.run_steps(60);
     assert!(

@@ -35,7 +35,10 @@ impl FrameCx<'_> {
         let row_start = vl.row_start(row);
         let top = self.geom.line_top(self.mem, line) + row as f32 * self.geom.row_h;
         let left = self.geom.text_left(self.mem);
-        let rect = Rect::from_min_size(pos2(left, top), vec2(self.geom.text.width(), self.geom.row_h));
+        let rect = Rect::from_min_size(
+            pos2(left, top),
+            vec2(self.geom.text.width(), self.geom.row_h),
+        );
         (rect, left + x, row_start)
     }
 }
@@ -73,7 +76,10 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &Ui, text: &EditorText) {
     let screen = f.ctx.content_rect();
     let max_h = (f.geom.rect.height() / 4.0).max(250.0);
     // The size of the last frame decides the placement (the first frame measures).
-    let size = f.mem.hover_size.unwrap_or(vec2(MAX_WIDTH * 0.6, f.geom.row_h * 3.0));
+    let size = f
+        .mem
+        .hover_size
+        .unwrap_or(vec2(MAX_WIDTH * 0.6, f.geom.row_h * 3.0));
     let above_fits = row.top() - size.y >= screen.top();
     let below_fits = row.bottom() + size.y <= screen.bottom();
     let above = if f.doc.config().hover.above {
@@ -178,7 +184,9 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &Ui, text: &EditorText) {
                                         ui.horizontal_wrapped(|ui| {
                                             ui.label(RichText::new(&d.message).color(c));
                                             let src = match &d.code {
-                                                Some(code) => format!("{}({code})", source.as_str()),
+                                                Some(code) => {
+                                                    format!("{}({code})", source.as_str())
+                                                }
                                                 None => source.as_str().to_string(),
                                             };
                                             ui.label(RichText::new(src).color(style.dim));
@@ -212,10 +220,7 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &Ui, text: &EditorText) {
                                 });
                                 let content = part.accessible_content();
                                 if !content.is_empty()
-                                    && ui
-                                        .small_button("⧉")
-                                        .on_hover_text(&text.hover_copy)
-                                        .clicked()
+                                    && ui.small_button(&text.hover_copy).clicked()
                                 {
                                     copy = Some(content);
                                 }
@@ -231,12 +236,18 @@ pub(crate) fn show(f: &mut FrameCx<'_>, ui: &Ui, text: &EditorText) {
     let rect = inner.response.rect;
     f.mem.hover_rect = Some(rect);
     f.mem.hover_size = Some(rect.size());
+    // A click on the hover's buttons takes egui's focus; the editor keeps it.
+    if (link.is_some() || action.is_some() || copy.is_some()) && f.mem.focused {
+        f.ctx.memory_mut(|m| m.request_focus(editor_id));
+    }
     if let Some(href) = link {
         f.out.events.push(EditorEvent::HoverLinkActivated { href });
     }
     if let Some((command_id, args)) = action {
         let args = serde_json::from_str(&args).unwrap_or(serde_json::Value::Null);
-        f.out.events.push(EditorEvent::DiagnosticAction { command_id, args });
+        f.out
+            .events
+            .push(EditorEvent::DiagnosticAction { command_id, args });
     }
     if let Some(c) = copy {
         f.ctx.copy_text(c);

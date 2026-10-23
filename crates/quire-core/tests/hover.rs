@@ -36,8 +36,11 @@ fn hover_placement_with_word_wrap_95328() {
     // 'just some text' wrapped at column 6 ("just " | "some " | "text"): the anchor at column 8
     // is on the visual row starting at column 6 (the widget's wrap rows give that column).
     let row_start = lc(1, 6).col;
-    let (show, secondary) =
-        compute_hover_positions(lc(1, 8)..lc(1, 8), row_start, &[(lc(1, 1)..lc(1, 15), false)]);
+    let (show, secondary) = compute_hover_positions(
+        lc(1, 8)..lc(1, 8),
+        row_start,
+        &[(lc(1, 1)..lc(1, 15), false)],
+    );
     assert_eq!(show, lc(1, 8));
     assert_eq!(secondary, lc(1, 6));
 }
@@ -55,47 +58,83 @@ fn should_show_hover_on() {
 
 #[test]
 fn should_show_hover_off() {
-    assert!(!should_show_hover(E::Off, M::Alt, mods(false, false, false)));
+    assert!(!should_show_hover(
+        E::Off,
+        M::Alt,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_ctrl_with_alt_modifier() {
-    assert!(should_show_hover(E::OnKeyboardModifier, M::Alt, mods(true, false, false)));
+    assert!(should_show_hover(
+        E::OnKeyboardModifier,
+        M::Alt,
+        mods(true, false, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_no_ctrl_with_alt_modifier() {
-    assert!(!should_show_hover(E::OnKeyboardModifier, M::Alt, mods(false, false, false)));
+    assert!(!should_show_hover(
+        E::OnKeyboardModifier,
+        M::Alt,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_meta_with_alt_modifier() {
-    assert!(should_show_hover(E::OnKeyboardModifier, M::Alt, mods(false, false, true)));
+    assert!(should_show_hover(
+        E::OnKeyboardModifier,
+        M::Alt,
+        mods(false, false, true)
+    ));
 }
 
 #[test]
 fn should_show_hover_alt_with_ctrl_modifier() {
-    assert!(should_show_hover(E::OnKeyboardModifier, M::Ctrl, mods(false, true, false)));
+    assert!(should_show_hover(
+        E::OnKeyboardModifier,
+        M::Ctrl,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_no_alt_with_ctrl_modifier() {
-    assert!(!should_show_hover(E::OnKeyboardModifier, M::Ctrl, mods(false, false, false)));
+    assert!(!should_show_hover(
+        E::OnKeyboardModifier,
+        M::Ctrl,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_alt_with_meta_modifier() {
-    assert!(should_show_hover(E::OnKeyboardModifier, M::Meta, mods(false, true, false)));
+    assert!(should_show_hover(
+        E::OnKeyboardModifier,
+        M::Meta,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_ignores_alt_with_alt_modifier() {
-    assert!(!should_show_hover(E::OnKeyboardModifier, M::Alt, mods(false, true, false)));
+    assert!(!should_show_hover(
+        E::OnKeyboardModifier,
+        M::Alt,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn should_show_hover_ignores_ctrl_with_ctrl_modifier() {
-    assert!(!should_show_hover(E::OnKeyboardModifier, M::Ctrl, mods(true, false, false)));
+    assert!(!should_show_hover(
+        E::OnKeyboardModifier,
+        M::Ctrl,
+        mods(true, false, false)
+    ));
 }
 
 /// The element of `isMousePositionWithinElement`'s tests: (left, top, width, height).
@@ -167,12 +206,18 @@ fn within_small_element() {
 
 #[test]
 fn trigger_ctrl_with_alt_modifier() {
-    assert!(is_trigger_modifier_pressed(M::Alt, mods(true, false, false)));
+    assert!(is_trigger_modifier_pressed(
+        M::Alt,
+        mods(true, false, false)
+    ));
 }
 
 #[test]
 fn trigger_meta_with_alt_modifier() {
-    assert!(is_trigger_modifier_pressed(M::Alt, mods(false, false, true)));
+    assert!(is_trigger_modifier_pressed(
+        M::Alt,
+        mods(false, false, true)
+    ));
 }
 
 #[test]
@@ -182,42 +227,66 @@ fn trigger_ctrl_and_meta_with_alt_modifier() {
 
 #[test]
 fn trigger_none_with_alt_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Alt, mods(false, false, false)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Alt,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn trigger_alt_with_alt_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Alt, mods(false, true, false)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Alt,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn trigger_alt_with_ctrl_modifier() {
-    assert!(is_trigger_modifier_pressed(M::Ctrl, mods(false, true, false)));
+    assert!(is_trigger_modifier_pressed(
+        M::Ctrl,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn trigger_none_with_ctrl_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Ctrl, mods(false, false, false)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Ctrl,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn trigger_ctrl_with_ctrl_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Ctrl, mods(true, false, false)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Ctrl,
+        mods(true, false, false)
+    ));
 }
 
 #[test]
 fn trigger_alt_with_meta_modifier() {
-    assert!(is_trigger_modifier_pressed(M::Meta, mods(false, true, false)));
+    assert!(is_trigger_modifier_pressed(
+        M::Meta,
+        mods(false, true, false)
+    ));
 }
 
 #[test]
 fn trigger_none_with_meta_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Meta, mods(false, false, false)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Meta,
+        mods(false, false, false)
+    ));
 }
 
 #[test]
 fn trigger_meta_with_meta_modifier() {
-    assert!(!is_trigger_modifier_pressed(M::Meta, mods(false, false, true)));
+    assert!(!is_trigger_modifier_pressed(
+        M::Meta,
+        mods(false, false, true)
+    ));
 }
 
 // ---- quire's own tests: HoverOperation timing, participants, the host seam ------------------
@@ -267,7 +336,9 @@ impl Ed {
                 r.parts
                     .iter()
                     .map(|p| match p {
-                        HoverPart::Diagnostic { diagnostic, .. } => format!("diag:{}", diagnostic.message),
+                        HoverPart::Diagnostic { diagnostic, .. } => {
+                            format!("diag:{}", diagnostic.message)
+                        }
                         HoverPart::Markdown { contents, .. } => contents.join("|"),
                         HoverPart::Loading { .. } => "Loading...".into(),
                     })
@@ -297,7 +368,12 @@ fn delayed_hover_asks_at_half_delay_and_shows_at_full_delay() {
     assert_eq!(r[0].pos, 5);
     // An early answer is held until the hover time.
     e.view
-        .set_hover(&e.doc, r[0].id, r[0].version, vec![hover("**foo**: i32", Some(4..7))])
+        .set_hover(
+            &e.doc,
+            r[0].id,
+            r[0].version,
+            vec![hover("**foo**: i32", Some(4..7))],
+        )
         .unwrap();
     assert!(!e.view.hover().is_visible());
     e.view.tick(&e.doc, 1300);
@@ -342,7 +418,11 @@ fn diagnostics_come_first_in_the_same_hover() {
             &e.doc,
             r[0].id,
             r[0].version,
-            vec![hover("first", None), hover("  ", None), hover("second", None)],
+            vec![
+                hover("first", None),
+                hover("  ", None),
+                hover("second", None),
+            ],
         )
         .unwrap();
     assert_eq!(e.md(), vec!["diag:unused variable", "first", "second"]);
@@ -375,7 +455,12 @@ fn same_anchor_does_not_restart_and_moving_on_the_line_filters() {
     e.view.tick(&e.doc, 150);
     let r = e.requests();
     e.view
-        .set_hover(&e.doc, r[0].id, r[0].version, vec![hover("foo", Some(4..7))])
+        .set_hover(
+            &e.doc,
+            r[0].id,
+            r[0].version,
+            vec![hover("foo", Some(4..7))],
+        )
         .unwrap();
     e.view.tick(&e.doc, 300);
     assert_eq!(e.md(), vec!["foo"]);
@@ -403,7 +488,8 @@ fn superseded_and_stale_answers_are_refused() {
     e.view.tick(&e.doc, 310);
     let r2 = e.requests();
     assert_eq!(
-        e.view.set_hover(&e.doc, r1[0].id, r1[0].version, vec![hover("x", None)]),
+        e.view
+            .set_hover(&e.doc, r1[0].id, r1[0].version, vec![hover("x", None)]),
         Err(AnswerRefusal::Superseded)
     );
     for i in 0..3 {
@@ -415,7 +501,8 @@ fn superseded_and_stale_answers_are_refused() {
         e.doc.apply(tr, &mut e.view).unwrap();
     }
     assert_eq!(
-        e.view.set_hover(&e.doc, r2[0].id, r2[0].version, vec![hover("x", None)]),
+        e.view
+            .set_hover(&e.doc, r2[0].id, r2[0].version, vec![hover("x", None)]),
         Err(AnswerRefusal::Stale)
     );
 }
@@ -426,10 +513,18 @@ fn answers_map_forward_through_edits() {
     e.mouse(5, 0);
     e.view.tick(&e.doc, 150);
     let r = e.requests();
-    let tr = Transaction::new(e.doc.version(), ChangeSet::insert_at(e.doc.text().len_bytes(), 0, "//").unwrap());
+    let tr = Transaction::new(
+        e.doc.version(),
+        ChangeSet::insert_at(e.doc.text().len_bytes(), 0, "//").unwrap(),
+    );
     e.doc.apply(tr, &mut e.view).unwrap();
     e.view
-        .set_hover(&e.doc, r[0].id, r[0].version, vec![hover("foo", Some(4..7))])
+        .set_hover(
+            &e.doc,
+            r[0].id,
+            r[0].version,
+            vec![hover("foo", Some(4..7))],
+        )
         .unwrap();
     e.view.tick(&e.doc, 300);
     let shown = e.view.hover().shown().unwrap();
@@ -443,7 +538,9 @@ fn show_hover_command_is_immediate_and_focuses_when_shown() {
     e.doc
         .execute(
             &mut e.view,
-            &C::SetSelection { selection: quire_core::Selection::point(5) },
+            &C::SetSelection {
+                selection: quire_core::Selection::point(5),
+            },
             Some(0),
         )
         .unwrap();
@@ -455,13 +552,24 @@ fn show_hover_command_is_immediate_and_focuses_when_shown() {
         .set_hover(&e.doc, r[0].id, r[0].version, vec![hover("foo", None)])
         .unwrap();
     assert_eq!(e.md(), vec!["foo"]);
-    assert_eq!(e.view.hover().shown().unwrap().source, HoverStartSource::Keyboard);
+    assert_eq!(
+        e.view.hover().shown().unwrap().source,
+        HoverStartSource::Keyboard
+    );
     assert!(!e.view.hover().is_focused());
-    e.doc.execute(&mut e.view, &C::ScrollDownHover, Some(20)).unwrap();
-    assert_eq!(e.view.take_hover_scroll(), None, "precondition: hover focused");
+    e.doc
+        .execute(&mut e.view, &C::ScrollDownHover, Some(20))
+        .unwrap();
+    assert_eq!(
+        e.view.take_hover_scroll(),
+        None,
+        "precondition: hover focused"
+    );
     e.doc.execute(&mut e.view, &C::ShowHover, Some(30)).unwrap();
     assert!(e.view.hover().is_focused());
-    e.doc.execute(&mut e.view, &C::ScrollDownHover, Some(40)).unwrap();
+    e.doc
+        .execute(&mut e.view, &C::ScrollDownHover, Some(40))
+        .unwrap();
     assert_eq!(
         e.view.take_hover_scroll(),
         Some(quire_core::hover::HoverScroll::Down)
@@ -472,12 +580,14 @@ fn show_hover_command_is_immediate_and_focuses_when_shown() {
 }
 
 #[test]
-fn empty_answers_hide_and_blur_hides() {
+fn empty_answers_hide_and_blur_keeps() {
     let mut e = Ed::new("let foo = 1;", true);
     e.mouse(5, 0);
     e.view.tick(&e.doc, 150);
     let r = e.requests();
-    e.view.set_hover(&e.doc, r[0].id, r[0].version, vec![]).unwrap();
+    e.view
+        .set_hover(&e.doc, r[0].id, r[0].version, vec![])
+        .unwrap();
     e.view.tick(&e.doc, 300);
     assert!(!e.view.hover().is_visible());
     e.mouse(9, 400);
@@ -488,7 +598,8 @@ fn empty_answers_hide_and_blur_hides() {
         .unwrap();
     e.view.tick(&e.doc, 700);
     assert!(e.view.hover().is_visible());
+    // Focus does not matter to the hover (VS Code shows hovers over unfocused editors).
     e.view.set_focused(true);
     e.view.set_focused(false);
-    assert!(!e.view.hover().is_visible());
+    assert!(e.view.hover().is_visible());
 }

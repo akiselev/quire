@@ -1053,6 +1053,13 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | CompletionModel > Have more relaxed suggest matching algorithm #15419 | `crates/quire-core/tests/suggest_model.rs` `more_relaxed_suggest_matching_15419` | pass |
 | CompletionModel > Emmet suggestion not appearing at the top of the list in jsx files, #39518 | `crates/quire-core/tests/suggest_model.rs` `emmet_suggestion_jsx_39518` | pass |
 
+## contentHover.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Content Hover > issue #151235: Gitlens hover shows up in the wrong place | `crates/quire-core/tests/hover.rs` `hover_shows_up_in_the_wrong_place_151235` | pass |
+| Content Hover > issue #95328: Hover placement with word-wrap | `crates/quire-core/tests/hover.rs` `hover_placement_with_word_wrap_95328` | pass |
+
 ## filters.test.ts
 
 | VS Code test | quire | status |
@@ -1099,6 +1106,66 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | Filters > configurable full match boost | `crates/quire-core/tests/suggest_filters.rs` `configurable_full_match_boost` | pass |
 | Filters > Unexpected suggest highlighting ignores whole word match in favor of matching first letter#147423 | `crates/quire-core/tests/suggest_filters.rs` `whole_word_match_147423` | pass |
 
+## hoverCopyButton.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Hover Copy Button > should create button element in container | N/A: DOM structure (the button element); the kittest hover_shows_diagnostics_and_markdown_with_copy_buttons checks the button | — |
+| Hover Copy Button > should add hover-row-with-copy class to container | N/A: DOM CSS class | — |
+| Hover Copy Button > should have copy icon | N/A: codicon CSS class | — |
+| Hover Copy Button > should copy content on click | `crates/egui_quire/tests/hints.rs` `hover_copy_button_copies_the_part` | pass |
+| Hover Copy Button > should copy content on Enter key | todo: keyboard focus on the parts of a focused hover (Tab into the hover) is not modelled yet | — |
+| Hover Copy Button > should copy content on Space key | todo: keyboard focus on the parts of a focused hover (Tab into the hover) is not modelled yet | — |
+
+## hoverUtils.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| Hover Utils > shouldShowHover > returns true when enabled is "on" | `crates/quire-core/tests/hover.rs` `should_show_hover_on` | pass |
+| Hover Utils > shouldShowHover > returns false when enabled is "off" | `crates/quire-core/tests/hover.rs` `should_show_hover_off` | pass |
+| Hover Utils > shouldShowHover > returns true with ctrl pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `should_show_hover_ctrl_with_alt_modifier` | pass |
+| Hover Utils > shouldShowHover > returns false without ctrl pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `should_show_hover_no_ctrl_with_alt_modifier` | pass |
+| Hover Utils > shouldShowHover > returns true with metaKey pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `should_show_hover_meta_with_alt_modifier` | pass |
+| Hover Utils > shouldShowHover > returns true with alt pressed when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `should_show_hover_alt_with_ctrl_modifier` | pass |
+| Hover Utils > shouldShowHover > returns false without alt pressed when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `should_show_hover_no_alt_with_ctrl_modifier` | pass |
+| Hover Utils > shouldShowHover > returns true with alt pressed when multiCursorModifier is metaKey | `crates/quire-core/tests/hover.rs` `should_show_hover_alt_with_meta_modifier` | pass |
+| Hover Utils > shouldShowHover > ignores alt when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `should_show_hover_ignores_alt_with_alt_modifier` | pass |
+| Hover Utils > shouldShowHover > ignores ctrl when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `should_show_hover_ignores_ctrl_with_ctrl_modifier` | pass |
+| Hover Utils > isMousePositionWithinElement > returns true when mouse is inside element bounds | `crates/quire-core/tests/hover.rs` `within_inside_bounds` | pass |
+| Hover Utils > isMousePositionWithinElement > returns true when mouse is on element edges | `crates/quire-core/tests/hover.rs` `within_on_edges` | pass |
+| Hover Utils > isMousePositionWithinElement > returns false when mouse is left of element | `crates/quire-core/tests/hover.rs` `within_left_of_element` | pass |
+| Hover Utils > isMousePositionWithinElement > returns false when mouse is right of element | `crates/quire-core/tests/hover.rs` `within_right_of_element` | pass |
+| Hover Utils > isMousePositionWithinElement > returns false when mouse is above element | `crates/quire-core/tests/hover.rs` `within_above_element` | pass |
+| Hover Utils > isMousePositionWithinElement > returns false when mouse is below element | `crates/quire-core/tests/hover.rs` `within_below_element` | pass |
+| Hover Utils > isMousePositionWithinElement > handles element at origin (0,0) | `crates/quire-core/tests/hover.rs` `within_element_at_origin` | pass |
+| Hover Utils > isMousePositionWithinElement > handles small elements (1x1) | `crates/quire-core/tests/hover.rs` `within_small_element` | pass |
+| Hover Utils > isTriggerModifierPressed > returns true with ctrl pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `trigger_ctrl_with_alt_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns true with metaKey pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `trigger_meta_with_alt_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns true with both ctrl and metaKey pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `trigger_ctrl_and_meta_with_alt_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false without ctrl or metaKey when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `trigger_none_with_alt_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false with alt pressed when multiCursorModifier is altKey | `crates/quire-core/tests/hover.rs` `trigger_alt_with_alt_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns true with alt pressed when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `trigger_alt_with_ctrl_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false without alt pressed when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `trigger_none_with_ctrl_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false with ctrl pressed when multiCursorModifier is ctrlKey | `crates/quire-core/tests/hover.rs` `trigger_ctrl_with_ctrl_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns true with alt pressed when multiCursorModifier is metaKey | `crates/quire-core/tests/hover.rs` `trigger_alt_with_meta_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false without alt pressed when multiCursorModifier is metaKey | `crates/quire-core/tests/hover.rs` `trigger_none_with_meta_modifier` | pass |
+| Hover Utils > isTriggerModifierPressed > returns false with metaKey pressed when multiCursorModifier is metaKey | `crates/quire-core/tests/hover.rs` `trigger_meta_with_meta_modifier` | pass |
+
+## parameterHintsModel.test.ts
+
+| VS Code test | quire | status |
+|---|---|---|
+| ParameterHintsModel > Provider should get trigger character on type | `crates/quire-core/tests/parameter_hints.rs` `provider_should_get_trigger_character_on_type` | pass |
+| ParameterHintsModel > Provider should be retriggered if already active | `crates/quire-core/tests/parameter_hints.rs` `provider_should_be_retriggered_if_already_active` | pass |
+| ParameterHintsModel > Provider should not be retriggered if previous help is canceled first | `crates/quire-core/tests/parameter_hints.rs` | fail (ours: async host provider: VS Code calls the provider before recording the pending request, so a cancel inside the provider still counts as a retrigger; quire's host answers later, and a cancel before the answer starts a fresh session (provider_not_retriggered_if_previous_help_is_canceled_first)) |
+| ParameterHintsModel > Provider should get last trigger character when triggered multiple times and only be invoked once | `crates/quire-core/tests/parameter_hints.rs` `provider_should_get_last_trigger_character_when_triggered_multiple_times` | pass |
+| ParameterHintsModel > Provider should be retriggered if already active | `crates/quire-core/tests/parameter_hints.rs` `provider_should_be_retriggered_if_already_active_after_delay` | pass |
+| ParameterHintsModel > Should cancel existing request when new request comes in | `crates/quire-core/tests/parameter_hints.rs` `should_cancel_existing_request_when_new_request_comes_in` | pass |
+| ParameterHintsModel > Provider should be retriggered by retrigger character | `crates/quire-core/tests/parameter_hints.rs` `provider_should_be_retriggered_by_retrigger_character` | pass |
+| ParameterHintsModel > should use first result from multiple providers | `crates/quire-core/tests/parameter_hints.rs` `should_use_first_result_from_multiple_providers` | pass |
+| ParameterHintsModel > Quick typing should use the first trigger character | `crates/quire-core/tests/parameter_hints.rs` `quick_typing_should_use_the_first_trigger_character` | pass |
+| ParameterHintsModel > Retrigger while a pending resolve is still going on should preserve last active signature #96702 | `crates/quire-core/tests/parameter_hints.rs` `retrigger_while_pending_resolve_preserves_last_active_signature_96702` | pass |
+
 ## snippetController2.old.test.ts
 
 | VS Code test | quire | status |
@@ -1135,16 +1202,16 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | SnippetController2 > insert, insert -> cursors collapse | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > insert, insert plain text -> no snippet mode | `crates/quire-core/tests/snippet_session.rs` `insert_plain_text_no_snippet_mode` | pass |
 | SnippetController2 > insert, delete snippet text | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > insert, nested trivial snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > insert, nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > insert, nested plain text | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > insert, nested trivial snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > insert, nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > insert, nested plain text | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
 | SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728 | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > HTML Snippets Combine, #32211 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Problems with nested snippet insertion #39594 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Problems with nested snippet insertion #39594 (part2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > HTML Snippets Combine, #32211 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Problems with nested snippet insertion #39594 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > Problems with nested snippet insertion #39594 (part2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
 | SnippetController2 > Placeholders order #58267 | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > Must tab through deleted tab stops in snippets #31619 | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (soft cancel) | todo: not yet ported (model-level; for the next completion lane) | — |
@@ -1251,16 +1318,16 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | SnippetSession > snippets, gracefully move over final tabstop | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, overwriting nested placeholder | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, selections and snippet ranges | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, nested sessions | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, nested sessions | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
 | SnippetSession > snippets, typing at final tabstop | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, typing at beginning | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, typing with nested placeholder | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, snippet with variables | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, merge | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
 | SnippetSession > snippets, next does not throw when placeholder decorations are missing | N/A: editor decorations | — |
-| SnippetSession > snippets, deep merge does not produce phantom cursors (#279349) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetSession > snippets, merge preserves mirrors in nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, deep merge does not produce phantom cursors (#279349) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge preserves mirrors in nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
 | SnippetSession > snippets, transform | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, multi placeholder same index one transform | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, transform example | todo: not yet ported (model-level; for the next completion lane) | — |
@@ -1347,7 +1414,11 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | textModelSearch.test.ts | 77 | 46 | 12 | 0 | 19 |
 | wordOperations.test.ts | 58 | 44 | 3 | 0 | 11 |
 | completionModel.test.ts | 13 | 13 | 0 | 0 | 0 |
+| contentHover.test.ts | 2 | 2 | 0 | 0 | 0 |
 | filters.test.ts | 41 | 29 | 0 | 0 | 12 |
+| hoverCopyButton.test.ts | 6 | 1 | 0 | 0 | 3 | (todo 2)
+| hoverUtils.test.ts | 29 | 29 | 0 | 0 | 0 |
+| parameterHintsModel.test.ts | 10 | 9 | 1 | 0 | 0 |
 | snippetController2.old.test.ts | 19 | 0 | 0 | 0 | 2 | (todo 17)
 | snippetController2.test.ts | 42 | 5 | 9 | 0 | 14 | (todo 14)
 | snippetParser.test.ts | 54 | 54 | 0 | 0 | 0 |
@@ -1357,12 +1428,14 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 
 ## Totals
 
-- VS Code tests listed: 1189
-- translated: 673 (pass 633, fail ours 40, fail bug 0)
-- N/A: 466
-- todo (not yet ported, outside the translated count): 50
+- VS Code tests listed: 1236
+- translated: 715 (pass 674, fail ours 41, fail bug 0)
+- N/A: 469
+- todo (not yet ported, outside the translated count): 52
 
 ## Departures without a VS Code test
 
 - `quickSuggestionsDelay`: quick suggestions are requested on the keystroke, not after VS Code's 10 ms editor.quickSuggestionsDelay (quire-core has no clock; typing inside a session only refilters)
 - `suggest.localityBonus`: no word-distance locality bonus (default off in VS Code)
+- `hover/signature help cancellation`: a superseded hover or signature help request is not cancelled at the host (VS Code cancels its token); its late answer is refused as Superseded (main-cadatomic, 2026-10-22)
+- `hover fenced code`: fenced code in hovers and parameter hints is monospace without syntax colouring: the widget has no highlighter of its own (main-cadatomic, 2026-10-22)

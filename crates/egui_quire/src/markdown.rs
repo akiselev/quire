@@ -43,7 +43,9 @@ pub(crate) enum Inline {
 fn is_rule(t: &str) -> bool {
     let t: String = t.chars().filter(|c| !c.is_whitespace()).collect();
     t.len() >= 3
-        && (t.chars().all(|c| c == '-') || t.chars().all(|c| c == '*') || t.chars().all(|c| c == '_'))
+        && (t.chars().all(|c| c == '-')
+            || t.chars().all(|c| c == '*')
+            || t.chars().all(|c| c == '_'))
 }
 
 fn list_marker(t: &str) -> Option<(String, &str)> {
@@ -215,7 +217,9 @@ pub(crate) fn inlines(src: &str) -> Vec<Inline> {
                 let intraword = c == '_'
                     && i > 0
                     && chars[i - 1].is_alphanumeric()
-                    && chars.get(i + if double { 2 } else { 1 }).is_some_and(|x| x.is_alphanumeric());
+                    && chars
+                        .get(i + if double { 2 } else { 1 })
+                        .is_some_and(|x| x.is_alphanumeric());
                 if intraword {
                     buf.push(c);
                     i += 1;
@@ -301,7 +305,7 @@ pub(crate) fn show(ui: &mut Ui, src: &str, style: &Style) -> Option<String> {
                             ui.label(format!("{m} "));
                         }
                         ParaKind::Quote => {
-                            ui.label(RichText::new("▎ ").color(style.dim));
+                            ui.label(RichText::new("  ").color(style.dim));
                         }
                         _ => {}
                     }
@@ -358,16 +362,33 @@ mod tests {
 
     #[test]
     fn blocks_split() {
-        let b = blocks("# Title\n\nsome *text*\ncontinued\n\n```rust\nfn x() {}\n```\n---\n- one\n- two");
+        let b = blocks(
+            "# Title\n\nsome *text*\ncontinued\n\n```rust\nfn x() {}\n```\n---\n- one\n- two",
+        );
         assert_eq!(
             b,
             vec![
-                Block::Para { text: "Title".into(), kind: ParaKind::Heading },
-                Block::Para { text: "some *text* continued".into(), kind: ParaKind::Plain },
-                Block::Code { lang: "rust".into(), text: "fn x() {}".into() },
+                Block::Para {
+                    text: "Title".into(),
+                    kind: ParaKind::Heading
+                },
+                Block::Para {
+                    text: "some *text* continued".into(),
+                    kind: ParaKind::Plain
+                },
+                Block::Code {
+                    lang: "rust".into(),
+                    text: "fn x() {}".into()
+                },
                 Block::Rule,
-                Block::Para { text: "one".into(), kind: ParaKind::Bullet("•".into()) },
-                Block::Para { text: "two".into(), kind: ParaKind::Bullet("•".into()) },
+                Block::Para {
+                    text: "one".into(),
+                    kind: ParaKind::Bullet("•".into())
+                },
+                Block::Para {
+                    text: "two".into(),
+                    kind: ParaKind::Bullet("•".into())
+                },
             ]
         );
     }
@@ -375,7 +396,11 @@ mod tests {
     #[test]
     fn inline_runs() {
         let r = inlines("a `b` **c** _d_ snake_case [e](http://x \"t\") \\*f\\*");
-        let t = |s: &str, strong, emphasis| Inline::Text { text: s.into(), strong, emphasis };
+        let t = |s: &str, strong, emphasis| Inline::Text {
+            text: s.into(),
+            strong,
+            emphasis,
+        };
         assert_eq!(
             r,
             vec![
@@ -386,7 +411,10 @@ mod tests {
                 t(" ", false, false),
                 t("d", false, true),
                 t(" snake_case ", false, false),
-                Inline::Link { text: "e".into(), href: "http://x".into() },
+                Inline::Link {
+                    text: "e".into(),
+                    href: "http://x".into()
+                },
                 t(" *f*", false, false),
             ]
         );
@@ -396,7 +424,11 @@ mod tests {
     fn unclosed_markers_are_text() {
         assert_eq!(
             inlines("a `b [c"),
-            vec![Inline::Text { text: "a `b [c".into(), strong: false, emphasis: false }]
+            vec![Inline::Text {
+                text: "a `b [c".into(),
+                strong: false,
+                emphasis: false
+            }]
         );
     }
 }

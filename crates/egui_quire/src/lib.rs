@@ -16,9 +16,9 @@ mod find_bar;
 #[doc(hidden)]
 pub mod galley_cache;
 mod glue;
-mod hover_widget;
 #[doc(hidden)]
 pub mod height;
+mod hover_widget;
 pub mod keymap;
 #[doc(hidden)]
 pub mod layout;
@@ -36,8 +36,8 @@ pub use command::{KeyAction, WidgetAction};
 pub use editor::{CodeEditor, EditorEvent, EditorOutput, KeyHandling, default_keymap};
 pub use find_bar::{query_id as find_query_id, replace_id as find_replace_id};
 pub use glue::FindOptions;
-pub use hover_widget::hover_id;
 pub use height::HeightIndex;
+pub use hover_widget::hover_id;
 pub use keymap::{KeyLookup, Keymap};
 pub use parameter_hints_widget::parameter_hints_id;
 pub use suggest_widget::{details_id as suggest_details_id, list_id as suggest_list_id};
