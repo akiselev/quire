@@ -61,8 +61,7 @@ pub(crate) fn run(
             if (next && !sn.has_next()) || (!next && !sn.has_prev()) {
                 return Ok(CommandOutput::Nothing);
             }
-            let to = if next { sn.current + 1 } else { sn.current - 1 };
-            let (cs, sel, after) = sn.move_to(doc.text(), to, view.selection().primary().head);
+            let (cs, sel, after) = sn.move_by(doc.text(), next);
             CommandOutput::Transaction(
                 Transaction::new(doc.version(), cs)
                     .with_selection(sel)
@@ -128,7 +127,7 @@ fn accept(doc: &Document, view: &EditorView, cmd: &EditorCommand) -> Option<Tran
         .collect();
     let ins = crate::completion::insert::insert_snippet(
         doc,
-        sel,
+        view,
         &template,
         overwrite_before,
         overwrite_after,
@@ -148,28 +147,22 @@ fn accept(doc: &Document, view: &EditorView, cmd: &EditorCommand) -> Option<Tran
             retrigger,
             command,
         }));
-    if ins.session.is_some() {
+    if ins.session.is_some() || view.snippet().is_some() {
         tr = tr.with_effect(Effect::Snippet(ins.session));
     }
     Some(tr)
 }
 
 /// A transaction inserting `template` (a snippet) at every cursor, replacing the selections,
-/// and starting snippet mode when it has placeholders (VS Code `SnippetController2.insert`).
+/// and starting snippet mode when it has placeholders, or merging it into the snippet mode
+/// (VS Code `SnippetController2.insert`).
 pub fn snippet_transaction(
     doc: &Document,
     view: &EditorView,
     template: &str,
 ) -> Option<Transaction> {
-    let ins = crate::completion::insert::insert_snippet(
-        doc,
-        view.selection(),
-        template,
-        0,
-        0,
-        true,
-        Vec::new(),
-    )?;
+    let ins =
+        crate::completion::insert::insert_snippet(doc, view, template, 0, 0, true, Vec::new())?;
     Some(
         Transaction::new(doc.version(), ins.changes)
             .with_selection(ins.selection)

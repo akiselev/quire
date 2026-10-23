@@ -808,7 +808,7 @@
     [
      "SnippetController2 > insert, insert -> cursors collapse",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "insert_insert_cursors_collapse"
      }
     ],
     [
@@ -820,79 +820,79 @@
     [
      "SnippetController2 > insert, delete snippet text",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "insert_delete_snippet_text"
      }
     ],
     [
      "SnippetController2 > insert, nested trivial snippet",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "insert_nested_trivial_snippet"
      }
     ],
     [
      "SnippetController2 > insert, nested snippet",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "insert_nested_snippet"
      }
     ],
     [
      "SnippetController2 > insert, nested plain text",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "insert_nested_plain_text"
      }
     ],
     [
      "SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "nested_without_final_placeholder_jumps_to_next_outer_27898"
      }
     ],
     [
      "SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "recursive_snippets_tab_shift_tab_27543"
      }
     ],
     [
      "SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "tabstop_selecting_previously_entered_variable_23728"
      }
     ],
     [
      "SnippetController2 > HTML Snippets Combine, #32211",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "html_snippets_combine_32211"
      }
     ],
     [
      "SnippetController2 > Problems with nested snippet insertion #39594",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "nested_snippet_insertion_39594"
      }
     ],
     [
      "SnippetController2 > Problems with nested snippet insertion #39594 (part2)",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "nested_snippet_insertion_39594_part2"
      }
     ],
     [
      "SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "nested_snippets_terminating_abruptly_42012"
      }
     ],
     [
      "SnippetController2 > Placeholders order #58267",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "placeholders_order_58267"
      }
     ],
     [
      "SnippetController2 > Must tab through deleted tab stops in snippets #31619",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "tab_through_deleted_tab_stops_31619"
      }
     ],
     [
@@ -910,13 +910,13 @@
     [
      "SnippetController2 > User defined snippet tab stops ignored #72862",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "user_defined_tab_stops_72862"
      }
     ],
     [
      "SnippetController2 > Optional tabstop in snippets #72358",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "optional_tabstop_72358"
      }
     ],
     [
@@ -1464,19 +1464,19 @@
     [
      "SnippetSession > snippets, overwriting nested placeholder",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "overwriting_nested_placeholder"
      }
     ],
     [
      "SnippetSession > snippets, selections and snippet ranges",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "selections_and_snippet_ranges"
      }
     ],
     [
      "SnippetSession > snippets, nested sessions",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "nested_sessions"
      }
     ],
     [
@@ -1494,7 +1494,7 @@
     [
      "SnippetSession > snippets, typing with nested placeholder",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "typing_with_nested_placeholder"
      }
     ],
     [
@@ -1506,7 +1506,7 @@
     [
      "SnippetSession > snippets, merge",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "merge"
      }
     ],
     [
@@ -1518,31 +1518,31 @@
     [
      "SnippetSession > snippets, deep merge does not produce phantom cursors (#279349)",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "deep_merge_no_phantom_cursors_279349"
      }
     ],
     [
      "SnippetSession > snippets, merge preserves mirrors in nested snippet",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "merge_preserves_mirrors_in_nested_snippet"
      }
     ],
     [
      "SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position",
      {
-      "ours": "(queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "test": "merge_placeholder_occurrences_collapse"
      }
     ],
     [
      "SnippetSession > snippets, transform",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "transform"
      }
     ],
     [
      "SnippetSession > snippets, multi placeholder same index one transform",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "multi_placeholder_same_index_one_transform"
      }
     ],
     [
@@ -1566,19 +1566,19 @@
     [
      "SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "transform_adjacent_to_previous_placeholder_96545"
      }
     ],
     [
      "SnippetSession > Snippet tab stop selection issue #96545",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "tab_stop_selection_96545"
      }
     ],
     [
      "SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769",
      {
-      "todo": "not yet ported (model-level; for the next completion lane)"
+      "test": "placeholder_index_after_snippets_in_a_row_30769"
      }
     ],
     [

@@ -1199,25 +1199,25 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | SnippetController2 > insert, insert -> tab, tab, done | `crates/quire-core/tests/snippet_session.rs` `insert_tab_tab_done` | pass |
 | SnippetController2 > insert, insert -> cursor moves out (left/right) | `crates/quire-core/tests/snippet_session.rs` `insert_cursor_moves_out_left_right` | pass |
 | SnippetController2 > insert, insert -> cursor moves out (up/down) | `crates/quire-core/tests/snippet_session.rs` `insert_cursor_moves_out_up_down` | pass |
-| SnippetController2 > insert, insert -> cursors collapse | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetController2 > insert, insert -> cursors collapse | `crates/quire-core/tests/snippet_session.rs` `insert_insert_cursors_collapse` | pass |
 | SnippetController2 > insert, insert plain text -> no snippet mode | `crates/quire-core/tests/snippet_session.rs` `insert_plain_text_no_snippet_mode` | pass |
-| SnippetController2 > insert, delete snippet text | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > insert, nested trivial snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > insert, nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > insert, nested plain text | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728 | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > HTML Snippets Combine, #32211 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Problems with nested snippet insertion #39594 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Problems with nested snippet insertion #39594 (part2) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012 | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetController2 > Placeholders order #58267 | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > Must tab through deleted tab stops in snippets #31619 | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetController2 > insert, delete snippet text | `crates/quire-core/tests/snippet_session.rs` `insert_delete_snippet_text` | pass |
+| SnippetController2 > insert, nested trivial snippet | `crates/quire-core/tests/snippet_session.rs` `insert_nested_trivial_snippet` | pass |
+| SnippetController2 > insert, nested snippet | `crates/quire-core/tests/snippet_session.rs` `insert_nested_snippet` | pass |
+| SnippetController2 > insert, nested plain text | `crates/quire-core/tests/snippet_session.rs` `insert_nested_plain_text` | pass |
+| SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898 | `crates/quire-core/tests/snippet_session.rs` `nested_without_final_placeholder_jumps_to_next_outer_27898` | pass |
+| SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543 | `crates/quire-core/tests/snippet_session.rs` `recursive_snippets_tab_shift_tab_27543` | pass |
+| SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728 | `crates/quire-core/tests/snippet_session.rs` `tabstop_selecting_previously_entered_variable_23728` | pass |
+| SnippetController2 > HTML Snippets Combine, #32211 | `crates/quire-core/tests/snippet_session.rs` `html_snippets_combine_32211` | pass |
+| SnippetController2 > Problems with nested snippet insertion #39594 | `crates/quire-core/tests/snippet_session.rs` `nested_snippet_insertion_39594` | pass |
+| SnippetController2 > Problems with nested snippet insertion #39594 (part2) | `crates/quire-core/tests/snippet_session.rs` `nested_snippet_insertion_39594_part2` | pass |
+| SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012 | `crates/quire-core/tests/snippet_session.rs` `nested_snippets_terminating_abruptly_42012` | pass |
+| SnippetController2 > Placeholders order #58267 | `crates/quire-core/tests/snippet_session.rs` `placeholders_order_58267` | pass |
+| SnippetController2 > Must tab through deleted tab stops in snippets #31619 | `crates/quire-core/tests/snippet_session.rs` `tab_through_deleted_tab_stops_31619` | pass |
 | SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (soft cancel) | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (hard cancel) | `crates/quire-core/tests/snippet_session.rs` `cancelling_discards_added_cursors_68512_hard` | pass |
-| SnippetController2 > User defined snippet tab stops ignored #72862 | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetController2 > Optional tabstop in snippets #72358 | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetController2 > User defined snippet tab stops ignored #72862 | `crates/quire-core/tests/snippet_session.rs` `user_defined_tab_stops_72862` | pass |
+| SnippetController2 > Optional tabstop in snippets #72358 | `crates/quire-core/tests/snippet_session.rs` `optional_tabstop_72358` | pass |
 | SnippetController2 > issue #90135: confusing trim whitespace edits | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (1 of 2) | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (2 of 2) | todo: not yet ported (model-level; for the next completion lane) | — |
@@ -1316,26 +1316,26 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | SnippetSession > snippets, don't merge touching tabstops 1/2 | N/A: tests the SnippetSession class alone, which keeps the final tabstop for prev; in VS Code's editor SnippetController2 ends snippet mode at the last placeholder, as quire does (covered by insert_tab_tab_done) | — |
 | SnippetSession > snippets, don't merge touching tabstops 2/2 | `crates/quire-core/tests/snippet_session.rs` `dont_merge_touching_tabstops_2` | pass |
 | SnippetSession > snippets, gracefully move over final tabstop | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, overwriting nested placeholder | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, selections and snippet ranges | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, nested sessions | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, overwriting nested placeholder | `crates/quire-core/tests/snippet_session.rs` `overwriting_nested_placeholder` | pass |
+| SnippetSession > snippets, selections and snippet ranges | `crates/quire-core/tests/snippet_session.rs` `selections_and_snippet_ranges` | pass |
+| SnippetSession > snippets, nested sessions | `crates/quire-core/tests/snippet_session.rs` `nested_sessions` | pass |
 | SnippetSession > snippets, typing at final tabstop | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, typing at beginning | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, typing with nested placeholder | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetSession > snippets, typing with nested placeholder | `crates/quire-core/tests/snippet_session.rs` `typing_with_nested_placeholder` | pass |
 | SnippetSession > snippets, snippet with variables | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, merge | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
+| SnippetSession > snippets, merge | `crates/quire-core/tests/snippet_session.rs` `merge` | pass |
 | SnippetSession > snippets, next does not throw when placeholder decorations are missing | N/A: editor decorations | — |
-| SnippetSession > snippets, deep merge does not produce phantom cursors (#279349) | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetSession > snippets, merge preserves mirrors in nested snippet | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position | `crates/quire-core/tests/snippet_session.rs` | fail (ours: (queued: SnippetSession.merge) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)) |
-| SnippetSession > snippets, transform | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > snippets, multi placeholder same index one transform | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetSession > snippets, deep merge does not produce phantom cursors (#279349) | `crates/quire-core/tests/snippet_session.rs` `deep_merge_no_phantom_cursors_279349` | pass |
+| SnippetSession > snippets, merge preserves mirrors in nested snippet | `crates/quire-core/tests/snippet_session.rs` `merge_preserves_mirrors_in_nested_snippet` | pass |
+| SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position | `crates/quire-core/tests/snippet_session.rs` `merge_placeholder_occurrences_collapse` | pass |
+| SnippetSession > snippets, transform | `crates/quire-core/tests/snippet_session.rs` `transform` | pass |
+| SnippetSession > snippets, multi placeholder same index one transform | `crates/quire-core/tests/snippet_session.rs` `multi_placeholder_same_index_one_transform` | pass |
 | SnippetSession > snippets, transform example | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, transform with indent | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > snippets, transform example hit if | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > Snippet tab stop selection issue #96545 | todo: not yet ported (model-level; for the next completion lane) | — |
-| SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769 | todo: not yet ported (model-level; for the next completion lane) | — |
+| SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder | `crates/quire-core/tests/snippet_session.rs` `transform_adjacent_to_previous_placeholder_96545` | pass |
+| SnippetSession > Snippet tab stop selection issue #96545 | `crates/quire-core/tests/snippet_session.rs` `tab_stop_selection_96545` | pass |
+| SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769 | `crates/quire-core/tests/snippet_session.rs` `placeholder_index_after_snippets_in_a_row_30769` | pass |
 | SnippetSession > Snippet variable text isn't whitespace normalised, #31124 | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > Selecting text from left to right, and choosing item messes up code, #31199 | todo: not yet ported (model-level; for the next completion lane) | — |
 | SnippetSession > Tabs don't get replaced with spaces in snippet transformations #103818 | todo: not yet ported (model-level; for the next completion lane) | — |
@@ -1420,18 +1420,18 @@ missing quire feature; `fail (bug: …)` = a quire bug to fix.
 | hoverUtils.test.ts | 29 | 29 | 0 | 0 | 0 |
 | parameterHintsModel.test.ts | 10 | 9 | 1 | 0 | 0 |
 | snippetController2.old.test.ts | 19 | 0 | 0 | 0 | 2 | (todo 17)
-| snippetController2.test.ts | 42 | 5 | 9 | 0 | 14 | (todo 14)
+| snippetController2.test.ts | 42 | 21 | 0 | 0 | 14 | (todo 7)
 | snippetParser.test.ts | 54 | 54 | 0 | 0 | 0 |
-| snippetSession.test.ts | 47 | 11 | 5 | 0 | 12 | (todo 19)
+| snippetSession.test.ts | 47 | 24 | 0 | 0 | 12 | (todo 11)
 | suggestModel.test.ts | 32 | 20 | 0 | 0 | 12 |
 | wordDistance.test.ts | 1 | 0 | 1 | 0 | 0 |
 
 ## Totals
 
 - VS Code tests listed: 1236
-- translated: 715 (pass 674, fail ours 41, fail bug 0)
+- translated: 730 (pass 703, fail ours 27, fail bug 0)
 - N/A: 469
-- todo (not yet ported, outside the translated count): 52
+- todo (not yet ported, outside the translated count): 37
 
 ## Departures without a VS Code test
 
