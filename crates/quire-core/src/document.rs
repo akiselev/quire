@@ -616,7 +616,10 @@ impl Document {
         let session_fx = effects.iter().any(|e| {
             matches!(
                 e,
-                Effect::Suggest(_) | Effect::Snippet(_) | Effect::Hover(_) | Effect::ParameterHints(_)
+                Effect::Suggest(_)
+                    | Effect::Snippet(_)
+                    | Effect::Hover(_)
+                    | Effect::ParameterHints(_)
             )
         });
         let selection_changed = selection_before != *view.selection();

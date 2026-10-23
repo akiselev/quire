@@ -152,7 +152,11 @@ pub fn is_trigger_modifier_pressed(mcm: MultiCursorModifier, m: EventModifiers) 
 }
 
 /// VS Code `shouldShowHover`: whether a mouse move may show the hover.
-pub fn should_show_hover(enabled: HoverEnabled, mcm: MultiCursorModifier, m: EventModifiers) -> bool {
+pub fn should_show_hover(
+    enabled: HoverEnabled,
+    mcm: MultiCursorModifier,
+    m: EventModifiers,
+) -> bool {
     match enabled {
         HoverEnabled::On => true,
         HoverEnabled::Off => false,
@@ -690,9 +694,13 @@ impl HoverState {
                 return;
             };
             let mut due: Vec<(u64, u8)> = Vec::new();
-            for (i, t) in [self.op.async_timer, self.op.sync_timer, self.op.loading_timer]
-                .iter()
-                .enumerate()
+            for (i, t) in [
+                self.op.async_timer,
+                self.op.sync_timer,
+                self.op.loading_timer,
+            ]
+            .iter()
+            .enumerate()
             {
                 if let Some(t) = t
                     && t.due(now)
@@ -700,11 +708,12 @@ impl HoverState {
                     due.push((t.at().unwrap_or(0), i as u8));
                 }
             }
-            let Some(&(_, which)) = due.iter().min() else {
+            let Some(&(at, which)) = due.iter().min() else {
                 return;
             };
             match which {
-                0 => self.trigger_async(doc, options, Some(now)),
+                // The second wait runs from when the first ended, not from this tick.
+                0 => self.trigger_async(doc, options, Some(at)),
                 1 => self.trigger_sync(doc, options),
                 _ => self.trigger_loading(options),
             }
@@ -851,7 +860,10 @@ fn diagnostic_parts(doc: &Document, anchor: &HoverAnchor) -> Vec<HoverPart> {
     let line_str = text.line(line).to_string();
     let next = |p: usize| {
         let c = p.saturating_sub(ls).min(line_str.len());
-        line_str[c..].chars().next().map_or(p, |ch| p + ch.len_utf8())
+        line_str[c..]
+            .chars()
+            .next()
+            .map_or(p, |ch| p + ch.len_utf8())
     };
     let prev = |p: usize| {
         let c = p.saturating_sub(ls).min(line_str.len());

@@ -230,9 +230,9 @@ impl EditorView {
     /// group ([`Document::close_undo_group`]), one of Monaco's closing rules.
     pub fn set_focused(&mut self, f: bool) -> bool {
         if !f {
-            // VS Code: parameter hints cancel on blur; the hover goes with the editor's focus.
+            // VS Code: parameter hints cancel on blur. The hover does not depend on focus (it
+            // shows over unfocused editors, and clicking into it takes focus).
             self.parameter_hints.cancel();
-            self.hover.hide();
         }
         self.text.set_focused(f)
     }

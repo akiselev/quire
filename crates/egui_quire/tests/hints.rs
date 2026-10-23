@@ -40,7 +40,10 @@ fn overloads() -> SignatureHelp {
     a.documentation = Some(Documentation::Markdown("Adds **two** numbers.".into()));
     let b = SignatureInformation::new(
         "add(a: f64, b: f64) -> f64",
-        vec![ParameterInformation::new("a: f64"), ParameterInformation::new("b: f64")],
+        vec![
+            ParameterInformation::new("a: f64"),
+            ParameterInformation::new("b: f64"),
+        ],
     );
     SignatureHelp {
         signatures: vec![a, b],
@@ -61,7 +64,11 @@ impl St {
         doc.set_diagnostics(
             SourceId::new("check"),
             doc.version(),
-            vec![Diagnostic::new(4..7, Severity::Error, "unused variable `foo`")],
+            vec![Diagnostic::new(
+                4..7,
+                Severity::Error,
+                "unused variable `foo`",
+            )],
         )
         .unwrap();
         let view = EditorView::new(&doc);
@@ -195,10 +202,10 @@ fn hover_shows_diagnostics_and_markdown_with_copy_buttons() {
     assert!(diag < md, "{label}");
     assert!(label.contains("let foo: i32"));
     // The rendered Markdown (strong text, the code block).
-    assert!(h.query_by_label("foo").is_some());
-    assert!(h.query_by_label_contains("let foo: i32").is_some());
+    assert!(h.query_all_by_label("foo").count() >= 1);
+    assert!(h.query_all_by_label_contains("let foo: i32").count() >= 1);
     // One copy button per part.
-    assert_eq!(h.query_all_by_label("⧉").count(), 2);
+    assert_eq!(h.query_all_by_label("Copy").count(), 2);
 }
 
 #[test]
@@ -208,13 +215,20 @@ fn hover_copy_button_copies_the_part() {
     let p = point_of(&mut h, 5);
     h.event(Event::PointerMoved(p));
     wait(&mut h, 0.5);
-    let button = h.query_all_by_label("⧉").next().unwrap();
-    button.click();
+    let button = h.query_all_by_label("Copy").next().unwrap();
+    // Through AccessKit (see docs/handoff/p1-hover.md: pointer clicks on hover buttons).
+    button.click_accesskit();
+    // The copy is in the output of the frame that saw the click.
+    let mut copied = false;
+    for _ in 0..4 {
+        h.step();
+        copied |=
+            h.output().platform_output.commands.iter().any(
+                |c| matches!(c, egui::OutputCommand::CopyText(t) if t == "unused variable `foo`"),
+            );
+    }
     h.run();
-    let copied = h.output().platform_output.commands.iter().any(|c| {
-        matches!(c, egui::OutputCommand::CopyText(t) if t == "unused variable `foo`")
-    });
-    assert!(copied, "{:?}", h.output().platform_output.commands);
+    assert!(copied);
     assert!(hover_label(&h).is_some(), "clicking on the hover keeps it");
 }
 
@@ -225,7 +239,7 @@ fn hover_link_emits_hover_link_activated_and_escape_closes() {
     let p = point_of(&mut h, 5);
     h.event(Event::PointerMoved(p));
     wait(&mut h, 0.5);
-    h.get_by_label("docs").click();
+    h.get_by_label("docs").click_accesskit();
     h.run();
     assert_eq!(h.state().links, ["https://example.com/foo"]);
     h.key_press(Key::Escape);
@@ -275,7 +289,11 @@ fn hints_label(h: &Harness<'_, St>) -> Option<String> {
 
 fn hints_description(h: &Harness<'_, St>) -> Option<String> {
     h.query_all_by_role(Role::Tooltip)
-        .find(|n| n.accesskit_node().label().is_some_and(|l| l.starts_with("add(")))
+        .find(|n| {
+            n.accesskit_node()
+                .label()
+                .is_some_and(|l| l.starts_with("add("))
+        })
         .and_then(|n| n.accesskit_node().description())
 }
 
@@ -296,7 +314,10 @@ fn trigger_character_opens_parameter_hints_with_active_parameter() {
         h.state().sig_requests[0].trigger,
         quire_core::parameter_hints::SignatureHelpTriggerKind::TriggerCharacter("(".into())
     );
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: i32, b: i32) -> i32"));
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: i32, b: i32) -> i32")
+    );
     assert_eq!(
         hints_description(&h).as_deref(),
         Some("a: i32, the first, Adds **two** numbers., hint")
@@ -318,22 +339,42 @@ fn up_down_cycle_overloads_and_escape_closes() {
     // Ctrl+Shift+Space (Cmd on macOS).
     h.key_press_modifiers(Modifiers::COMMAND | Modifiers::SHIFT, Key::Space);
     h.run();
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: i32, b: i32) -> i32"));
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: i32, b: i32) -> i32")
+    );
     h.key_press(Key::ArrowDown);
     h.run();
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: f64, b: f64) -> f64"));
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: f64, b: f64) -> f64")
+    );
     assert!(h.query_by_label("2/2").is_some());
     h.key_press(Key::ArrowDown);
     h.run();
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: i32, b: i32) -> i32"), "cycles");
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: i32, b: i32) -> i32"),
+        "cycles"
+    );
     h.key_press(Key::ArrowUp);
     h.run();
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: f64, b: f64) -> f64"));
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: f64, b: f64) -> f64")
+    );
     // The arrows of the widget do the same.
-    h.get_by_label("▲").click();
+    h.get_by_label("Previous signature").click_accesskit();
     h.run();
-    assert_eq!(hints_label(&h).as_deref(), Some("add(a: i32, b: i32) -> i32"));
-    assert_eq!(h.state().view.selection().primary().head, 3, "the cursor stays");
+    assert_eq!(
+        hints_label(&h).as_deref(),
+        Some("add(a: i32, b: i32) -> i32")
+    );
+    assert_eq!(
+        h.state().view.selection().primary().head,
+        3,
+        "the cursor stays"
+    );
     h.key_press(Key::Escape);
     h.run();
     assert!(hints_label(&h).is_none());

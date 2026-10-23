@@ -13,8 +13,7 @@
 use quire_core::hover::AnswerRefusal;
 use quire_core::parameter_hints::{
     Documentation, ParameterHintsOutput, ParameterInformation, ParameterLabel, SignatureHelp,
-    SignatureHelpRequest, SignatureHelpSource, SignatureHelpTriggerKind as K,
-    SignatureInformation,
+    SignatureHelpRequest, SignatureHelpSource, SignatureHelpTriggerKind as K, SignatureInformation,
 };
 use quire_core::{Document, EditorCommand as C, EditorConfig, EditorView, Selection, SourceId};
 
@@ -82,8 +81,7 @@ impl Ed {
         r: &SignatureHelpRequest,
         h: Option<SignatureHelp>,
     ) -> Result<(), AnswerRefusal> {
-        self.view
-            .set_signature_help(&self.doc, r.id, r.version, h)
+        self.view.set_signature_help(&self.doc, r.id, r.version, h)
     }
 }
 
@@ -148,7 +146,10 @@ fn provider_not_retriggered_if_previous_help_is_canceled_first() {
     assert_eq!(r2.context.trigger, trig("("));
     assert!(!r2.context.is_retrigger);
     assert_eq!(r2.context.active_signature_help, None);
-    assert_eq!(e.answer(&r, Some(empty_sig_help())), Err(AnswerRefusal::Superseded));
+    assert_eq!(
+        e.answer(&r, Some(empty_sig_help())),
+        Err(AnswerRefusal::Superseded)
+    );
 }
 
 #[test]
@@ -199,7 +200,10 @@ fn should_cancel_existing_request_when_new_request_comes_in() {
         active_parameter: 0,
     };
     // Request 0 was cancelled: its answer is not taken.
-    assert_eq!(e.answer(&r0, Some(label("0"))), Err(AnswerRefusal::Superseded));
+    assert_eq!(
+        e.answer(&r0, Some(label("0"))),
+        Err(AnswerRefusal::Superseded)
+    );
     e.answer(&r1, Some(label("1"))).unwrap();
     assert_eq!(
         e.view.parameter_hints().active().unwrap().signatures[0].label,
@@ -229,11 +233,7 @@ fn provider_should_be_retriggered_by_retrigger_character() {
 
 #[test]
 fn should_use_first_result_from_multiple_providers() {
-    let mut e = Ed::new(
-        "",
-        vec![source(&["a"], &[]), source(&["a"], &[])],
-        Some(5),
-    );
+    let mut e = Ed::new("", vec![source(&["a"], &[]), source(&["a"], &[])], Some(5));
     // The host asks its providers in order and answers with the first result
     // (VS Code `provideSignatureHelp`).
     let first = |r: &SignatureHelpRequest| {
@@ -316,7 +316,10 @@ fn retrigger_while_pending_resolve_preserves_last_active_signature_96702() {
     let r3 = e.one_request();
     // In a retrigger during a pending resolve, the old active signature is still there.
     assert_eq!(r3.context.active_signature_help, Some(empty_sig_help()));
-    assert_eq!(e.answer(&r2, Some(empty_sig_help())), Err(AnswerRefusal::Superseded));
+    assert_eq!(
+        e.answer(&r2, Some(empty_sig_help())),
+        Err(AnswerRefusal::Superseded)
+    );
     e.answer(&r3, Some(empty_sig_help())).unwrap();
 }
 
@@ -372,7 +375,10 @@ fn single_signature_disables_cycling_commands() {
     let r = e.one_request();
     e.answer(&r, Some(overloads(1))).unwrap();
     e.cmd(C::ShowNextParameterHint, 1);
-    assert!(e.view.parameter_hints().is_visible(), "precondition: multiple signatures");
+    assert!(
+        e.view.parameter_hints().is_visible(),
+        "precondition: multiple signatures"
+    );
     e.cmd(C::CloseParameterHints, 2);
     assert!(!e.view.parameter_hints().is_visible());
 }
@@ -380,7 +386,13 @@ fn single_signature_disables_cycling_commands() {
 #[test]
 fn leaving_the_call_closes_the_hints() {
     let mut e = Ed::new("f", vec![source(&["("], &[")"])], None);
-    e.cmd(C::CursorMove { to: quire_core::Motion::LineEnd, select: false }, 0);
+    e.cmd(
+        C::CursorMove {
+            to: quire_core::Motion::LineEnd,
+            select: false,
+        },
+        0,
+    );
     e.type_at("(", 0);
     e.tick(120);
     let r = e.one_request();
@@ -401,7 +413,13 @@ fn moving_the_cursor_retriggers_with_content_change() {
     e.cmd(C::TriggerParameterHints, 0);
     let r = e.one_request();
     e.answer(&r, Some(overloads(1))).unwrap();
-    e.cmd(C::CursorMove { to: quire_core::Motion::Right, select: false }, 10);
+    e.cmd(
+        C::CursorMove {
+            to: quire_core::Motion::Right,
+            select: false,
+        },
+        10,
+    );
     e.tick(130);
     let r = e.one_request();
     assert_eq!(r.context.trigger, K::ContentChange);
@@ -415,7 +433,14 @@ fn a_mouse_selection_and_blur_cancel() {
     e.cmd(C::TriggerParameterHints, 0);
     let r = e.one_request();
     e.answer(&r, Some(overloads(1))).unwrap();
-    e.cmd(C::SetSelection { selection: Selection::point(3) }, 10);
+    // The widget's mouse selection (egui_quire `glue::select`).
+    let tr = quire_core::Transaction::select(
+        e.doc.version(),
+        e.doc.text().len_bytes(),
+        Selection::point(3),
+    )
+    .with_origin(quire_core::Origin::Command("setSelection".into()));
+    e.doc.apply(tr, &mut e.view).unwrap();
     assert!(!e.view.parameter_hints().is_visible());
     e.cmd(C::TriggerParameterHints, 20);
     let r = e.one_request();
@@ -456,7 +481,8 @@ fn stale_answers_are_refused() {
     e.cmd(C::TriggerParameterHints, 0);
     let r = e.one_request();
     assert_eq!(
-        e.view.set_signature_help(&e.doc, r.id, quire_core::Version(r.version.0 + 5), None),
+        e.view
+            .set_signature_help(&e.doc, r.id, quire_core::Version(r.version.0 + 5), None),
         Err(AnswerRefusal::Stale)
     );
 }
@@ -476,7 +502,11 @@ fn parameter_label_offsets() {
             },
         ],
     );
-    assert_eq!(s.parameter_label_offsets(0), 4..5, "whole word, first occurrence");
+    assert_eq!(
+        s.parameter_label_offsets(0),
+        4..5,
+        "whole word, first occurrence"
+    );
     assert_eq!(s.parameter_label_offsets(1), 19..20, "not inside `ab`");
     assert_eq!(s.parameter_label_offsets(2), 7..17);
     assert_eq!(s.parameter_label_offsets(3), 0..0, "not found");

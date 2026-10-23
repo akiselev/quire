@@ -393,16 +393,17 @@ impl ParameterHintsState {
             .unwrap_or(SignatureHelpTriggerKind::Invoke);
         let id = SignatureHelpRequestId(trigger_id);
         let pos = cursor.min(doc.text().len_bytes());
-        self.outputs.push(ParameterHintsOutput::Request(SignatureHelpRequest {
-            id,
-            pos,
-            version: doc.version(),
-            context: SignatureHelpContext {
-                trigger: kind,
-                is_retrigger,
-                active_signature_help: active.clone(),
-            },
-        }));
+        self.outputs
+            .push(ParameterHintsOutput::Request(SignatureHelpRequest {
+                id,
+                pos,
+                version: doc.version(),
+                context: SignatureHelpContext {
+                    trigger: kind,
+                    is_retrigger,
+                    active_signature_help: active.clone(),
+                },
+            }));
         self.state = State::Pending {
             id,
             previously_active: active,
@@ -476,7 +477,7 @@ impl ParameterHintsState {
         let Some(ch) = text.chars().next_back() else {
             return;
         };
-        let has = |list: &[String]| list.iter().any(|s| s.chars().next() == Some(ch));
+        let has = |list: &[String]| list.iter().any(|s| s.starts_with(ch));
         let sources = doc.signature_help_sources();
         let trigger = sources.iter().any(|s| has(&s.trigger_characters));
         let retrigger = sources

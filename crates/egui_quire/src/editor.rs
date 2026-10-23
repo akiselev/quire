@@ -1609,7 +1609,8 @@ impl FrameCx<'_> {
         if self.view.hover().is_focused() {
             // Keys go to the focused hover: its scroll commands, Escape hides it
             // (ContentHoverWidgetWrapper's keydown); other keys do nothing.
-            if hover_cmd && let KeyLookup::Bound(b) = &lookup
+            if hover_cmd
+                && let KeyLookup::Bound(b) = &lookup
                 && let KeyAction::Command(c) = b.action.clone()
             {
                 self.dispatch(c);
@@ -1639,7 +1640,14 @@ impl FrameCx<'_> {
     }
 
     /// Hover-related input: the mouse side of VS Code's `ContentHoverController`.
-    fn hover_mouse(&mut self, ui: &Ui, response: &Response, ptr: Option<Pos2>, pressed: bool, down: bool) {
+    fn hover_mouse(
+        &mut self,
+        ui: &Ui,
+        response: &Response,
+        ptr: Option<Pos2>,
+        pressed: bool,
+        down: bool,
+    ) {
         use quire_core::hover::{
             EventModifiers, HoverAnchor, HoverStartMode, HoverStartSource, MultiCursorModifier,
             should_show_hover,
@@ -1677,7 +1685,11 @@ impl FrameCx<'_> {
             }
             return;
         };
-        let moved = self.mem.hover_mouse.last.is_none_or(|(lp, lm)| lp != p || lm != mods);
+        let moved = self
+            .mem
+            .hover_mouse
+            .last
+            .is_none_or(|(lp, lm)| lp != p || lm != mods);
         let prev = self.mem.hover_mouse.last.map(|(lp, _)| lp);
         self.mem.hover_mouse.last = Some((p, mods));
         let ev_mods = EventModifiers {
@@ -1687,7 +1699,9 @@ impl FrameCx<'_> {
         };
         let react = |f: &mut Self, p: Pos2, prev: Option<Pos2>| {
             if should_show_hover(cfg.enabled, MultiCursorModifier::Alt, ev_mods) {
-                let anchor = f.hover_anchor_at(p).map(|pos| HoverAnchor { range: pos..pos });
+                let anchor = f
+                    .hover_anchor_at(p)
+                    .map(|pos| HoverAnchor { range: pos..pos });
                 // ContentHoverWidget.isMouseGettingCloser
                 let closer = cfg.sticky
                     && match (f.mem.hover_rect, prev) {
@@ -1719,7 +1733,9 @@ impl FrameCx<'_> {
         if !moved {
             if let Some(t) = self.mem.hover_mouse.runner {
                 self.ctx
-                    .request_repaint_after(std::time::Duration::from_secs_f64((t - now).max(0.001)));
+                    .request_repaint_after(std::time::Duration::from_secs_f64(
+                        (t - now).max(0.001),
+                    ));
             }
             return;
         }

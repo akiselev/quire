@@ -46,8 +46,8 @@ pub use recent::{LineEdit, RecentChanges, Stale};
 pub use selection::{SelRange, Selection};
 pub use text::{LineEnding, Text, TextSlice};
 pub use transaction::{
-    AuthorId, Effect, GroupHint, HoverEffect, InputKind, Origin, ParameterHintsEffect, SuggestEffect,
-    Transaction,
+    AuthorId, Effect, GroupHint, HoverEffect, InputKind, Origin, ParameterHintsEffect,
+    SuggestEffect, Transaction,
 };
 pub use version::Version;
 pub use view::{AutoClosed, EditorView, Preedit, Reveal, Scroll, SyncOutcome};
