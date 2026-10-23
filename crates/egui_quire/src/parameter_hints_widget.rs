@@ -57,7 +57,7 @@ fn arrow(ui: &mut Ui, up: bool, label: &str) -> egui::Response {
     let (rect, resp) = ui.allocate_exact_size(size, egui::Sense::click());
     let resp = resp.on_hover_text(label);
     let label = label.to_string();
-    resp.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &label));
+    resp.widget_info(|| egui::WidgetInfo::labeled(egui::Role::Button, true, &label));
     let v = ui.style().interact(&resp);
     let c = rect.center();
     let (dx, dy) = (4.0, 2.5);
