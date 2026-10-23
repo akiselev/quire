@@ -36,7 +36,7 @@ quire depends on neither.
   check, clippy and fmt run niced with 3 jobs and no slot.
 - After a branch merges, delete its worktree's `target/`. At most two worktrees have their own
   target; others share one by exporting `CARGO_TARGET_DIR=<dir>` and
-  `CARGO_BUILD_BUILD_DIR=<dir>/build`. Below 20 GB free disk, stop building and tell the coordinator.
+  `CARGO_BUILD_BUILD_DIR=<dir>/build`. Below 15 GB free disk, stop building and tell the coordinator.
 - While writing: `scripts/cargo.sh check -p <crate>` and only the touched tests
   (`scripts/cargo.sh test -p <crate> --test <name>` or a name filter).
 - `scripts/check.sh` once per lane, at the end (it takes one machine slot for the whole run); it is
