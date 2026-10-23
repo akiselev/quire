@@ -347,55 +347,55 @@
     [
      "SnippetController > Simple accepted",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Simple canceled",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when deleting lines above",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when deleting lines below",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when inserting lines above",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when inserting lines below",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when calling model.setValue()",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when undoing",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Stops when moving cursor outside",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
@@ -413,49 +413,49 @@
     [
      "SnippetController > Final tabstop with multiple selections",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Final tabstop, #11742 simple",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Final tabstop, #11742 different indents",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Final tabstop, #11890 stay at the beginning",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Final tabstop, no tabstop",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Multiple cursor and overwriteBefore/After, issue #11060",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Multiple cursor and overwriteBefore/After, #16277",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController > Insert snippet twice, #19449",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ]
    ]
@@ -474,7 +474,7 @@
     [
      "SnippetController2 > insert, insert -> abort",
      {
-      "ours": "no soft cancel that keeps added cursors: leaveSnippet is VS Code's hard cancel (cancel(true))"
+      "todo": "soft cancel (cancel() keeping the cursors) is internal to VS Code; port through a host API in the next lane"
      }
     ],
     [
@@ -498,7 +498,7 @@
     [
      "SnippetController2 > insert, insert -> cursors collapse",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
@@ -510,85 +510,85 @@
     [
      "SnippetController2 > insert, delete snippet text",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > insert, nested trivial snippet",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > insert, nested snippet",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > insert, nested plain text",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Nested snippets without final placeholder jumps to next outer placeholder, #27898",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Inconsistent tab stop behaviour with recursive snippets and tab / shift tab, #27543",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Snippet tabstop selecting content of previously entered variable only works when separated by space, #23728",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > HTML Snippets Combine, #32211",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Problems with nested snippet insertion #39594",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Problems with nested snippet insertion #39594 (part2)",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > “Nested” snippets terminating abruptly in VSCode 1.19.2. #42012",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetController2 > Placeholders order #58267",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > Must tab through deleted tab stops in snippets #31619",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > Cancelling snippet mode should discard added cursors #68512 (soft cancel)",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
@@ -600,43 +600,43 @@
     [
      "SnippetController2 > User defined snippet tab stops ignored #72862",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > Optional tabstop in snippets #72358",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > issue #90135: confusing trim whitespace edits",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (1 of 2)",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > issue #145727: insertSnippet can put snippet selections in wrong positions (2 of 2)",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > leading TAB by snippets won't replace by spaces #101870",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetController2 > leading TAB by snippets won't replace by spaces #101870 (part 2)",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
@@ -1100,7 +1100,7 @@
     [
      "SnippetSession > snippets, newline NO whitespace adjust",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
@@ -1130,13 +1130,13 @@
     [
      "SnippetSession > snippets, don't grow final tabstop",
      {
-      "ours": "snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev"
+      "na": "tests the SnippetSession class alone, which keeps the final tabstop for prev; in VS Code's editor SnippetController2 ends snippet mode at the last placeholder, as quire does (covered by insert_tab_tab_done)"
      }
     ],
     [
      "SnippetSession > snippets, don't merge touching tabstops 1/2",
      {
-      "ours": "snippet mode ends at the final tabstop (SnippetController2's behaviour); the SnippetSession class alone stays there for prev"
+      "na": "tests the SnippetSession class alone, which keeps the final tabstop for prev; in VS Code's editor SnippetController2 ends snippet mode at the last placeholder, as quire does (covered by insert_tab_tab_done)"
      }
     ],
     [
@@ -1148,55 +1148,55 @@
     [
      "SnippetSession > snippets, gracefully move over final tabstop",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, overwriting nested placeholder",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, selections and snippet ranges",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, nested sessions",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetSession > snippets, typing at final tabstop",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, typing at beginning",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, typing with nested placeholder",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, snippet with variables",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, merge",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
@@ -1208,85 +1208,85 @@
     [
      "SnippetSession > snippets, deep merge does not produce phantom cursors (#279349)",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetSession > snippets, merge preserves mirrors in nested snippet",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetSession > snippets, merge does not throw when placeholder occurrences collapse to same position",
      {
-      "ours": "a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
+      "ours": "(pending approval) a snippet inserted inside snippet mode replaces the session (VS Code merges nested snippets)"
      }
     ],
     [
      "SnippetSession > snippets, transform",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, multi placeholder same index one transform",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, transform example",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, transform with indent",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > snippets, transform example hit if",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Snippet tab stop selection issue #96545, snippets, transform adjacent to previous placeholder",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Snippet tab stop selection issue #96545",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Snippet placeholder index incorrect after using 2+ snippets in a row that each end with a placeholder, #30769",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Snippet variable text isn't whitespace normalised, #31124",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Selecting text from left to right, and choosing item messes up code, #31199",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
      "SnippetSession > Tabs don't get replaced with spaces in snippet transformations #103818",
      {
-      "ours": "not yet ported (model-level; listed for the next completion lane)"
+      "todo": "not yet ported (model-level; for the next completion lane)"
      }
     ],
     [
