@@ -89,6 +89,27 @@ pub fn line_string(text: &Text, i: usize) -> String {
     s
 }
 
+/// Line `i` without its line feed, cut after `stop` chars (copying only that prefix).
+pub fn line_prefix(text: &Text, i: usize, stop: usize) -> String {
+    let slice = text.line(i);
+    let mut out = String::with_capacity(slice.len_bytes().min(stop * 4));
+    let mut chars = 0usize;
+    for chunk in slice.chunks() {
+        let chunk = chunk.strip_suffix('\n').unwrap_or(chunk);
+        match chunk.char_indices().nth(stop - chars) {
+            Some((b, _)) => {
+                out.push_str(&chunk[..b]);
+                return out;
+            }
+            None => {
+                out.push_str(chunk);
+                chars += chunk.chars().count();
+            }
+        }
+    }
+    out
+}
+
 /// The token paints of `line` (`(model byte, paint)`; paint `t + 1` for token type `t`), semantic
 /// tokens laid over the highlighter's as egui_quire's `glue::line_runs` does.
 pub fn token_paints(doc: &Document, line: usize, out: &mut Vec<(usize, u32)>) {
@@ -108,7 +129,8 @@ pub fn token_paints(doc: &Document, line: usize, out: &mut Vec<(usize, u32)>) {
     }
 }
 
-/// Builds the display line of `line`: its text, its paints and its injected pieces.
+/// Builds the display line of `line`: its text (at most `stop_rendering_line_after` chars), its
+/// paints and its injected pieces.
 pub fn display_line(
     doc: &Document,
     view: &mut EditorView,
@@ -116,7 +138,8 @@ pub fn display_line(
     hints: bool,
 ) -> DisplayLine {
     let text = doc.text();
-    let model = line_string(text, line);
+    // VS Code `stopRenderingLineAfter` (E3 F2): a long line shows (and shapes) only its prefix
+    let model = line_prefix(text, line, doc.config().stop_rendering_line_after.max(1));
     let mut paints = Vec::new();
     token_paints(doc, line, &mut paints);
     let start = text.line_to_byte(line);
@@ -244,6 +267,14 @@ mod tests {
         assert_eq!(l.to_model(11), 6);
         assert_eq!(l.to_model(99), 9);
         assert!(l.piece_at(6).is_some() && l.piece_at(10).is_none());
+    }
+
+    #[test]
+    fn long_lines_keep_a_prefix() {
+        let t = Text::from_file(&format!("{}\nb", "é".repeat(100)));
+        assert_eq!(line_prefix(&t, 0, 10), "é".repeat(10));
+        assert_eq!(line_prefix(&t, 0, 1_000), "é".repeat(100), "no line feed");
+        assert_eq!(line_prefix(&t, 1, 10), "b");
     }
 
     #[test]
