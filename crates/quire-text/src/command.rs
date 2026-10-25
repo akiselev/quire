@@ -675,6 +675,19 @@ impl TextDocument {
         let mut ex = Executed::default();
         match &cmd {
             EditCommand::Preedit(PreeditUpdate::Update { text, active }) => {
+                // A composition that starts over a selection replaces it, in one transaction of
+                // its own (AppKit `setMarkedText`, TSF): the selected text is deleted first.
+                if view.preedit().is_none()
+                    && !text.is_empty()
+                    && view.selection().ranges().iter().any(|r| !r.is_empty())
+                {
+                    let delete = EditCommand::Insert {
+                        text: String::new(),
+                        kind: InputKind::Ime,
+                        distribute: false,
+                    };
+                    ex = self.execute(view, delete, rules, layout, time_ms);
+                }
                 view.set_preedit(Some(Preedit {
                     text: text.clone(),
                     active: active.clone(),

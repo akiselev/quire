@@ -27,7 +27,13 @@ depends on `quire-text`, `quire-core` (path) and on svelters' `presto-base`, `pr
 | `theme.rs` | `EditorTheme` in presto colours (egui_quire's Dark+/Light+ token palette), font family/size/line height, caret blink timing. |
 
 quire-text: `Text::len_utf16`, `Text::byte_to_utf16_offset`, `Text::utf16_offset_to_byte`
-(document-wide UTF-16, both backends) with a unit test. No other change outside the new crate except
+(document-wide UTF-16, both backends: O(log n) on the rope through ropey's `char_to_utf16_cu` /
+`utf16_cu_to_char`, a scan on the small backend, which holds at most 64 KiB) with a unit test
+(TEXT-INPUT's R1). And TEXT-INPUT's R2: `PreeditUpdate::Update` that starts a composition over a
+non-empty selection first deletes the selection in one IME transaction (`Executed::applied` carries
+it), as AppKit and TSF do; later updates change only the preedit (test
+`a_preedit_over_a_selection_replaces_it` in `tests/rules.rs`, not run). This changes what a field
+sees on a composition start, so it is listed for approval with question 3. No other change outside the new crate except
 the workspace `Cargo.toml` (member, presto git dependencies) and `THIRD_PARTY_NOTICES.md` (the wrap
 translation in presto_quire).
 

@@ -4,8 +4,8 @@
 use proptest::prelude::*;
 use quire_text::{
     ChangeSet, DocRules, EditCommand, EditRules, HostRequest, InputKind, LineBreaks, LineMode,
-    NoWrap, PrimaryRule, Refusal, Rejected, Selection, TextDocument, TextView, Transaction,
-    UndoRules, WordRules,
+    NoWrap, PreeditUpdate, PrimaryRule, Refusal, Rejected, Selection, TextDocument, TextView,
+    Transaction, UndoRules, WordRules,
 };
 use std::sync::Arc;
 
@@ -168,4 +168,36 @@ proptest! {
             }
         }
     }
+}
+
+#[test]
+fn a_preedit_over_a_selection_replaces_it() {
+    let (mut doc, mut view) = field("hello", DocRules::field(LineMode::SINGLE, UndoRules::Gtk));
+    let edit = EditRules::field(WordRules::Pango);
+    let layout = NoWrap::default();
+    doc.execute(
+        &mut view,
+        EditCommand::SetSelection(Selection::single(1, 4)),
+        &edit,
+        &layout,
+        None,
+    );
+    let update = |t: &str| {
+        EditCommand::Preedit(PreeditUpdate::Update {
+            text: t.into(),
+            active: None,
+        })
+    };
+    let ex = doc.execute(&mut view, update("か"), &edit, &layout, None);
+    assert!(
+        ex.applied.is_some_and(|a| a.changed_text()),
+        "one deleting transaction"
+    );
+    assert_eq!(doc.text().to_string(), "ho");
+    assert_eq!(view.selection().primary().range(), 1..1);
+    assert_eq!(view.preedit().map(|p| p.text.as_str()), Some("か"));
+    // later updates of the same composition change only the preedit
+    let ex = doc.execute(&mut view, update("かな"), &edit, &layout, None);
+    assert!(ex.applied.is_none());
+    assert_eq!(doc.text().to_string(), "ho");
 }
