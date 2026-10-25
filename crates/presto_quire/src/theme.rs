@@ -99,7 +99,10 @@ impl EditorTheme {
 
     /// Colour of a token type.
     pub fn token_color(&self, token_type: usize) -> Color {
-        self.token_colors.get(token_type).copied().unwrap_or(self.foreground)
+        self.token_colors
+            .get(token_type)
+            .copied()
+            .unwrap_or(self.foreground)
     }
 
     /// Colour of a paint id recorded in a shaped line: 0 is the foreground, `t + 1` token type `t`.
@@ -152,7 +155,13 @@ fn default_token_colors(dark: bool, fg: Color) -> Vec<Color> {
         .iter()
         .map(|t| match t {
             T::Text | T::Embedded => fg,
-            T::Namespace | T::Type | T::Class | T::Enum | T::Interface | T::Struct | T::TypeParameter => ty,
+            T::Namespace
+            | T::Type
+            | T::Class
+            | T::Enum
+            | T::Interface
+            | T::Struct
+            | T::TypeParameter => ty,
             T::Constructor => ty,
             T::Parameter | T::Variable | T::Property => var,
             T::EnumMember | T::Constant | T::Boolean => constant,

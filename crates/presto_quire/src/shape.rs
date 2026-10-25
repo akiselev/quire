@@ -52,7 +52,11 @@ pub struct ShapedLine {
 
 impl CacheBytes for Arc<ShapedLine> {
     fn cache_bytes(&self) -> usize {
-        let glyphs: usize = self.runs.iter().map(|r| r.run.glyphs.len() * std::mem::size_of::<Glyph>()).sum();
+        let glyphs: usize = self
+            .runs
+            .iter()
+            .map(|r| r.run.glyphs.len() * std::mem::size_of::<Glyph>())
+            .sum();
         glyphs + self.stops.len() * 8 + self.runs.len() * 64 + 64
     }
 }
@@ -87,12 +91,19 @@ impl ShapedLine {
             return self.len();
         }
         let (a, b) = (self.stops[i - 1], self.stops[i]);
-        if x - a.1 <= b.1 - x { a.0 as usize } else { b.0 as usize }
+        if x - a.1 <= b.1 - x {
+            a.0 as usize
+        } else {
+            b.0 as usize
+        }
     }
 
     /// Per-char advances (points), in char order, for wrapping.
     pub fn advances(&self) -> Vec<f32> {
-        self.stops.windows(2).map(|w| (w[1].1 - w[0].1).max(0.0)).collect()
+        self.stops
+            .windows(2)
+            .map(|w| (w[1].1 - w[0].1).max(0.0))
+            .collect()
     }
 }
 
@@ -154,7 +165,8 @@ impl MonoTable {
 
     /// Whether `line` can take the fast path: printable ASCII and tabs only.
     pub fn covers(line: &str) -> bool {
-        line.bytes().all(|b| b == b'\t' || (b' '..=b'~').contains(&b))
+        line.bytes()
+            .all(|b| b == b'\t' || (b' '..=b'~').contains(&b))
     }
 
     /// Shapes an ASCII `line` (see [`MonoTable::covers`]) with token `paints` (`(start byte, paint)`
@@ -171,12 +183,18 @@ impl MonoTable {
             let i = paints.partition_point(|p| p.0 <= b);
             if i == 0 { 0 } else { paints[i - 1].1 }
         };
-        let flush = |cur: &mut Option<(u32, usize, Vec<Glyph>, f32, usize)>, runs: &mut Vec<LineRun>| {
+        let flush = |cur: &mut Option<(u32, usize, Vec<Glyph>, f32, usize)>,
+                     runs: &mut Vec<LineRun>| {
             if let Some((paint, start, glyphs, x0, end)) = cur.take()
                 && !glyphs.is_empty()
             {
                 let advance = glyphs.last().map_or(0.0, |g| g.x + self.advance);
-                runs.push(LineRun { run: Arc::new(self.run(glyphs, advance)), x: x0, paint, range: start..end });
+                runs.push(LineRun {
+                    run: Arc::new(self.run(glyphs, advance)),
+                    x: x0,
+                    paint,
+                    range: start..end,
+                });
             }
         };
         for (i, &b) in bytes.iter().enumerate() {
@@ -195,13 +213,24 @@ impl MonoTable {
                 flush(&mut cur, &mut runs);
             }
             let c = cur.get_or_insert_with(|| (paint, i, Vec::new(), x, i));
-            c.2.push(Glyph { id: self.glyphs[(b - b' ') as usize], x: x - c.3, y: 0.0 });
+            c.2.push(Glyph {
+                id: self.glyphs[(b - b' ') as usize],
+                x: x - c.3,
+                y: 0.0,
+            });
             c.4 = i + 1;
         }
         flush(&mut cur, &mut runs);
         let width = col as f32 * self.advance;
         stops.push((bytes.len() as u32, width));
-        ShapedLine { runs, stops, width, ascent: self.ascent, descent: self.descent, fast: true }
+        ShapedLine {
+            runs,
+            stops,
+            width,
+            ascent: self.ascent,
+            descent: self.descent,
+            fast: true,
+        }
     }
 
     fn run(&self, glyphs: Vec<Glyph>, advance: f32) -> GlyphRun {
@@ -249,7 +278,12 @@ pub const LINE_CACHE_BUDGET: usize = 16 << 20;
 impl LineShaper {
     pub fn new(fonts: Arc<presto_text::FontStore>, family: &str, size: f32) -> Self {
         let mut text = TextSystem::new(fonts);
-        let style = TextStyle { family: family.to_owned(), size, wrap: false, ..TextStyle::default() };
+        let style = TextStyle {
+            family: family.to_owned(),
+            size,
+            wrap: false,
+            ..TextStyle::default()
+        };
         let mono = MonoTable::probe(&mut text, &style);
         let font_generation = text.fonts().generation();
         LineShaper {
@@ -300,7 +334,9 @@ impl LineShaper {
         if let Some(m) = &self.mono {
             return m.advance;
         }
-        let l = self.text.layout(&RichText::plain("0000000000", self.style.clone()), None);
+        let l = self
+            .text
+            .layout(&RichText::plain("0000000000", self.style.clone()), None);
         l.size().w / 10.0
     }
 
@@ -309,8 +345,14 @@ impl LineShaper {
         if let Some(m) = &self.mono {
             return (m.ascent, m.descent);
         }
-        let l = self.text.layout(&RichText::plain("Hg", self.style.clone()), None);
-        l.runs().first().map_or((self.style.size * 0.8, self.style.size * 0.2), |r| (r.run.ascent, r.run.descent))
+        let l = self
+            .text
+            .layout(&RichText::plain("Hg", self.style.clone()), None);
+        l.runs()
+            .first()
+            .map_or((self.style.size * 0.8, self.style.size * 0.2), |r| {
+                (r.run.ascent, r.run.descent)
+            })
     }
 
     /// (hits, misses) of the line cache; entries held.
@@ -370,11 +412,20 @@ impl LineShaper {
         let mut rich = RichText::plain(line, self.style.clone());
         rich.tab_size = Some(self.tab_size as f32);
         for (i, &(start, paint)) in paints.iter().enumerate() {
-            let end = paints.get(i + 1).map_or(line.len(), |p| p.0).min(line.len());
+            let end = paints
+                .get(i + 1)
+                .map_or(line.len(), |p| p.0)
+                .min(line.len());
             let start = floor_boundary(line, start.min(line.len()));
             let end = floor_boundary(line, end);
             if start < end && paint != 0 {
-                rich.spans.push(Span { range: start..end, style: TextStyle { paint, ..self.style.clone() } });
+                rich.spans.push(Span {
+                    range: start..end,
+                    style: TextStyle {
+                        paint,
+                        ..self.style.clone()
+                    },
+                });
             }
         }
         let layout = self.text.layout(&rich, None);
@@ -385,7 +436,12 @@ impl LineShaper {
             ascent = ascent.max(r.run.ascent);
             descent = descent.max(r.run.descent);
             debug_assert!((r.origin.y - baseline).abs() < 0.5, "one unwrapped line");
-            runs.push(LineRun { run: r.run.clone(), x: r.origin.x, paint: r.style, range: r.range.clone() });
+            runs.push(LineRun {
+                run: r.run.clone(),
+                x: r.origin.x,
+                paint: r.style,
+                range: r.range.clone(),
+            });
         }
         if runs.is_empty() {
             let (a, d) = self.metrics();
@@ -401,7 +457,14 @@ impl LineShaper {
         } else {
             spread_stops(line, &runs)
         };
-        ShapedLine { runs, stops, width: layout.size().w, ascent, descent, fast: false }
+        ShapedLine {
+            runs,
+            stops,
+            width: layout.size().w,
+            ascent,
+            descent,
+            fast: false,
+        }
     }
 }
 
@@ -482,7 +545,14 @@ mod tests {
         assert_eq!(s.runs.len(), 1, "one paint, one run");
         let run = &s.runs[0].run;
         let ids: Vec<u32> = run.glyphs.iter().map(|g| g.id).collect();
-        assert_eq!(ids, vec![100 + (b'a' - b' ') as u32, 100 + (b'b' - b' ') as u32, 100 + (b'c' - b' ') as u32]);
+        assert_eq!(
+            ids,
+            vec![
+                100 + (b'a' - b' ') as u32,
+                100 + (b'b' - b' ') as u32,
+                100 + (b'c' - b' ') as u32
+            ]
+        );
         let gx: Vec<f32> = run.glyphs.iter().map(|g| g.x).collect();
         assert_eq!(gx, vec![0.0, 32.0, 48.0], "spaces and tabs draw nothing");
     }
@@ -490,9 +560,16 @@ mod tests {
     #[test]
     fn fast_path_splits_runs_by_paint() {
         let s = table().shape("let x", &[(0, 5), (3, 0), (4, 7)], 4);
-        let paints: Vec<(u32, Range<usize>, f32)> = s.runs.iter().map(|r| (r.paint, r.range.clone(), r.x)).collect();
+        let paints: Vec<(u32, Range<usize>, f32)> = s
+            .runs
+            .iter()
+            .map(|r| (r.paint, r.range.clone(), r.x))
+            .collect();
         assert_eq!(paints, vec![(5, 0..3, 0.0), (7, 4..5, 32.0)]);
-        assert_eq!(s.runs[1].run.glyphs[0].x, 0.0, "glyphs are relative to their run");
+        assert_eq!(
+            s.runs[1].run.glyphs[0].x, 0.0,
+            "glyphs are relative to their run"
+        );
     }
 
     #[test]
@@ -540,7 +617,13 @@ mod tests {
         assert!(!s.fast);
         assert!(s.width > 0.0);
         assert_eq!(s.len(), "héllo wörld".len());
-        assert!(s.stops.windows(2).all(|w| w[0].0 < w[1].0 && w[0].1 <= w[1].1), "{:?}", s.stops);
+        assert!(
+            s.stops
+                .windows(2)
+                .all(|w| w[0].0 < w[1].0 && w[0].1 <= w[1].1),
+            "{:?}",
+            s.stops
+        );
         assert!(s.runs.iter().any(|r| r.paint == 3) && s.runs.iter().any(|r| r.paint == 4));
         let again = sh.shape("héllo wörld", &[(0, 3), (6, 4)]);
         assert!(Arc::ptr_eq(&s, &again), "the second shape is a cache hit");

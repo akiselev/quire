@@ -3068,6 +3068,7 @@ dependencies = [
  "quire-core",
  "quire-syntax",
  "quire-text",
+ "serde",
  "serde_json",
 ]
 

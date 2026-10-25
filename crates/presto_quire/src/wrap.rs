@@ -151,7 +151,12 @@ pub struct Wrap {
 }
 
 impl Wrap {
-    pub const NONE: Wrap = Wrap { width: None, indent: WrappingIndent::None, tab_size: 4, column: 8.0 };
+    pub const NONE: Wrap = Wrap {
+        width: None,
+        indent: WrappingIndent::None,
+        tab_size: 4,
+        column: 8.0,
+    };
 }
 
 /// One visual row of a line.
@@ -180,7 +185,12 @@ impl CacheBytes for Arc<LineRows> {
         if self.rows.len() == 1 {
             return 96;
         }
-        let glyphs: usize = self.rows.iter().flat_map(|r| &r.runs).map(|r| r.run.glyphs.len() * 12 + 64).sum();
+        let glyphs: usize = self
+            .rows
+            .iter()
+            .flat_map(|r| &r.runs)
+            .map(|r| r.run.glyphs.len() * 12 + 64)
+            .sum();
         glyphs + self.rows.len() * 64
     }
 }
@@ -190,7 +200,12 @@ impl LineRows {
     pub fn new(text: &str, shaped: Arc<ShapedLine>, wrap: Wrap) -> Self {
         let len = shaped.len();
         let Some(width) = wrap.width.filter(|w| *w > 0.0 && shaped.width > *w) else {
-            let rows = vec![Row { range: 0..len, x0: 0.0, indent: 0.0, runs: shaped.runs.clone() }];
+            let rows = vec![Row {
+                range: 0..len,
+                x0: 0.0,
+                indent: 0.0,
+                runs: shaped.runs.clone(),
+            }];
             return LineRows { shaped, rows };
         };
         let cols = ((width / wrap.column.max(0.01)).floor() as u32).max(1);
@@ -221,7 +236,10 @@ impl LineRows {
 
     /// The row holding line-local `byte`; at a wrap point `upstream` picks the row it ends.
     pub fn row_of(&self, byte: usize, upstream: bool) -> usize {
-        let i = self.rows.partition_point(|r| r.range.start <= byte).saturating_sub(1);
+        let i = self
+            .rows
+            .partition_point(|r| r.range.start <= byte)
+            .saturating_sub(1);
         if upstream && i > 0 && self.rows[i].range.start == byte {
             i - 1
         } else {
@@ -245,7 +263,10 @@ impl LineRows {
     pub fn hit(&self, k: usize, x: f32) -> (usize, bool) {
         let k = k.min(self.rows.len() - 1);
         let r = &self.rows[k];
-        let b = self.shaped.byte_at(x - r.indent + r.x0).clamp(r.range.start, r.range.end);
+        let b = self
+            .shaped
+            .byte_at(x - r.indent + r.x0)
+            .clamp(r.range.start, r.range.end);
         let last = k + 1 == self.rows.len();
         (b, !last && b == r.range.end)
     }
@@ -258,7 +279,9 @@ impl LineRows {
 
     /// The widest row.
     pub fn width(&self) -> f32 {
-        (0..self.rows.len()).map(|k| self.row_width(k)).fold(0.0, f32::max)
+        (0..self.rows.len())
+            .map(|k| self.row_width(k))
+            .fold(0.0, f32::max)
     }
 }
 
@@ -270,9 +293,15 @@ fn split_runs(shaped: &ShapedLine, rows: &mut [Row]) {
         let mut parts: Vec<Option<(f32, Vec<Glyph>)>> = vec![None; rows.len()];
         for g in &run.run.glyphs {
             let gx = run.x + g.x;
-            let k = starts.partition_point(|s| *s <= gx + 0.001).saturating_sub(1);
+            let k = starts
+                .partition_point(|s| *s <= gx + 0.001)
+                .saturating_sub(1);
             let p = parts[k].get_or_insert_with(|| (gx, Vec::new()));
-            p.1.push(Glyph { id: g.id, x: gx - p.0, y: g.y });
+            p.1.push(Glyph {
+                id: g.id,
+                x: gx - p.0,
+                y: g.y,
+            });
         }
         for (k, p) in parts.into_iter().enumerate() {
             let Some((x0, glyphs)) = p else { continue };
@@ -283,14 +312,23 @@ fn split_runs(shaped: &ShapedLine, rows: &mut [Row]) {
             sub.advance = advance;
             let start = row.range.start.max(run.range.start);
             let end = row.range.end.min(run.range.end).max(start);
-            row.runs.push(LineRun { run: Arc::new(sub), x: x0 - row.x0 + row.indent, paint: run.paint, range: start..end });
+            row.runs.push(LineRun {
+                run: Arc::new(sub),
+                x: x0 - row.x0 + row.indent,
+                paint: run.paint,
+                range: start..end,
+            });
         }
     }
 }
 
 /// The advance of a run's last glyph, estimated as the run's mean (used only for ink bounds).
 fn glyph_advance_estimate(run: &presto_base::text::GlyphRun) -> f32 {
-    if run.glyphs.is_empty() { 0.0 } else { run.advance / run.glyphs.len() as f32 }
+    if run.glyphs.is_empty() {
+        0.0
+    } else {
+        run.advance / run.glyphs.len() as f32
+    }
 }
 
 #[cfg(test)]
@@ -320,7 +358,16 @@ mod tests {
 
     fn rows(text: &str, width: f32, indent: WrappingIndent) -> LineRows {
         let shaped = Arc::new(mono().shape(text, &[], 4));
-        LineRows::new(text, shaped, Wrap { width: Some(width), indent, tab_size: 4, column: 10.0 })
+        LineRows::new(
+            text,
+            shaped,
+            Wrap {
+                width: Some(width),
+                indent,
+                tab_size: 4,
+                column: 10.0,
+            },
+        )
     }
 
     #[test]
@@ -354,7 +401,11 @@ mod tests {
         let wrap = r.rows[1].range.start;
         assert_eq!(r.locate(wrap, false).0, 1);
         assert_eq!(r.locate(wrap, true), (0, 100.0));
-        assert_eq!(r.hit(0, 1000.0), (wrap, true), "past the end of a wrapped row is upstream");
+        assert_eq!(
+            r.hit(0, 1000.0),
+            (wrap, true),
+            "past the end of a wrapped row is upstream"
+        );
         assert_eq!(r.hit(1, 1000.0), (14, false), "the last row's end is not");
         assert_eq!(r.hit(1, 0.0), (wrap, false));
     }
@@ -362,7 +413,12 @@ mod tests {
     #[test]
     fn every_glyph_lands_on_exactly_one_row() {
         let r = rows("aaaa bbbb cccc dddd eeee", 70.0, WrappingIndent::None);
-        let total: usize = r.rows.iter().flat_map(|row| &row.runs).map(|run| run.run.glyphs.len()).sum();
+        let total: usize = r
+            .rows
+            .iter()
+            .flat_map(|row| &row.runs)
+            .map(|run| run.run.glyphs.len())
+            .sum();
         let shaped: usize = r.shaped.runs.iter().map(|run| run.run.glyphs.len()).sum();
         assert_eq!(total, shaped);
     }

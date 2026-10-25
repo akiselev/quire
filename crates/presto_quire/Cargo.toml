@@ -10,10 +10,11 @@ publish.workspace = true
 
 [dependencies]
 quire-text.workspace = true
-quire-core.workspace = true
+quire-core = { workspace = true, features = ["serde"] }
 presto-base.workspace = true
 presto-core.workspace = true
 presto-text.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]

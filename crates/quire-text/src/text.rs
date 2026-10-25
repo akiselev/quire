@@ -1055,7 +1055,10 @@ mod tests {
     #[test]
     fn document_utf16_offsets() {
         // "x\n" 2 cu, 'a' 1, '😀' 2 (4 bytes), 'é' 1 (2 bytes): 6 cu, 9 bytes
-        for t in [Text::from_file("x\na😀é"), rope_of(&Text::from_file("x\na😀é"))] {
+        for t in [
+            Text::from_file("x\na😀é"),
+            rope_of(&Text::from_file("x\na😀é")),
+        ] {
             assert_eq!(t.len_utf16(), 6);
             assert_eq!(t.byte_to_utf16_offset(0), 0);
             assert_eq!(t.byte_to_utf16_offset(3), 3);

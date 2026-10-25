@@ -75,7 +75,14 @@ impl<K, V> std::fmt::Debug for GenCache<K, V> {
 
 impl<K: Hash + Eq + Copy, V: Clone + CacheBytes> GenCache<K, V> {
     pub fn new(budget: usize) -> Self {
-        GenCache { map: HashMap::new(), generation: 0, bytes: 0, budget, hits: 0, misses: 0 }
+        GenCache {
+            map: HashMap::new(),
+            generation: 0,
+            bytes: 0,
+            budget,
+            hits: 0,
+            misses: 0,
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -113,7 +120,14 @@ impl<K: Hash + Eq + Copy, V: Clone + CacheBytes> GenCache<K, V> {
     pub fn insert(&mut self, key: K, value: V) {
         let bytes = value.cache_bytes();
         self.misses += 1;
-        if let Some(old) = self.map.insert(key, Entry { value, used: self.generation, bytes }) {
+        if let Some(old) = self.map.insert(
+            key,
+            Entry {
+                value,
+                used: self.generation,
+                bytes,
+            },
+        ) {
             self.bytes -= old.bytes;
         }
         self.bytes += bytes;
@@ -135,8 +149,12 @@ impl<K: Hash + Eq + Copy, V: Clone + CacheBytes> GenCache<K, V> {
             return;
         }
         let keep_from = self.generation.saturating_sub(1);
-        let mut old: Vec<(u64, K)> =
-            self.map.iter().filter(|(_, e)| e.used < keep_from).map(|(k, e)| (e.used, *k)).collect();
+        let mut old: Vec<(u64, K)> = self
+            .map
+            .iter()
+            .filter(|(_, e)| e.used < keep_from)
+            .map(|(k, e)| (e.used, *k))
+            .collect();
         old.sort_unstable_by_key(|(used, _)| *used);
         for (_, k) in old {
             if self.bytes <= self.budget {
