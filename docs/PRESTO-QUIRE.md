@@ -32,8 +32,7 @@ quire-text: `Text::len_utf16`, `Text::byte_to_utf16_offset`, `Text::utf16_offset
 (TEXT-INPUT's R1). And TEXT-INPUT's R2: `PreeditUpdate::Update` that starts a composition over a
 non-empty selection first deletes the selection in one IME transaction (`Executed::applied` carries
 it), as AppKit and TSF do; later updates change only the preedit (test
-`a_preedit_over_a_selection_replaces_it` in `tests/rules.rs`, not run). This changes what a field
-sees on a composition start, so it is listed for approval with question 3. No other change outside the new crate except
+`a_preedit_over_a_selection_replaces_it` in `tests/rules.rs`, not run). Approved by the coordinator (2026-10-25). No other change outside the new crate except
 the workspace `Cargo.toml` (member, presto git dependencies) and `THIRD_PARTY_NOTICES.md` (the wrap
 translation in presto_quire).
 
@@ -116,7 +115,7 @@ same fields, plus four egui handled inside egui: `CopyText { text }`, `PasteRequ
    `layers.rs` once it lands.
 2. Yes: the TEXT lane is asked for a public `TextLayout` cluster accessor.
 3. The four new host events are approved (CopyText, PasteRequested, FindWidgetRequested,
-   FindWidgetClosed). R2 was done after this decision (35b5063) and was not part of it.
+   FindWidgetClosed). R2 (a preedit over a selection replaces it, 35b5063) was approved separately, the same day.
 4. Yes in principle: an egui-free quire crate for height, widths, wrap and keymap, as a follow-up
    after consolidation.
 5. Yes: presto_quire may depend on svelters by git (as presto_berth does).
