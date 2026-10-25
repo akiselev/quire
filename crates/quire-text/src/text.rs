@@ -752,6 +752,43 @@ impl Text {
         }
     }
 
+    /// The length in UTF-16 code units (what TSF, NSTextInputClient and UIA count in).
+    pub fn len_utf16(&self) -> usize {
+        match &self.repr {
+            Repr::Small(a) => a.s.chars().map(char::len_utf16).sum(),
+            Repr::Rope(r) => r.len_utf16_cu(),
+        }
+    }
+
+    /// The document-wide UTF-16 offset of byte `b` (clamped to the end, rounded down to a char
+    /// boundary).
+    pub fn byte_to_utf16_offset(&self, b: usize) -> usize {
+        let b = self.clamp_to_boundary(b);
+        match &self.repr {
+            Repr::Small(a) => a.s[..b].chars().map(char::len_utf16).sum(),
+            Repr::Rope(r) => r.char_to_utf16_cu(r.byte_to_char(b)),
+        }
+    }
+
+    /// The byte offset of the document-wide UTF-16 offset `u` (clamped to the end; an offset inside
+    /// a surrogate pair rounds down to the pair's start).
+    pub fn utf16_offset_to_byte(&self, u: usize) -> usize {
+        match &self.repr {
+            Repr::Small(a) => {
+                let (mut pos, mut acc) = (0, 0);
+                for c in a.s.chars() {
+                    if acc + c.len_utf16() > u {
+                        break;
+                    }
+                    acc += c.len_utf16();
+                    pos += c.len_utf8();
+                }
+                pos
+            }
+            Repr::Rope(r) => r.char_to_byte(r.utf16_cu_to_char(u.min(r.len_utf16_cu()))),
+        }
+    }
+
     /// Char index of byte `b` (rounded down).
     pub fn byte_to_char(&self, b: usize) -> usize {
         let b = b.min(self.len_bytes());
@@ -1013,6 +1050,23 @@ mod tests {
         assert_eq!(t.byte_to_utf16(9), (1, 4));
         // inside the surrogate pair rounds down
         assert_eq!(t.utf16_to_byte(1, 2), 3);
+    }
+
+    #[test]
+    fn document_utf16_offsets() {
+        // "x\n" 2 cu, 'a' 1, '😀' 2 (4 bytes), 'é' 1 (2 bytes): 6 cu, 9 bytes
+        for t in [Text::from_file("x\na😀é"), rope_of(&Text::from_file("x\na😀é"))] {
+            assert_eq!(t.len_utf16(), 6);
+            assert_eq!(t.byte_to_utf16_offset(0), 0);
+            assert_eq!(t.byte_to_utf16_offset(3), 3);
+            assert_eq!(t.byte_to_utf16_offset(7), 5);
+            assert_eq!(t.byte_to_utf16_offset(99), 6);
+            assert_eq!(t.utf16_offset_to_byte(3), 3);
+            assert_eq!(t.utf16_offset_to_byte(4), 3, "inside the pair rounds down");
+            assert_eq!(t.utf16_offset_to_byte(5), 7);
+            assert_eq!(t.utf16_offset_to_byte(6), 9);
+            assert_eq!(t.utf16_offset_to_byte(99), 9);
+        }
     }
 
     #[test]

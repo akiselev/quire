@@ -1,0 +1,23 @@
+[package]
+name = "presto_quire"
+description = "The quire code editor view on presto (svelters' retained toolkit)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+quire-text.workspace = true
+quire-core.workspace = true
+presto-base.workspace = true
+presto-core.workspace = true
+presto-text.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+quire-syntax.workspace = true
+
+[lints]
+workspace = true
