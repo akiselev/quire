@@ -109,3 +109,16 @@ same fields, plus four egui handled inside egui: `CopyText { text }`, `PasteRequ
 2. Questions 1 and 2, then move `code-editor` onto `layers.rs`.
 3. The gaps above in order of use: wrapped InsertCursor/column selection, hover Markdown and focus,
    suggest details, a11y text runs, find bar once presto has a text field.
+
+## Coordinator decisions (2026-10-25)
+
+1. Yes: CORE-3 adds a hook for kinds that own layers and send fast commits; `code-editor` moves onto
+   `layers.rs` once it lands.
+2. Yes: the TEXT lane is asked for a public `TextLayout` cluster accessor.
+3. The four new host events are approved (CopyText, PasteRequested, FindWidgetRequested,
+   FindWidgetClosed). R2 was done after this decision (35b5063) and was not part of it.
+4. Yes in principle: an egui-free quire crate for height, widths, wrap and keymap, as a follow-up
+   after consolidation.
+5. Yes: presto_quire may depend on svelters by git (as presto_berth does).
+
+The consolidation runs the tests.
