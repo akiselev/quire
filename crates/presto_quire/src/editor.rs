@@ -392,6 +392,11 @@ impl PrestoEditor {
         self.scroll
     }
 
+    /// The time of the last input (caret blink restarts there).
+    pub fn last_interaction_time(&self) -> Time {
+        self.last_interaction
+    }
+
     pub fn is_focused(&self) -> bool {
         self.focused
     }
@@ -1137,7 +1142,6 @@ impl PrestoEditor {
     /// produces types unless a binding consumed the key (VS Code: a matched keybinding prevents the
     /// keypress's default); AltGr text entry stays unbound and types.
     pub fn key(&mut self, doc: &mut Document, view: &mut EditorView, ev: &KeyEvent) -> bool {
-        self.now = self.now.max(self.now);
         if ev.state != KeyState::Pressed {
             return false;
         }
@@ -1204,9 +1208,12 @@ impl PrestoEditor {
                     && !t.chars().any(char::is_control)
                     && view.preedit().is_none() =>
             {
-                let ctrl_only = ev.modifiers.contains(Modifiers::CTRL)
-                    && !ev.modifiers.contains(Modifiers::ALT_GR);
-                if ctrl_only && !ev.modifiers.contains(Modifiers::ALT) {
+                // Ctrl (without Alt: Ctrl+Alt is AltGr on some layouts) and Cmd chords never type.
+                let m = ev.modifiers;
+                let ctrl_chord = m.contains(Modifiers::CTRL)
+                    && !m.contains(Modifiers::ALT)
+                    && !m.contains(Modifiers::ALT_GR);
+                if ctrl_chord || m.contains(Modifiers::SUPER) {
                     return false;
                 }
                 self.dispatch(doc, view, EditorCommand::Type { text: t.to_owned() });

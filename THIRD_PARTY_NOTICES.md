@@ -20,6 +20,9 @@ are translated from `src/vs/base/test/common/filters.test.ts` and
 `src/vs/editor/contrib/{hover,parameterHints}/test/**`.
 `crates/egui_quire/keymaps/vscode-default.json` is a subset of VS Code's default editor key
 bindings (JSON has no comments, so its notice is this entry).
+`crates/egui_quire/src/wrap.rs` and `crates/presto_quire/src/wrap.rs` translate the line breaking of
+VS Code's `monospaceLineBreaksComputer.ts`; presto_quire reads the same
+keymap file.
 
 ```
 MIT License

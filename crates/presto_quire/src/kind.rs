@@ -122,13 +122,23 @@ struct Inner {
 }
 
 /// The `code-editor` kind.
-#[derive(Default)]
 pub struct CodeEditorKind {
     inner: RefCell<Option<Inner>>,
     /// The `buffer` the inner state was built for.
     buffer: Option<String>,
     read_only: bool,
     gutter: bool,
+}
+
+impl Default for CodeEditorKind {
+    fn default() -> Self {
+        CodeEditorKind {
+            inner: RefCell::new(None),
+            buffer: None,
+            read_only: false,
+            gutter: true,
+        }
+    }
 }
 
 impl std::fmt::Debug for CodeEditorKind {
