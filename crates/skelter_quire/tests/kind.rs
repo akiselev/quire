@@ -13,7 +13,7 @@ use skelter_base::ids::{InputSeq, WindowId};
 use skelter_base::key::Key;
 use skelter_base::time::Time;
 use skelter_core::testkinds::{BoxKind, FixedText};
-use skelter_core::{Document, Kind, KindRegistry, StyleInput, Value};
+use skelter_core::{Document, Kind, KindRegistry, ListenFlags, StyleInput, Value};
 use skelter_quire::EditorEvent;
 use skelter_quire::kind::{CodeEditorKind, QuireHost};
 
@@ -91,6 +91,12 @@ fn records_types_and_reports() {
         Value::Str("main".into()),
     )
     .unwrap();
+    // JS listens to `change` and `selectionchange`; skelter-core queues a kind's signal for JS
+    // only when a listener is on its path
+    let change = spec.signal_named("change").unwrap();
+    let selectionchange = spec.signal_named("selectionchange").unwrap();
+    d.listen(n, change, ListenFlags::default());
+    d.listen(n, selectionchange, ListenFlags::default());
 
     let c = d.frame(W, Time(0)).expect("a first commit");
     let list = c
@@ -107,23 +113,40 @@ fn records_types_and_reports() {
     );
     assert!(!c.runs.is_empty());
 
-    // a click focuses it and puts the caret on the first line; typing goes into the document
-    d.dispatch(&pointer(
-        PointerPhase::Down,
-        Point::new(100.0, 8.0),
-        1_000,
-        1,
-    ));
-    d.dispatch(&pointer(PointerPhase::Up, Point::new(100.0, 8.0), 1_050, 2));
+    // a click focuses it and puts the caret on the first line; typing goes into the document.
+    // Each dispatch returns the JS-facing events it produced.
+    let mut events = Vec::new();
+    events.extend(
+        d.dispatch(&pointer(
+            PointerPhase::Down,
+            Point::new(100.0, 8.0),
+            1_000,
+            1,
+        ))
+        .events,
+    );
+    events.extend(
+        d.dispatch(&pointer(PointerPhase::Up, Point::new(100.0, 8.0), 1_050, 2))
+            .events,
+    );
     assert_eq!(d.focused(W), Some(n));
-    d.dispatch(&typed(Key::X, "x", 1_100, 3));
+    events.extend(d.dispatch(&typed(Key::X, "x", 1_100, 3)).events);
     assert!(
         buf.borrow().text().to_string().contains('x'),
         "{:?}",
         buf.borrow().text().to_string()
     );
-    let events = d.take_events();
-    assert!(!events.is_empty(), "change / selectionchange reach JS");
+    events.extend(d.take_events());
+    assert!(
+        events.iter().any(|e| e.target == n && e.signal == change),
+        "change reaches JS"
+    );
+    assert!(
+        events
+            .iter()
+            .any(|e| e.target == n && e.signal == selectionchange),
+        "selectionchange reaches JS"
+    );
     let host = d.service::<QuireHost>().unwrap();
     assert!(
         host.events
