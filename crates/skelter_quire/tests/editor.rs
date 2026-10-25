@@ -204,7 +204,10 @@ fn a_click_places_the_caret_on_the_clicked_line() {
     let p = f.at_line(1, 0.0);
     f.press(p, 1_000);
     assert_eq!(f.head(), 5, "the start of line 1");
-    let p = f.at_line(2, 1_000.0);
+    // Right of line 2's text but inside the widget: a press outside the widget's rect is not
+    // the editor's (pointer_down returns false), so x stays within the text area.
+    let g = f.ed.geom();
+    let p = f.at_line(2, g.size.w - g.text_left() - 1.0);
     f.press(p, 3_000);
     assert_eq!(f.head(), 14, "past the end of line 2");
 }
