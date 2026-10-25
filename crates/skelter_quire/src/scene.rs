@@ -7,27 +7,27 @@
 //! | [`EditorScene::gutter`] | gutter (scrolls in y only) | diagnostic marks, line numbers, fold markers |
 //! | [`EditorScene::overlay`] | local, above the panes | scrollbars, the suggest list, the hover, the parameter hints |
 //!
-//! Only the lines of the viewport plus overscan are recorded ([`PrestoEditor::layout`]); a scroll
-//! that stays inside them ([`PrestoEditor::covers`]) moves the content and gutter layers by offset.
+//! Only the lines of the viewport plus overscan are recorded ([`SkelterEditor::layout`]); a scroll
+//! that stays inside them ([`SkelterEditor::covers`]) moves the content and gutter layers by offset.
 //! The primary caret is not in any list: it is [`EditorScene::caret`], for the compositor to blink
-//! as a fast commit ([`presto_base::commit::FastCommit::Caret`]); hosts without that draw it with
+//! as a fast commit ([`skelter_base::commit::FastCommit::Caret`]); hosts without that draw it with
 //! [`EditorScene::caret_prim`].
 
 use std::ops::Range;
 use std::sync::Arc;
 
-use presto_base::color::{Color, Fill};
-use presto_base::display::{BorderStyle, DisplayList, Glyphs, Line, LineCap, Prim, Quad};
-use presto_base::geom::{Corners, Insets, Point, Rect, Size, Vec2};
-use presto_base::ids::RunId;
-use presto_base::text::GlyphRun;
 use quire_core::{Document, EditorView, Severity};
+use skelter_base::color::{Color, Fill};
+use skelter_base::display::{BorderStyle, DisplayList, Glyphs, Line, LineCap, Prim, Quad};
+use skelter_base::geom::{Corners, Insets, Point, Rect, Size, Vec2};
+use skelter_base::ids::RunId;
+use skelter_base::text::GlyphRun;
 
-use crate::editor::{LaidLine, PAD_Y, PrestoEditor, SCROLLBAR_W, fold_headers};
+use crate::editor::{LaidLine, PAD_Y, SCROLLBAR_W, SkelterEditor, fold_headers};
 use crate::lines::{PAINT_HINT, PAINT_PREEDIT, PieceKind};
 use crate::shape::ShapedLine;
 
-/// Where recorded glyph runs go: the compositor holds runs by id (presto-core's `RecordCx` for a
+/// Where recorded glyph runs go: the compositor holds runs by id (skelter-core's `RecordCx` for a
 /// node, [`crate::layers::RunTable`] for the editor's own layers).
 pub trait RunSink {
     fn add_run(&mut self, run: Arc<GlyphRun>) -> RunId;
@@ -52,7 +52,7 @@ pub struct EditorScene {
     pub text_clip: Rect,
     /// The IME candidate area (the primary caret, local space).
     pub ime_rect: Option<Rect>,
-    /// [`PrestoEditor::content_rev`] at record time.
+    /// [`SkelterEditor::content_rev`] at record time.
     pub content_rev: u64,
 }
 
@@ -158,7 +158,7 @@ fn line_spans<'r>(
     })
 }
 
-impl PrestoEditor {
+impl SkelterEditor {
     /// The y of line `l`'s first row in content space.
     fn line_top(&self, line: usize) -> f32 {
         self.heights.y_of(line)
@@ -699,7 +699,7 @@ impl PrestoEditor {
             r,
         );
         sc.overlay.push(
-            Prim::PushClip(presto_base::geom::RoundedRect {
+            Prim::PushClip(skelter_base::geom::RoundedRect {
                 rect: r,
                 radii: Corners::all(3.0),
             }),

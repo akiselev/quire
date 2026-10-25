@@ -10,7 +10,7 @@
 //!
 //! Sums are kept in `f64`, so heights such as 13.6 add up without drift over 100k lines.
 //!
-//! A copy of egui_quire's `height.rs` (no egui in it); both can move to one crate (docs/PRESTO-QUIRE.md).
+//! A copy of egui_quire's `height.rs` (no egui in it); both can move to one crate (docs/SKELTER-QUIRE.md).
 
 use std::ops::Range;
 

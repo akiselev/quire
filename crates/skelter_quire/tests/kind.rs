@@ -1,21 +1,21 @@
-//! `code-editor` in a presto-core document: it lays out, records, takes focus on a click, types,
+//! `code-editor` in a skelter-core document: it lays out, records, takes focus on a click, types,
 //! and reports to the host's outbox and to JS.
 
 use std::sync::Arc;
 
-use presto_base::event::{
+use quire_core::EditorConfig;
+use skelter_base::event::{
     InputEnvelope, InputEvent, KeyEvent, KeyLocation, KeyState, Modifiers, MouseButton,
     PointerEvent, PointerPhase, PointerType,
 };
-use presto_base::geom::{Point, Scale, Size, Vec2};
-use presto_base::ids::{InputSeq, WindowId};
-use presto_base::key::Key;
-use presto_base::time::Time;
-use presto_core::testkinds::{BoxKind, FixedText};
-use presto_core::{Document, Kind, KindRegistry, StyleInput, Value};
-use presto_quire::EditorEvent;
-use presto_quire::kind::{CodeEditorKind, QuireHost};
-use quire_core::EditorConfig;
+use skelter_base::geom::{Point, Scale, Size, Vec2};
+use skelter_base::ids::{InputSeq, WindowId};
+use skelter_base::key::Key;
+use skelter_base::time::Time;
+use skelter_core::testkinds::{BoxKind, FixedText};
+use skelter_core::{Document, Kind, KindRegistry, StyleInput, Value};
+use skelter_quire::EditorEvent;
+use skelter_quire::kind::{CodeEditorKind, QuireHost};
 
 const W: WindowId = WindowId(1);
 
@@ -66,9 +66,9 @@ fn records_types_and_reports() {
     let editor = reg.register::<CodeEditorKind>().expect("code-editor");
     let mut d = Document::new(Arc::new(reg), Box::new(FixedText));
     d.set_text_shaper(Box::new(FixedText));
-    let fonts = presto_text::FontStore::new(presto_text::FontConfig::testing());
+    let fonts = skelter_text::FontStore::new(skelter_text::FontConfig::testing());
     let mut host = QuireHost::new(fonts);
-    host.theme.font_family = presto_text::test_fonts::SANS_FAMILY.into();
+    host.theme.font_family = skelter_text::test_fonts::SANS_FAMILY.into();
     let buf = host.insert_buffer(
         "main",
         quire_core::Document::new("hello\nworld", EditorConfig::default()),
@@ -102,7 +102,7 @@ fn records_types_and_reports() {
     assert!(
         list.items
             .iter()
-            .any(|p| matches!(p, presto_base::display::Prim::Glyphs(_))),
+            .any(|p| matches!(p, skelter_base::display::Prim::Glyphs(_))),
         "text is drawn"
     );
     assert!(!c.runs.is_empty());

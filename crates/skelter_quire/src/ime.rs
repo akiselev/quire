@@ -1,4 +1,4 @@
-//! The editor as presto's [`TextInputClient`] (svelters architecture §11.3): what the platform's
+//! The editor as skelter's [`TextInputClient`] (svelters architecture §11.3): what the platform's
 //! IME bridges (IMM32/TSF, NSTextInputClient, text-input-v3) read and write.
 //!
 //! The IME sees a *virtual text*: the document with the composition (quire keeps it as the view's
@@ -10,16 +10,16 @@
 use std::cell::RefCell;
 use std::ops::Range;
 
-use presto_base::geom::{Affine, Point, Rect};
-use presto_base::input::{InputPurpose, TextInputClient, Utf16Range};
 use quire_core::{Document, EditorCommand, EditorView, Preedit};
+use skelter_base::geom::{Affine, Point, Rect};
+use skelter_base::input::{InputPurpose, TextInputClient, Utf16Range};
 
-use crate::editor::{PrestoEditor, composition_cmd, replace_range};
+use crate::editor::{SkelterEditor, composition_cmd, replace_range};
 
 /// One editor, its document and view, and where its local space is in the window.
 #[derive(Debug)]
 pub struct ImeTarget<'a> {
-    pub editor: &'a mut PrestoEditor,
+    pub editor: &'a mut SkelterEditor,
     pub doc: &'a mut Document,
     pub view: &'a mut EditorView,
     /// Editor local space → window points.
@@ -229,7 +229,7 @@ impl ImeTarget<'_> {
         let (start, end) = (self.locate(range.start), self.locate(range.end));
         let editor = &mut *self.editor;
         let (doc, view) = (&*self.doc, &mut *self.view);
-        let rect_of = |editor: &mut PrestoEditor, view: &mut EditorView, v: VirtualPos| -> Rect {
+        let rect_of = |editor: &mut SkelterEditor, view: &mut EditorView, v: VirtualPos| -> Rect {
             match v {
                 VirtualPos::Doc(b) => editor.caret_content_rect(doc, view, b, false).0,
                 VirtualPos::Preedit(pb) => {
@@ -293,10 +293,10 @@ impl ImeTarget<'_> {
 }
 
 /// Content space → local space offset of the editor.
-fn content_to_local(editor: &PrestoEditor) -> presto_base::geom::Vec2 {
+fn content_to_local(editor: &SkelterEditor) -> skelter_base::geom::Vec2 {
     let g = editor.geom();
     let s = editor.scroll();
-    presto_base::geom::Vec2::new(g.text_left() - s.x, crate::editor::PAD_Y - s.y)
+    skelter_base::geom::Vec2::new(g.text_left() - s.x, crate::editor::PAD_Y - s.y)
 }
 
 fn utf16_len(s: &str) -> usize {

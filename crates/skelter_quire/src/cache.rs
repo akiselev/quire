@@ -1,5 +1,5 @@
 //! The two-generation caches of shaped lines and wrapped rows (svelters
-//! `plans/research/presto/notes/round2/text-stack.md` §5.2).
+//! `plans/research/skelter/notes/round2/text-stack.md` §5.2).
 //!
 //! An entry used in this frame or the previous one survives [`GenCache::end_frame`]; the rest are
 //! dropped when the cache is over its byte budget, oldest generation first. Lines scrolled away

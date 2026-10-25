@@ -11,7 +11,7 @@ use std::ops::Range;
 use quire_core::{Document, EditorView, Text};
 use quire_text::{Edge, Goal, VisualLine, VisualLines};
 
-use crate::editor::{LaidLine, PrestoEditor};
+use crate::editor::{LaidLine, SkelterEditor};
 
 /// Fixed-point units per point of the goal x.
 pub const GOAL_UNITS: f32 = 64.0;
@@ -23,7 +23,7 @@ pub struct WrappedLines<'a> {
 }
 
 struct Inner<'a> {
-    editor: &'a mut PrestoEditor,
+    editor: &'a mut SkelterEditor,
     doc: &'a Document,
     view: &'a mut EditorView,
 }
@@ -38,7 +38,7 @@ impl std::fmt::Debug for WrappedLines<'_> {
 
 impl<'a> WrappedLines<'a> {
     pub fn new(
-        editor: &'a mut PrestoEditor,
+        editor: &'a mut SkelterEditor,
         doc: &'a Document,
         view: &'a mut EditorView,
         page: usize,

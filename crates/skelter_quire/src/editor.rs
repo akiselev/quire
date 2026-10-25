@@ -1,12 +1,12 @@
 //! The editor engine: one [`EditorView`] of a shared [`Document`] laid out, scrolled and driven by
-//! presto input, independent of where its display lists go ([`crate::scene`] records them,
-//! [`crate::layers`] commits them as compositor layers, [`crate::kind`] hosts them in a presto-core
+//! skelter input, independent of where its display lists go ([`crate::scene`] records them,
+//! [`crate::layers`] commits them as compositor layers, [`crate::kind`] hosts them in a skelter-core
 //! node).
 //!
 //! The behaviour is egui_quire's (`editor.rs`): the same commands, keymap, multi-click and drag
 //! selection, Alt+click cursors, Alt+Shift box selection, fold toggles in the gutter, IME preedit as
 //! injected text, the same host events. What differs is the input and geometry vocabulary
-//! (presto's events, points in the editor's local space) and vertical motion under soft wrap,
+//! (skelter's events, points in the editor's local space) and vertical motion under soft wrap,
 //! which goes through quire-text's [`VisualLines`](quire_text::VisualLines) over the wrapped rows
 //! ([`crate::visual`]).
 //!
@@ -17,15 +17,15 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use presto_base::event::{ImeEvent, KeyEvent, KeyState, Modifiers, MouseButton, ScrollDelta};
-use presto_base::geom::{Point, Rect, Size, Vec2};
-use presto_base::key::Key;
-use presto_base::time::{Span, Time};
-use presto_core::PointerInput;
 use quire_core::{
     Applied, AuthorId, ChangeSet, Document, EditorCommand, EditorView, GroupHint, HostRequest,
     InputKind, Origin, SelRange, Selection, Transaction, UndoMode, Version, WordWrap,
 };
+use skelter_base::event::{ImeEvent, KeyEvent, KeyState, Modifiers, MouseButton, ScrollDelta};
+use skelter_base::geom::{Point, Rect, Size, Vec2};
+use skelter_base::key::Key;
+use skelter_base::time::{Span, Time};
+use skelter_core::PointerInput;
 
 use crate::cache::{GenCache, RowsKey, hash_one};
 use crate::chord::Chord;
@@ -43,7 +43,7 @@ use crate::wrap::{LineRows, Wrap};
 pub enum KeyHandling {
     /// The editor resolves keys through this keymap.
     Builtin(Keymap),
-    /// The host resolves keys (and dispatches commands with [`PrestoEditor::dispatch`]); typed text
+    /// The host resolves keys (and dispatches commands with [`SkelterEditor::dispatch`]); typed text
     /// still types.
     Host,
 }
@@ -142,10 +142,10 @@ pub enum EditorEvent {
     CopyText {
         text: String,
     },
-    /// Paste was pressed: the host reads the clipboard and calls [`PrestoEditor::paste`].
+    /// Paste was pressed: the host reads the clipboard and calls [`SkelterEditor::paste`].
     PasteRequested,
-    /// `actions.find` / the replace action: the host shows its find bar (a presto text field) and
-    /// drives the search with [`PrestoEditor::set_find`].
+    /// `actions.find` / the replace action: the host shows its find bar (a skelter text field) and
+    /// drives the search with [`SkelterEditor::set_find`].
     FindWidgetRequested {
         replace: bool,
         seed: Option<String>,
@@ -284,7 +284,7 @@ pub struct LaidLine {
 }
 
 /// The engine. One per editor view; the [`Document`] and [`EditorView`] stay the host's.
-pub struct PrestoEditor {
+pub struct SkelterEditor {
     pub theme: EditorTheme,
     pub options: EditorOptions,
     pub(crate) shaper: LineShaper,
@@ -321,9 +321,9 @@ pub struct PrestoEditor {
     pub(crate) popups: Vec<crate::scene::Popup>,
 }
 
-impl std::fmt::Debug for PrestoEditor {
+impl std::fmt::Debug for SkelterEditor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PrestoEditor")
+        f.debug_struct("SkelterEditor")
             .field("geom", &self.geom)
             .field("scroll", &self.scroll)
             .field("focused", &self.focused)
@@ -335,14 +335,14 @@ impl std::fmt::Debug for PrestoEditor {
 /// The byte budget of the wrapped-rows cache.
 pub const ROWS_CACHE_BUDGET: usize = 8 << 20;
 
-impl PrestoEditor {
+impl SkelterEditor {
     pub fn new(
-        fonts: Arc<presto_text::FontStore>,
+        fonts: Arc<skelter_text::FontStore>,
         theme: EditorTheme,
         options: EditorOptions,
     ) -> Self {
         let shaper = LineShaper::new(fonts, &theme.font_family, theme.font_size);
-        PrestoEditor {
+        SkelterEditor {
             theme,
             options,
             shaper,
@@ -1149,7 +1149,7 @@ impl PrestoEditor {
             return self.type_key_text(doc, view, ev);
         };
         if view.preedit().is_some() {
-            // Keys belong to the composition (presto routes printable ones to the IME first);
+            // Keys belong to the composition (skelter routes printable ones to the IME first);
             // Escape cancels the preedit only.
             if key == Key::Escape {
                 view.set_preedit(None);
@@ -1281,7 +1281,7 @@ impl PrestoEditor {
         true
     }
 
-    /// An IME event (presto's: preedit cursor and surrounding deletes in bytes).
+    /// An IME event (skelter's: preedit cursor and surrounding deletes in bytes).
     pub fn ime(&mut self, doc: &mut Document, view: &mut EditorView, ev: &ImeEvent) {
         self.touch();
         match ev {
@@ -1321,7 +1321,7 @@ impl PrestoEditor {
                 }
             }
             ImeEvent::DeleteSurrounding { before, after } => {
-                // presto counts bytes, core counts chars: convert around the primary caret.
+                // skelter counts bytes, core counts chars: convert around the primary caret.
                 let t = doc.text();
                 let head = view.selection().primary().head.min(t.len_bytes());
                 let b = t.byte_to_char(head) - t.byte_to_char(head.saturating_sub(*before));

@@ -7,9 +7,9 @@
 //! do not resolve to a known command are not bound ("not implemented means not registered") and
 //! are listed in [`Keymap::unresolved`].
 
-use presto_base::event::Modifiers;
-use presto_base::key::Key;
 use serde::Deserialize;
+use skelter_base::event::Modifiers;
+use skelter_base::key::Key;
 
 use crate::chord::{Chord, KeySeq};
 use crate::command::KeyAction;

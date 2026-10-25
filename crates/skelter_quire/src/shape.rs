@@ -1,12 +1,12 @@
 //! Line shaping: one logical line into glyph runs and the x of every char boundary (svelters
-//! `plans/research/presto/notes/round2/text-stack.md` §5.2).
+//! `plans/research/skelter/notes/round2/text-stack.md` §5.2).
 //!
 //! Two paths:
 //! - **ASCII monospace fast path.** A line of printable ASCII and tabs in a monospace editor font
 //!   needs no shaper: glyph ids and the advance come from a table of the 95 printable characters
 //!   ([`MonoTable`]), x = column × advance with tabs to the line's stops. Spaces and tabs draw no
 //!   glyph. One run per paint id, so a token colour is one `Glyphs` primitive.
-//! - **General path.** presto-text's [`TextSystem`] lays the whole line out unwrapped, with one span
+//! - **General path.** skelter-text's [`TextSystem`] lays the whole line out unwrapped, with one span
 //!   per token whose paint id is the token type (colour-only spans, so token colours never split
 //!   shaping); char boundary x come from the layout's caret geometry.
 //!
@@ -16,10 +16,10 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use presto_base::geom::Point;
-use presto_base::ids::FontId;
-use presto_base::text::{AaMode, Glyph, GlyphRun, HintMode};
-use presto_text::{RichText, Span, TextStyle, TextSystem};
+use skelter_base::geom::Point;
+use skelter_base::ids::FontId;
+use skelter_base::text::{AaMode, Glyph, GlyphRun, HintMode};
+use skelter_text::{RichText, Span, TextStyle, TextSystem};
 
 use crate::cache::{CacheBytes, GenCache, ShapeKey, hash_one};
 
@@ -250,7 +250,7 @@ impl MonoTable {
     }
 }
 
-/// Shapes lines through the fast path or presto-text, with the two-generation line cache.
+/// Shapes lines through the fast path or skelter-text, with the two-generation line cache.
 pub struct LineShaper {
     text: TextSystem,
     style: TextStyle,
@@ -276,7 +276,7 @@ impl std::fmt::Debug for LineShaper {
 pub const LINE_CACHE_BUDGET: usize = 16 << 20;
 
 impl LineShaper {
-    pub fn new(fonts: Arc<presto_text::FontStore>, family: &str, size: f32) -> Self {
+    pub fn new(fonts: Arc<skelter_text::FontStore>, family: &str, size: f32) -> Self {
         let mut text = TextSystem::new(fonts);
         let style = TextStyle {
             family: family.to_owned(),
@@ -360,7 +360,7 @@ impl LineShaper {
         (self.cache.stats(), self.cache.len())
     }
 
-    /// Ends a frame of both caches (presto-text's and the line cache).
+    /// Ends a frame of both caches (skelter-text's and the line cache).
     pub fn end_frame(&mut self) {
         self.text.end_frame();
         self.cache.end_frame();
@@ -610,8 +610,8 @@ mod tests {
 
     #[test]
     fn general_path_shapes_with_the_bundled_fonts() {
-        let fonts = presto_text::FontStore::new(presto_text::FontConfig::testing());
-        let mut sh = LineShaper::new(fonts, presto_text::test_fonts::SANS_FAMILY, 13.0);
+        let fonts = skelter_text::FontStore::new(skelter_text::FontConfig::testing());
+        let mut sh = LineShaper::new(fonts, skelter_text::test_fonts::SANS_FAMILY, 13.0);
         assert!(sh.mono().is_none(), "Noto Sans is proportional");
         let s = sh.shape("héllo wörld", &[(0, 3), (6, 4)]);
         assert!(!s.fast);

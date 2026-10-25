@@ -5,7 +5,7 @@ members = [
     "crates/quire-core",
     "crates/quire-syntax",
     "crates/egui_quire",
-    "crates/presto_quire",
+    "crates/skelter_quire",
 ]
 
 [workspace.package]
@@ -21,11 +21,11 @@ quire-text = { path = "crates/quire-text" }
 quire-core = { path = "crates/quire-core" }
 quire-syntax = { path = "crates/quire-syntax" }
 egui_quire = { path = "crates/egui_quire" }
-# presto (svelters' retained toolkit that replaces egui; svelters plans/research/presto/). The
-# presto_quire renderer is the only crate that depends on it.
-presto-base = { git = "https://github.com/akiselev/svelters", branch = "ci/presto-base" }
-presto-core = { git = "https://github.com/akiselev/svelters", branch = "ci/presto-base" }
-presto-text = { git = "https://github.com/akiselev/svelters", branch = "ci/presto-base" }
+# skelter (svelters' retained toolkit that replaces egui; svelters plans/research/skelter/). The
+# skelter_quire renderer is the only crate that depends on it.
+skelter-base = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
+skelter-core = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
+skelter-text = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
 # Only LF is a line break inside quire (Text normalises CR/CRLF on load).
 ropey = { version = "1.6.1", default-features = false, features = ["simd"] }
 imara-diff = "0.2"

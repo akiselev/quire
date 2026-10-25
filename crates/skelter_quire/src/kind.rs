@@ -1,4 +1,4 @@
-//! `code-editor`: the editor as a presto-core [`Kind`], for svelters' `<code-editor>` element.
+//! `code-editor`: the editor as a skelter-core [`Kind`], for svelters' `<code-editor>` element.
 //!
 //! The host registers [`CodeEditorKind`] and lends the kinds a [`QuireHost`] service: the font store,
 //! the theme, the documents by name (a node shows the one its `buffer` prop names; several nodes
@@ -8,27 +8,27 @@
 //! it: the content under a clip, translated by the scroll offset, the gutter by its y offset, the
 //! primary caret drawn in its blink phase (wake-ups at each blink transition). Scrolling therefore
 //! re-records this node (a paint change) instead of moving a compositor layer; [`crate::layers`]
-//! is the layer path for hosts that own layers, and moving `code-editor` onto it needs a presto-core
-//! hook for kinds that own layers (docs/PRESTO-QUIRE.md, question 1).
+//! is the layer path for hosts that own layers, and moving `code-editor` onto it needs a skelter-core
+//! hook for kinds that own layers (docs/SKELTER-QUIRE.md, question 1).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use presto_base::change::ChangeClass;
-use presto_base::geom::{Affine, Point, Rect, RoundedRect, Vec2};
-use presto_base::ids::{NodeId, RunId};
-use presto_base::input::{InputPurpose, TextInputClient, Utf16Range};
-use presto_base::text::GlyphRun;
-use presto_base::time::Time;
-use presto_core::{
+use quire_core::{Document, EditorView};
+use skelter_base::change::ChangeClass;
+use skelter_base::geom::{Affine, Point, Rect, RoundedRect, Vec2};
+use skelter_base::ids::{NodeId, RunId};
+use skelter_base::input::{InputPurpose, TextInputClient, Utf16Range};
+use skelter_base::text::GlyphRun;
+use skelter_base::time::Time;
+use skelter_core::{
     A11yCx, Event, EventCx, FocusReason, Handled, Kind, KindSpec, MeasureCx, PrepareCx, PropCx,
     PropError, PropId, PropSpec, RecordCx, SignalFlags, SignalSpec, Value, ValueType,
 };
-use quire_core::{Document, EditorView};
 
-use crate::editor::{EditorEvent, EditorOptions, PrestoEditor};
+use crate::editor::{EditorEvent, EditorOptions, SkelterEditor};
 use crate::ime::ImeTarget;
 use crate::layers::translate_prim;
 use crate::scene::RunSink;
@@ -36,7 +36,7 @@ use crate::theme::EditorTheme;
 
 /// What `code-editor` nodes share, lent through `Document::set_service`.
 pub struct QuireHost {
-    pub fonts: Arc<presto_text::FontStore>,
+    pub fonts: Arc<skelter_text::FontStore>,
     pub theme: EditorTheme,
     /// Options new editors start with.
     pub options: EditorOptions,
@@ -59,7 +59,7 @@ impl std::fmt::Debug for QuireHost {
 }
 
 impl QuireHost {
-    pub fn new(fonts: Arc<presto_text::FontStore>) -> Self {
+    pub fn new(fonts: Arc<skelter_text::FontStore>) -> Self {
         QuireHost {
             fonts,
             theme: EditorTheme::default(),
@@ -88,7 +88,7 @@ pub const PROPS: &[PropSpec] = &[
     PropSpec::new("readonly", ValueType::Bool, ChangeClass::Paint)
         .doc("Refuse edits (selection and find still work)."),
     PropSpec::new("gutter", ValueType::Bool, ChangeClass::Layout)
-        .default(presto_core::PropDefault::Bool(true))
+        .default(skelter_core::PropDefault::Bool(true))
         .doc("Show line numbers, fold markers and diagnostic marks."),
 ];
 
@@ -102,9 +102,9 @@ pub const SIGNALS: &[SignalSpec] = &[
 pub static SPEC: KindSpec = KindSpec {
     props: PROPS,
     signals: SIGNALS,
-    role: presto_base::accesskit::Role::MultilineTextInput,
+    role: skelter_base::accesskit::Role::MultilineTextInput,
     focusable: true,
-    doc: "The quire code editor (presto_quire).",
+    doc: "The quire code editor (skelter_quire).",
     ..KindSpec::new("code-editor")
 };
 
@@ -115,7 +115,7 @@ fn prop(name: &str) -> PropId {
 struct Inner {
     doc: Rc<RefCell<Document>>,
     view: EditorView,
-    editor: PrestoEditor,
+    editor: SkelterEditor,
     /// Local → window.
     to_window: Affine,
     now: Time,
@@ -174,7 +174,7 @@ impl CodeEditorKind {
         let mut options = host.options.clone();
         options.read_only |= self.read_only;
         options.gutter = self.gutter;
-        let editor = PrestoEditor::new(host.fonts.clone(), host.theme.clone(), options);
+        let editor = SkelterEditor::new(host.fonts.clone(), host.theme.clone(), options);
         let view = EditorView::new(&doc.borrow());
         *slot = Some(Inner {
             doc,
@@ -260,11 +260,11 @@ impl Kind for CodeEditorKind {
     fn measure(
         &self,
         _cx: &mut MeasureCx,
-        known: presto_core::taffy::Size<Option<f32>>,
-        _avail: presto_core::taffy::Size<presto_core::taffy::AvailableSpace>,
-    ) -> presto_core::taffy::Size<f32> {
+        known: skelter_core::taffy::Size<Option<f32>>,
+        _avail: skelter_core::taffy::Size<skelter_core::taffy::AvailableSpace>,
+    ) -> skelter_core::taffy::Size<f32> {
         // the editor fills what CSS gives it; alone it has no intrinsic size
-        presto_core::taffy::Size {
+        skelter_core::taffy::Size {
             width: known.width.unwrap_or(0.0),
             height: known.height.unwrap_or(0.0),
         }
@@ -294,7 +294,7 @@ impl Kind for CodeEditorKind {
         let doc = i.doc.borrow();
         let sc = i.editor.record(&doc, &mut i.view, &mut CxSink(cx), None);
         let caret_on = i.editor.caret_visible(i.now);
-        let put = |cx: &mut RecordCx, list: &presto_base::display::DisplayList, d: Vec2| {
+        let put = |cx: &mut RecordCx, list: &skelter_base::display::DisplayList, d: Vec2| {
             for p in &list.items {
                 let (q, ink) = translate_prim(p, d);
                 cx.push(q, ink);
@@ -389,7 +389,7 @@ impl Kind for CodeEditorKind {
             cx.release_pointer();
         }
         if matches!(ev, Event::PointerMove(_) | Event::HoverEnter) {
-            cx.set_cursor(presto_base::cursor::CursorIcon::Text);
+            cx.set_cursor(skelter_base::cursor::CursorIcon::Text);
         }
         // the next wake-up: hover and hint deadlines, the caret's next blink
         let next = self.with(|i| {
@@ -417,7 +417,7 @@ impl Kind for CodeEditorKind {
         let doc = i.doc.borrow();
         let t = doc.text();
         // the whole value for documents up to a page of text; larger ones expose their name only
-        // (the TextRun projection egui_quire has needs child a11y nodes: docs/PRESTO-QUIRE.md)
+        // (the TextRun projection egui_quire has needs child a11y nodes: docs/SKELTER-QUIRE.md)
         if t.len_bytes() <= A11Y_VALUE_MAX {
             cx.out.set_value(t.to_string());
         }
@@ -430,10 +430,10 @@ impl Kind for CodeEditorKind {
 /// Documents up to this size expose their text as the accessible value.
 pub const A11Y_VALUE_MAX: usize = 64 * 1024;
 
-fn cancel_input() -> presto_core::PointerInput {
-    presto_core::PointerInput {
+fn cancel_input() -> skelter_core::PointerInput {
+    skelter_core::PointerInput {
         pointer: 0,
-        kind: presto_base::event::PointerType::Mouse,
+        kind: skelter_base::event::PointerType::Mouse,
         button: None,
         buttons: 0,
         pos: Point::ZERO,
@@ -447,12 +447,12 @@ fn cancel_input() -> presto_core::PointerInput {
 /// `SetValue` replaces the text; `ReplaceSelectedText` the selection (egui_quire's
 /// `handle_accesskit_actions`).
 fn a11y_action(
-    e: &mut PrestoEditor,
+    e: &mut SkelterEditor,
     doc: &mut Document,
     view: &mut EditorView,
-    req: &presto_base::accesskit::ActionRequest,
+    req: &skelter_base::accesskit::ActionRequest,
 ) -> bool {
-    use presto_base::accesskit::{Action, ActionData};
+    use skelter_base::accesskit::{Action, ActionData};
     if e.options.read_only {
         return false;
     }

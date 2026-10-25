@@ -1,11 +1,11 @@
-//! Editor theme: colours, the editor font and caret timing, in presto's types.
+//! Editor theme: colours, the editor font and caret timing, in skelter's types.
 //!
 //! A plain struct the host fills from its own tokens. Token colours are resolved at record time
 //! from a line's token styles (the shaped runs carry only a paint id), so a theme switch
 //! re-records without reshaping.
 
-use presto_base::color::Color;
-use presto_base::time::Span;
+use skelter_base::color::Color;
+use skelter_base::time::Span;
 
 /// Colours and font of one editor.
 #[derive(Clone, Debug, PartialEq)]

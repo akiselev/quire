@@ -1,6 +1,6 @@
 [package]
-name = "presto_quire"
-description = "The quire code editor view on presto (svelters' retained toolkit)"
+name = "skelter_quire"
+description = "The quire code editor view on skelter (svelters' retained toolkit)"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -11,9 +11,9 @@ publish.workspace = true
 [dependencies]
 quire-text.workspace = true
 quire-core = { workspace = true, features = ["serde"] }
-presto-base.workspace = true
-presto-core.workspace = true
-presto-text.workspace = true
+skelter-base.workspace = true
+skelter-core.workspace = true
+skelter-text.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

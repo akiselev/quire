@@ -15,8 +15,8 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use presto_base::text::Glyph;
 use quire_core::WrappingIndent;
+use skelter_base::text::Glyph;
 
 use crate::cache::CacheBytes;
 use crate::shape::{LineRun, ShapedLine};
@@ -323,7 +323,7 @@ fn split_runs(shaped: &ShapedLine, rows: &mut [Row]) {
 }
 
 /// The advance of a run's last glyph, estimated as the run's mean (used only for ink bounds).
-fn glyph_advance_estimate(run: &presto_base::text::GlyphRun) -> f32 {
+fn glyph_advance_estimate(run: &skelter_base::text::GlyphRun) -> f32 {
     if run.glyphs.is_empty() {
         0.0
     } else {
@@ -335,8 +335,8 @@ fn glyph_advance_estimate(run: &presto_base::text::GlyphRun) -> f32 {
 mod tests {
     use super::*;
     use crate::shape::MonoTable;
-    use presto_base::ids::FontId;
-    use presto_base::text::{AaMode, HintMode};
+    use skelter_base::ids::FontId;
+    use skelter_base::text::{AaMode, HintMode};
 
     fn mono() -> MonoTable {
         let mut glyphs = [0u32; 95];

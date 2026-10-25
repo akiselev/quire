@@ -1,9 +1,9 @@
 //! Key chords in VS Code's `keybindings.json` notation (`ctrl+shift+left`, `cmd+s`, `f3`), over
-//! presto's keys (named as egui names them, so the notation and the bundled keymap carry over from
+//! skelter's keys (named as egui names them, so the notation and the bundled keymap carry over from
 //! egui_quire unchanged).
 
-use presto_base::event::Modifiers;
-use presto_base::key::Key;
+use skelter_base::event::Modifiers;
+use skelter_base::key::Key;
 
 /// One key with exact physical modifiers. `ctrl` and `cmd` are separate: on macOS `cmd` is ⌘ and
 /// `ctrl` is ⌃; elsewhere `cmd` (Windows/Super) is never bound by the default keymap.

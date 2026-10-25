@@ -1,5 +1,5 @@
 //! The editor as compositor layers, for hosts that own their part of the layer tree (a canvas-like
-//! pane, a test harness, svelters' `<code-editor>` once presto-core lets a kind own layers).
+//! pane, a test harness, svelters' `<code-editor>` once skelter-core lets a kind own layers).
 //!
 //! Four layers under the host's parent layer, in paint order:
 //!
@@ -11,7 +11,7 @@
 //! | overlay | `Overlay` | the editor's box | [`EditorScene::overlay`] |
 //!
 //! Scrolling is a compositor offset: [`EditorLayers::scroll_commits`] are the two
-//! [`FastCommit::ScrollOffset`]s of a scroll the recorded lines cover ([`PrestoEditor::covers`]);
+//! [`FastCommit::ScrollOffset`]s of a scroll the recorded lines cover ([`SkelterEditor::covers`]);
 //! only the overlay (scrollbars, popups) is re-recorded then. The caret is a [`FastCommit::Caret`]
 //! the compositor blinks ([`EditorLayers::caret_commit`]).
 //!
@@ -20,18 +20,18 @@
 
 use std::sync::Arc;
 
-use presto_base::commit::{Commit, FastCommit};
-use presto_base::display::DisplayList;
-use presto_base::geom::{Affine, Rect, Vec2};
-use presto_base::ids::{InputSeq, LayerId, NodeId, PropNodeId, Revision, RunId, WindowId};
-use presto_base::layer::{ItemRef, LayerDelta, LayerDesc, LayerKind};
-use presto_base::props::{
+use quire_core::{Document, EditorView};
+use skelter_base::commit::{Commit, FastCommit};
+use skelter_base::display::DisplayList;
+use skelter_base::geom::{Affine, Rect, Vec2};
+use skelter_base::ids::{InputSeq, LayerId, NodeId, PropNodeId, Revision, RunId, WindowId};
+use skelter_base::layer::{ItemRef, LayerDelta, LayerDesc, LayerKind};
+use skelter_base::props::{
     ClipNode, ClipShape, OverscrollBehavior, PropOp, ScrollNode, TransformNode,
 };
-use presto_base::text::GlyphRun;
-use quire_core::{Document, EditorView};
+use skelter_base::text::GlyphRun;
 
-use crate::editor::PrestoEditor;
+use crate::editor::SkelterEditor;
 use crate::scene::{EditorScene, RunSink};
 
 /// Ids the host allocates for one editor's layers.
@@ -133,11 +133,11 @@ impl EditorLayers {
         }
     }
 
-    /// The commit for this frame (after [`PrestoEditor::layout`]): everything when the content
+    /// The commit for this frame (after [`SkelterEditor::layout`]): everything when the content
     /// changed or a scroll left the recorded lines; else the overlay and the scroll offsets.
     pub fn commit(
         &mut self,
-        editor: &mut PrestoEditor,
+        editor: &mut SkelterEditor,
         doc: &Document,
         view: &mut EditorView,
         box_transform: Affine,
@@ -194,7 +194,7 @@ impl EditorLayers {
         c
     }
 
-    fn last_scroll_left_cover(&self, editor: &PrestoEditor) -> bool {
+    fn last_scroll_left_cover(&self, editor: &SkelterEditor) -> bool {
         !editor.covers(editor.scroll())
     }
 
@@ -296,7 +296,7 @@ impl EditorLayers {
                 ids.content_space,
                 Some(ids.text_clip),
                 1,
-                Rect::from_origin_size(presto_base::geom::Point::ZERO, sc.content_size),
+                Rect::from_origin_size(skelter_base::geom::Point::ZERO, sc.content_size),
             ),
             desc(
                 ids.gutter,
@@ -344,7 +344,7 @@ impl EditorLayers {
     /// The fast commits of a scroll to the editor's current offset (content x/y, gutter y).
     pub fn scroll_commits(
         &self,
-        editor: &PrestoEditor,
+        editor: &SkelterEditor,
         revision: Revision,
         input_seq: InputSeq,
     ) -> [FastCommit; 2] {
@@ -372,7 +372,7 @@ impl EditorLayers {
     pub fn caret_commit(
         &self,
         scene_caret: Option<Rect>,
-        editor: &PrestoEditor,
+        editor: &SkelterEditor,
         box_transform: Affine,
         revision: Revision,
     ) -> FastCommit {
@@ -438,11 +438,11 @@ pub fn translate_list(list: &DisplayList, d: Vec2) -> DisplayList {
 
 /// One prim moved by `d`, with its moved ink rect (clips have no ink).
 pub fn translate_prim(
-    p: &presto_base::display::Prim,
+    p: &skelter_base::display::Prim,
     d: Vec2,
-) -> (presto_base::display::Prim, Rect) {
-    use presto_base::display::Prim;
-    let mv = |pt: presto_base::geom::Point| pt + d;
+) -> (skelter_base::display::Prim, Rect) {
+    use skelter_base::display::Prim;
+    let mv = |pt: skelter_base::geom::Point| pt + d;
     match p {
         Prim::Quad(q) => {
             let mut q = q.clone();

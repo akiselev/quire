@@ -1,36 +1,36 @@
-//! The editor engine end to end on presto types, with presto-text's bundled test fonts (Noto Sans:
+//! The editor engine end to end on skelter types, with skelter-text's bundled test fonts (Noto Sans:
 //! proportional, so these take the general shaping path; the fast path has unit tests in
 //! `shape.rs`).
 
 use std::sync::Arc;
 
-use presto_base::display::Prim;
-use presto_base::event::{
+use quire_core::{Diagnostic, Document, EditorConfig, EditorView, Severity, SourceId, WordWrap};
+use skelter_base::display::Prim;
+use skelter_base::event::{
     ImeEvent, KeyEvent, KeyLocation, KeyState, Modifiers, MouseButton, PointerType, ScrollDelta,
 };
-use presto_base::geom::{Point, Size, Vec2};
-use presto_base::ids::{InputSeq, LayerId, NodeId, PropNodeId, Revision, RunId, WindowId};
-use presto_base::input::TextInputClient;
-use presto_base::key::Key;
-use presto_base::text::GlyphRun;
-use presto_base::time::{Span, Time};
-use presto_core::PointerInput;
-use presto_quire::editor::{EditorEvent, EditorOptions, PrestoEditor};
-use presto_quire::ime::{ImeClient, ImeTarget};
-use presto_quire::layers::{EditorLayerIds, EditorLayers};
-use presto_quire::{EditorTheme, OperatingSystem, RunSink};
-use quire_core::{Diagnostic, Document, EditorConfig, EditorView, Severity, SourceId, WordWrap};
+use skelter_base::geom::{Point, Size, Vec2};
+use skelter_base::ids::{InputSeq, LayerId, NodeId, PropNodeId, Revision, RunId, WindowId};
+use skelter_base::input::TextInputClient;
+use skelter_base::key::Key;
+use skelter_base::text::GlyphRun;
+use skelter_base::time::{Span, Time};
+use skelter_core::PointerInput;
+use skelter_quire::editor::{EditorEvent, EditorOptions, SkelterEditor};
+use skelter_quire::ime::{ImeClient, ImeTarget};
+use skelter_quire::layers::{EditorLayerIds, EditorLayers};
+use skelter_quire::{EditorTheme, OperatingSystem, RunSink};
 
-fn fonts() -> Arc<presto_text::FontStore> {
-    presto_text::FontStore::new(presto_text::FontConfig::testing())
+fn fonts() -> Arc<skelter_text::FontStore> {
+    skelter_text::FontStore::new(skelter_text::FontConfig::testing())
 }
 
-fn editor(os: OperatingSystem) -> PrestoEditor {
+fn editor(os: OperatingSystem) -> SkelterEditor {
     let theme = EditorTheme {
-        font_family: presto_text::test_fonts::SANS_FAMILY.into(),
+        font_family: skelter_text::test_fonts::SANS_FAMILY.into(),
         ..EditorTheme::default()
     };
-    PrestoEditor::new(
+    SkelterEditor::new(
         fonts(),
         theme,
         EditorOptions {
@@ -43,7 +43,7 @@ fn editor(os: OperatingSystem) -> PrestoEditor {
 struct Fixture {
     doc: Document,
     view: EditorView,
-    ed: PrestoEditor,
+    ed: SkelterEditor,
 }
 
 fn fixture(text: &str, size: Size) -> Fixture {
@@ -101,7 +101,7 @@ impl Fixture {
         let g = self.ed.geom();
         Point::new(
             g.text_left() + x,
-            presto_quire::editor::PAD_Y + line as f32 * g.row_h + g.row_h * 0.5,
+            skelter_quire::editor::PAD_Y + line as f32 * g.row_h + g.row_h * 0.5,
         )
     }
 }
@@ -247,7 +247,7 @@ fn the_record_draws_text_and_line_numbers() {
     let mut f = fixture("fn main() {}\nlet x = 1;", Size::new(400.0, 200.0));
     let mut runs = Runs::default();
     let sc = f.ed.record(&f.doc, &mut f.view, &mut runs, None);
-    let glyphs = |l: &presto_base::display::DisplayList| {
+    let glyphs = |l: &skelter_base::display::DisplayList| {
         l.items
             .iter()
             .filter(|p| matches!(p, Prim::Glyphs(_)))
@@ -397,7 +397,7 @@ fn layers_scroll_by_offset_inside_the_overscan() {
     assert!(
         c1.layers
             .iter()
-            .any(|l| matches!(l, presto_base::layer::LayerDelta::Add(_)))
+            .any(|l| matches!(l, skelter_base::layer::LayerDelta::Add(_)))
     );
     f.ed.wheel(
         &f.doc,
@@ -415,10 +415,10 @@ fn layers_scroll_by_offset_inside_the_overscan() {
         InputSeq(2),
     );
     assert_eq!(c2.lists.len(), 1, "only the overlay re-records");
-    assert!(c2.props.ops.iter().any(|o| matches!(o, presto_base::props::PropOp::Scroll(n, s) if *n == ids.content_scroll && s.offset.y == 40.0)));
+    assert!(c2.props.ops.iter().any(|o| matches!(o, skelter_base::props::PropOp::Scroll(n, s) if *n == ids.content_scroll && s.offset.y == 40.0)));
     let fast = layers.scroll_commits(&f.ed, Revision(2), InputSeq(2));
     assert!(
-        matches!(fast[1], presto_base::commit::FastCommit::ScrollOffset { offset, .. } if offset == Vec2::new(0.0, 40.0))
+        matches!(fast[1], skelter_base::commit::FastCommit::ScrollOffset { offset, .. } if offset == Vec2::new(0.0, 40.0))
     );
     // far away: the recorded lines no longer cover the viewport
     f.ed.wheel(
