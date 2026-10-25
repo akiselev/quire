@@ -356,7 +356,6 @@ fn the_text_input_client_counts_utf16_over_the_virtual_text() {
     );
     client.unmark_text();
     assert_eq!(client.marked_range(), None);
-    drop(client);
     assert_eq!(f.text(), "😀xab");
 }
 
