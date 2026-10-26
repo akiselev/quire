@@ -119,6 +119,7 @@ fn pointer(local: Point, buttons: u32, button: Option<MouseButton>) -> PointerIn
         modifiers: Modifiers::default(),
         pressure: 0.5,
         count: 1,
+        history: Vec::new(),
     }
 }
 

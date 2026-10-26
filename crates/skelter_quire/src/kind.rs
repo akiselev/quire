@@ -378,6 +378,8 @@ impl Kind for CodeEditorKind {
                     }
                     Event::A11y(req) => a11y_action(e, &mut doc, view, req),
                     Event::Click(_) | Event::HoverEnter => false,
+                    // raw motion, gestures and per-child a11y requests: nothing for a text editor
+                    _ => false,
                 }
             })
             .unwrap_or(false);
@@ -441,6 +443,7 @@ fn cancel_input() -> skelter_core::PointerInput {
         modifiers: Default::default(),
         pressure: 0.0,
         count: 0,
+        history: Vec::new(),
     }
 }
 
