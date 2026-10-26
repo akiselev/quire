@@ -23,9 +23,9 @@ quire-syntax = { path = "crates/quire-syntax" }
 egui_quire = { path = "crates/egui_quire" }
 # skelter (svelters' retained toolkit that replaces egui; svelters plans/research/skelter/). The
 # skelter_quire renderer is the only crate that depends on it.
-skelter-base = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
-skelter-core = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
-skelter-text = { git = "https://github.com/akiselev/svelters", branch = "ci/skelter-integration" }
+skelter-base = { git = "https://github.com/akiselev/svelters", branch = "master" }
+skelter-core = { git = "https://github.com/akiselev/svelters", branch = "master" }
+skelter-text = { git = "https://github.com/akiselev/svelters", branch = "master" }
 # Only LF is a line break inside quire (Text normalises CR/CRLF on load).
 ropey = { version = "1.6.1", default-features = false, features = ["simd"] }
 imara-diff = "0.2"

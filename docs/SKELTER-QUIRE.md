@@ -8,7 +8,7 @@ Date: 2026-10-25. Branch `claude/presto-quire` (from `master` 3e78dcd). Brief: s
 
 A new crate `crates/skelter_quire` (about 8,000 lines with tests): the quire editor view on skelter. It
 depends on `quire-text`, `quire-core` (path) and on svelters' `skelter-base`, `skelter-core` and
-`skelter-text` by git (`ci/skelter-integration`; first built against `ci/presto-base`). No egui anywhere in its graph.
+`skelter-text` by git (`master`; first built against `ci/presto-base`). No egui anywhere in its graph.
 
 | Module | What |
 |---|---|
