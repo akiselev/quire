@@ -3623,7 +3623,7 @@ checksum = "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256"
 [[package]]
 name = "skelter-anim"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#fc7903fe447a8ff9e940fc74046957fbd8925415"
+source = "git+https://github.com/akiselev/svelters?branch=master#e98d2a64d05408740fcb4495f7882a302672b217"
 dependencies = [
  "skelter-base",
 ]
@@ -3631,7 +3631,7 @@ dependencies = [
 [[package]]
 name = "skelter-base"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#fc7903fe447a8ff9e940fc74046957fbd8925415"
+source = "git+https://github.com/akiselev/svelters?branch=master#e98d2a64d05408740fcb4495f7882a302672b217"
 dependencies = [
  "accesskit",
  "bytemuck",
@@ -3641,7 +3641,7 @@ dependencies = [
 [[package]]
 name = "skelter-core"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#fc7903fe447a8ff9e940fc74046957fbd8925415"
+source = "git+https://github.com/akiselev/svelters?branch=master#e98d2a64d05408740fcb4495f7882a302672b217"
 dependencies = [
  "accesskit",
  "skelter-anim",
@@ -3654,7 +3654,7 @@ dependencies = [
 [[package]]
 name = "skelter-text"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#fc7903fe447a8ff9e940fc74046957fbd8925415"
+source = "git+https://github.com/akiselev/svelters?branch=master#e98d2a64d05408740fcb4495f7882a302672b217"
 dependencies = [
  "fontique",
  "parley",
@@ -3826,7 +3826,7 @@ checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 [[package]]
 name = "svelters-style"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#fc7903fe447a8ff9e940fc74046957fbd8925415"
+source = "git+https://github.com/akiselev/svelters?branch=master#e98d2a64d05408740fcb4495f7882a302672b217"
 dependencies = [
  "cssparser",
  "cssparser-color",

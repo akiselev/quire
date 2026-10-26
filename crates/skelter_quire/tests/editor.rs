@@ -5,11 +5,13 @@
 use std::sync::Arc;
 
 use quire_core::{Diagnostic, Document, EditorConfig, EditorView, Severity, SourceId, WordWrap};
+use skelter_base::color::Color;
+use skelter_base::commit::FastCommit;
 use skelter_base::display::Prim;
 use skelter_base::event::{
     ImeEvent, KeyEvent, KeyLocation, KeyState, Modifiers, MouseButton, PointerType, ScrollDelta,
 };
-use skelter_base::geom::{Point, Size, Vec2};
+use skelter_base::geom::{Affine, Point, Rect, Size, Vec2};
 use skelter_base::ids::{InputSeq, LayerId, NodeId, PropNodeId, Revision, RunId, WindowId};
 use skelter_base::input::TextInputClient;
 use skelter_base::key::Key;
@@ -362,11 +364,8 @@ fn the_text_input_client_counts_utf16_over_the_virtual_text() {
     assert_eq!(f.text(), "😀xab");
 }
 
-#[test]
-fn layers_scroll_by_offset_inside_the_overscan() {
-    let text = "x\n".repeat(1_000);
-    let mut f = fixture(&text, Size::new(400.0, 200.0));
-    let ids = EditorLayerIds {
+fn layer_ids() -> EditorLayerIds {
+    EditorLayerIds {
         window: WindowId(1),
         parent_layer: None,
         parent_space: None,
@@ -385,7 +384,14 @@ fn layers_scroll_by_offset_inside_the_overscan() {
         content_node: NodeId(31),
         gutter_node: NodeId(32),
         overlay_node: NodeId(33),
-    };
+    }
+}
+
+#[test]
+fn layers_scroll_by_offset_inside_the_overscan() {
+    let text = "x\n".repeat(1_000);
+    let mut f = fixture(&text, Size::new(400.0, 200.0));
+    let ids = layer_ids();
     let mut layers = EditorLayers::new(ids, 1 << 48);
     let c1 = layers.commit(
         &mut f.ed,
@@ -440,4 +446,39 @@ fn layers_scroll_by_offset_inside_the_overscan() {
     );
     assert_eq!(c3.lists.len(), 4);
     assert!(!c3.dropped_runs.is_empty(), "the old record's runs go");
+}
+
+#[test]
+fn layers_caret_commit_carries_the_caret_colour_and_box_space() {
+    let mut f = fixture("hello", Size::new(400.0, 200.0));
+    let red = Color::from_rgba8(255, 0, 0, 255);
+    f.ed.theme.caret = red;
+    let ids = layer_ids();
+    let mut layers = EditorLayers::new(ids, 1 << 48);
+    let at = Affine::translate(5.0, 7.0);
+    let r = Rect::new(10.0, 0.0, 12.0, 18.0);
+    let caret = |c: FastCommit| match c {
+        FastCommit::Caret {
+            rect,
+            color,
+            transform,
+            ..
+        } => (rect, color, transform),
+        other => panic!("not a caret: {other:?}"),
+    };
+    // before the layers are committed the compositor doesn't know the box node: window space
+    let (before, color, transform) = caret(layers.caret_commit(Some(r), &f.ed, at, Revision(1)));
+    assert_eq!(color, red, "the editor's caret colour");
+    assert_eq!(transform, PropNodeId::default(), "window space");
+    let before = before.expect("shown");
+    layers.commit(&mut f.ed, &f.doc, &mut f.view, at, Revision(2), InputSeq(2));
+    // then in the editor's box space, without the box offset
+    let (after, color, transform) = caret(layers.caret_commit(Some(r), &f.ed, at, Revision(3)));
+    assert_eq!(color, red);
+    assert_eq!(transform, ids.box_space, "the editor's own transform node");
+    let after = after.expect("shown");
+    assert_eq!(before, after.translate(Vec2::new(5.0, 7.0)));
+    let (hidden, color, _) = caret(layers.caret_commit(None, &f.ed, at, Revision(4)));
+    assert_eq!(hidden, None);
+    assert_eq!(color, red);
 }

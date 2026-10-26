@@ -368,7 +368,13 @@ impl EditorLayers {
         ]
     }
 
-    /// The caret for the compositor to blink, in window space (`None` hides it).
+    /// The caret for the compositor to blink (`None` hides it), in the editor's caret colour.
+    ///
+    /// Once the editor's layers are committed, the rect is in the space of the editor's box
+    /// transform node ([`EditorLayerIds::box_space`]), so the caret follows scrolls and transform
+    /// animations the compositor runs on that node's chain. Before that (or after
+    /// [`Self::remove`]) the compositor doesn't know the node, so the rect is in window space,
+    /// through `box_transform`, with the default (unknown) transform node.
     pub fn caret_commit(
         &self,
         scene_caret: Option<Rect>,
@@ -378,13 +384,21 @@ impl EditorLayers {
     ) -> FastCommit {
         let g = editor.geom();
         let s = editor.scroll();
-        let rect = scene_caret.map(|r| {
-            let local = r.translate(Vec2::new(g.text_left() - s.x, crate::editor::PAD_Y - s.y));
-            box_transform.apply_rect(&local)
-        });
+        let local = scene_caret
+            .map(|r| r.translate(Vec2::new(g.text_left() - s.x, crate::editor::PAD_Y - s.y)));
+        let (rect, transform) = if self.added {
+            (local, self.ids.box_space)
+        } else {
+            (
+                local.map(|r| box_transform.apply_rect(&r)),
+                PropNodeId::default(),
+            )
+        };
         FastCommit::Caret {
             window: self.ids.window,
             rect,
+            color: editor.theme.caret,
+            transform,
             revision,
         }
     }
