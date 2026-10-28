@@ -98,7 +98,11 @@ Filtered runs (all through `scripts/cargo.sh`):
   incremental 7, injections 9, structure 9.
 - `test -p quire-syntax` (default features, no toml): highlight 10, structure 8, abi 1.
 
-`scripts/check.sh`: CHECK_RESULT
+`scripts/check.sh` on `cb551df` (the code; later commits are docs only): **all passed**. fmt,
+clippy `-D warnings`, `cargo test --workspace --all-features` **601 pass, 0 fail, 6 ignored**,
+wasm32 checks of quire-core and quire-text, and the dependency and egui `=0.37.0` guards. The
+first run stopped at the wasm32 step because this container lacked the `wasm32-unknown-unknown`
+target (`rustup target add` fixed it). The second, complete run is the one recorded.
 
 ## Questions (for the coordinator)
 
