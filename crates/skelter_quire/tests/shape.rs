@@ -93,7 +93,11 @@ fn ligatures_on_refuse_the_table_and_draw_the_ligature() {
     // the bug: shaped as one string, the 95 characters already contain ligature pieces
     let all: String = (b' '..=b'~').map(char::from).collect();
     let together = glyph_ids(&mut text, &on, &all);
-    assert_eq!(together.len(), 95, "same advances: the old probe accepted it");
+    assert_eq!(
+        together.len(),
+        95,
+        "same advances: the old probe accepted it"
+    );
     assert_ne!(
         together,
         off.glyphs.to_vec(),
