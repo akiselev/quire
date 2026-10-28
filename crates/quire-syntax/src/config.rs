@@ -74,7 +74,8 @@ impl std::fmt::Display for QueryError {
 }
 impl std::error::Error for QueryError {}
 
-static CONFIGS: [OnceLock<Result<LangConfig, QueryError>>; 5] = [
+static CONFIGS: [OnceLock<Result<LangConfig, QueryError>>; Lang::ALL.len()] = [
+    OnceLock::new(),
     OnceLock::new(),
     OnceLock::new(),
     OnceLock::new(),

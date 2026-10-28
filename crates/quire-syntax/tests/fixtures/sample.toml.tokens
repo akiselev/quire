@@ -1,0 +1,27 @@
+comment:"# A Cargo manifest."
+punctuation.bracket:"[" type:"package" punctuation.bracket:"]"
+property:"name" operator:"=" string:"\"quire-demo\""
+property:"version" operator:"=" string:"\"0.1.0\""
+property:"edition" operator:"=" string:"\"2024\""
+property:"publish" operator:"=" boolean:"false"
+property:"\"quoted key\"" operator:"=" string:"'literal'"
+property:"escaped" operator:"=" string:"\"tab" string.escape:"\\t" string:"here\""
+
+punctuation.bracket:"[" type:"dependencies" punctuation.bracket:"]"
+property:"serde" operator:"=" punctuation.bracket:"{" property:"version" operator:"=" string:"\"1\"" punctuation.delimiter:"," property:"features" operator:"=" punctuation.bracket:"[" string:"\"derive\"" punctuation.bracket:"]" punctuation.bracket:"}"
+property:"egui" punctuation.delimiter:"." property:"workspace" operator:"=" boolean:"true"
+
+punctuation.bracket:"[[" type:"bin" punctuation.bracket:"]]"
+property:"name" operator:"=" string:"\"demo\""
+property:"path" operator:"=" string:"\"src/main.rs\""
+
+punctuation.bracket:"[" type:"profile" punctuation.delimiter:"." type:"release" punctuation.bracket:"]"
+property:"opt-level" operator:"=" number:"3"
+property:"lto" operator:"=" number:"1.5e3"
+property:"built" operator:"=" string.special:"1979-05-27T07:32:00Z"
+property:"day" operator:"=" string.special:"1979-05-27"
+property:"list" operator:"=" punctuation.bracket:"["
+number:"1" punctuation.delimiter:","
+number:"2" punctuation.delimiter:","
+punctuation.bracket:"]"
+

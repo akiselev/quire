@@ -21,6 +21,7 @@ table! {
     "css"/"highlights", "css"/"folds", "css"/"indents", "css"/"brackets",
     "svelte"/"highlights", "svelte"/"injections", "svelte"/"folds", "svelte"/"indents",
     "svelte"/"brackets",
+    "toml"/"highlights", "toml"/"folds", "toml"/"indents", "toml"/"brackets",
 }
 
 /// The raw text of one query file, if it exists.

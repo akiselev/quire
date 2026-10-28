@@ -121,3 +121,29 @@ fn css_indent() {
         vec![Some(0), Some(1), Some(0)]
     );
 }
+
+#[cfg(feature = "toml")]
+#[test]
+fn toml_folds_brackets_and_indent() {
+    let s = "[package]\nname = \"a\"\n\n[dependencies]\nlist = [\n  1,\n  2,\n]\nt = { a = 1 }\n";
+    let (h, _, t) = parse(Lang::Toml, s);
+    let f: Vec<(usize, usize)> = h
+        .folds(&t)
+        .into_iter()
+        .map(|f| (f.start_line, f.end_line))
+        .collect();
+    // each table from its header, and the multi-line array
+    assert!(f.contains(&(0, 1)) || f.contains(&(0, 2)), "{f:?}");
+    assert!(f.iter().any(|&(a, b)| a == 3 && b >= 8), "{f:?}");
+    assert!(f.contains(&(4, 7)), "{f:?}");
+    let opens: Vec<&str> = h
+        .brackets(&t, 0..9)
+        .into_iter()
+        .map(|b| &s[b.open])
+        .collect();
+    assert!(opens.contains(&"[") && opens.contains(&"{"), "{opens:?}");
+    assert_eq!(
+        (4..8).map(|l| h.indent_level(&t, l)).collect::<Vec<_>>(),
+        vec![Some(0), Some(1), Some(1), Some(0)]
+    );
+}

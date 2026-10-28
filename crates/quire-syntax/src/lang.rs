@@ -14,16 +14,19 @@ pub enum Lang {
     JavaScript,
     /// CSS (`tree-sitter-css`).
     Css,
+    /// TOML (`tree-sitter-toml-ng`; the optional `toml` feature).
+    Toml,
 }
 
 impl Lang {
     /// Every language, in a fixed order (also the index order of per-language tables).
-    pub const ALL: [Lang; 5] = [
+    pub const ALL: [Lang; 6] = [
         Lang::Svelte,
         Lang::TypeScript,
         Lang::Tsx,
         Lang::JavaScript,
         Lang::Css,
+        Lang::Toml,
     ];
 
     /// The stable id: the query directory name and the name injections use.
@@ -34,6 +37,7 @@ impl Lang {
             Lang::Tsx => "tsx",
             Lang::JavaScript => "javascript",
             Lang::Css => "css",
+            Lang::Toml => "toml",
         }
     }
 
@@ -47,6 +51,7 @@ impl Lang {
             "tsx" => Lang::Tsx,
             "js" | "javascript" | "jsx" | "mjs" | "cjs" | "ecmascript" => Lang::JavaScript,
             "css" => Lang::Css,
+            "toml" => Lang::Toml,
             _ => return None,
         })
     }
@@ -78,6 +83,8 @@ impl Lang {
             Lang::JavaScript => Some(tree_sitter_javascript::LANGUAGE.into()),
             #[cfg(feature = "css")]
             Lang::Css => Some(tree_sitter_css::LANGUAGE.into()),
+            #[cfg(feature = "toml")]
+            Lang::Toml => Some(tree_sitter_toml_ng::LANGUAGE.into()),
             #[allow(unreachable_patterns)]
             _ => None,
         }

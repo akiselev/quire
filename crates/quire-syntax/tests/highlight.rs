@@ -18,6 +18,11 @@ fn fixture(name: &str) -> String {
 fn queries_compile() {
     quire_syntax::check_queries().unwrap();
     for lang in Lang::ALL {
+        if lang == Lang::Toml {
+            // an optional feature
+            assert_eq!(lang.is_available(), cfg!(feature = "toml"));
+            continue;
+        }
         assert!(lang.is_available(), "{lang} is a default feature");
     }
 }
@@ -104,6 +109,47 @@ fn css_spots() {
     assert_eq!(style_of(Lang::Css, &s, "/* Buttons */"), "comment");
     assert_eq!(style_of(Lang::Css, &s, "var("), "function");
     assert_eq!(style_of(Lang::Css, &s, "!important"), "keyword");
+}
+
+#[cfg(feature = "toml")]
+#[test]
+fn toml_fixture() {
+    expect_file(
+        "sample.toml.tokens",
+        &render(Lang::Toml, &fixture("sample.toml")),
+    );
+}
+
+#[cfg(feature = "toml")]
+#[test]
+fn toml_spots() {
+    let s = fixture("sample.toml");
+    assert_eq!(style_of(Lang::Toml, &s, "# A Cargo"), "comment");
+    assert_eq!(style_of(Lang::Toml, &s, "package"), "type");
+    assert_eq!(style_of(Lang::Toml, &s, "profile"), "type");
+    assert_eq!(style_of(Lang::Toml, &s, "release"), "type");
+    assert_eq!(style_of(Lang::Toml, &s, "bin"), "type");
+    assert_eq!(style_of(Lang::Toml, &s, "name ="), "property");
+    assert_eq!(style_of(Lang::Toml, &s, "\"quoted key\""), "property");
+    assert_eq!(style_of(Lang::Toml, &s, "workspace"), "property");
+    assert_eq!(style_of(Lang::Toml, &s, "features"), "property");
+    assert_eq!(style_of(Lang::Toml, &s, "\"quire-demo\""), "string");
+    assert_eq!(style_of(Lang::Toml, &s, "'literal'"), "string");
+    assert_eq!(style_of(Lang::Toml, &s, "\\t"), "string.escape");
+    assert_eq!(style_of(Lang::Toml, &s, "false"), "boolean");
+    assert_eq!(style_of(Lang::Toml, &s, "3\n"), "number");
+    assert_eq!(style_of(Lang::Toml, &s, "1.5e3"), "number");
+    assert_eq!(style_of(Lang::Toml, &s, "1979-05-27T"), "string.special");
+    assert_eq!(style_of(Lang::Toml, &s, "= \"quire"), "operator");
+    assert_eq!(style_of(Lang::Toml, &s, "[["), "punctuation.bracket");
+    assert_eq!(
+        style_of(Lang::Toml, &s, ".workspace"),
+        "punctuation.delimiter"
+    );
+    // by name and extension, as the other languages
+    assert_eq!(Lang::from_name("TOML"), Some(Lang::Toml));
+    assert_eq!(Lang::from_extension("toml"), Some(Lang::Toml));
+    assert_eq!(Lang::Toml.id(), "toml");
 }
 
 #[test]

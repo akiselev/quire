@@ -220,6 +220,12 @@ fn css_edits() {
     run(Lang::Css, &fixture("sample.css"), &[12, 13], 40);
 }
 
+#[cfg(feature = "toml")]
+#[test]
+fn toml_edits() {
+    run(Lang::Toml, &fixture("sample.toml"), &[14, 15], 40);
+}
+
 #[test]
 fn lazy_shift_after_many_line_edits() {
     // Many edits above untouched layers: their lazy shifts accumulate across parses.

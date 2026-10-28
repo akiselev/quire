@@ -43,3 +43,13 @@ fn grammars_load() {
     );
     check("css", tree_sitter_css::LANGUAGE.into(), "a { color: red; }");
 }
+
+#[cfg(feature = "toml")]
+#[test]
+fn toml_grammar_loads() {
+    check(
+        "toml",
+        tree_sitter_toml_ng::LANGUAGE.into(),
+        "[package]\nname = \"a\"\n[[bin]]\nx = { y = [1, 2.5] }\n",
+    );
+}

@@ -3123,6 +3123,7 @@ dependencies = [
  "tree-sitter-css",
  "tree-sitter-htmlx-svelte",
  "tree-sitter-javascript",
+ "tree-sitter-toml-ng",
  "tree-sitter-typescript",
 ]
 
@@ -4110,6 +4111,16 @@ name = "tree-sitter-language"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0af592be68c579aa78a16846bd19422978c3c52e438523d45ff5d1bff1f9d4a"
+
+[[package]]
+name = "tree-sitter-toml-ng"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e9adc2c898ae49730e857d75be403da3f92bb81d8e37a2f918a08dd10de5ebb1"
+dependencies = [
+ "cc",
+ "tree-sitter-language",
+]
 
 [[package]]
 name = "tree-sitter-typescript"

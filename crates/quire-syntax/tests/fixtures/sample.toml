@@ -1,0 +1,26 @@
+# A Cargo manifest.
+[package]
+name = "quire-demo"
+version = "0.1.0"
+edition = "2024"
+publish = false
+"quoted key" = 'literal'
+escaped = "tab\there"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+egui.workspace = true
+
+[[bin]]
+name = "demo"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = 1.5e3
+built = 1979-05-27T07:32:00Z
+day = 1979-05-27
+list = [
+  1,
+  2,
+]
