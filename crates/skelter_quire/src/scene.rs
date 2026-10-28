@@ -546,7 +546,7 @@ impl SkelterEditor {
             );
         }
         let view_w = g.size.w - g.text_left();
-        if g.wrap.width.is_none() && sc.content_size.w > view_w + 0.5 {
+        if self.horizontal_scrollbar_shown() {
             let w = (view_w * view_w / sc.content_size.w).max(20.0).min(view_w);
             let x = g.text_left()
                 + (self.scroll.x / (sc.content_size.w - view_w)).clamp(0.0, 1.0) * (view_w - w);

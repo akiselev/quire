@@ -667,6 +667,12 @@ impl SkelterEditor {
         Size::new(w, h)
     }
 
+    /// Whether the horizontal scrollbar is drawn: no wrap and content wider than the view.
+    pub fn horizontal_scrollbar_shown(&self) -> bool {
+        let view_w = self.geom.size.w - self.geom.text_left();
+        self.geom.wrap.width.is_none() && self.content_size().w > view_w + 0.5
+    }
+
     fn clamp_scroll(&mut self) {
         let c = self.content_size();
         let view_w = self.geom.size.w - self.geom.text_left();
@@ -716,12 +722,21 @@ impl SkelterEditor {
         let (rect, _) = self.caret_content_rect(doc, view, pos, false);
         let h = self.geom.size.h - PAD_Y;
         let w = self.geom.size.w - self.geom.text_left() - SCROLLBAR_W;
+        // VS Code `ViewLines._computeScrollTopToRevealRange`: a minimal reveal keeps the
+        // horizontal scrollbar's height clear at the bottom ("reveal one line more when the last
+        // line would be covered by the scrollbar"). VS Code pads whether or not the bar is shown;
+        // here only while it is, so a content-sized editor does not scroll.
+        let bottom = if self.horizontal_scrollbar_shown() {
+            h - SCROLLBAR_W
+        } else {
+            h
+        };
         if center {
             self.scroll.y = rect.min.y - (h - self.geom.row_h) * 0.5;
         } else if rect.min.y < self.scroll.y {
             self.scroll.y = rect.min.y;
-        } else if rect.max.y > self.scroll.y + h {
-            self.scroll.y = rect.max.y - h;
+        } else if rect.max.y > self.scroll.y + bottom {
+            self.scroll.y = rect.max.y - bottom;
         }
         if self.geom.wrap.width.is_none() {
             let margin = self.geom.column * 2.0;

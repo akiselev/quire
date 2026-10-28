@@ -483,3 +483,85 @@ fn layers_caret_commit_carries_the_caret_colour_and_box_space() {
     assert_eq!(hidden, None);
     assert_eq!(color, red);
 }
+
+/// The last drawn line's glyph box and the horizontal scrollbar's thumb, in local space.
+fn last_line_and_hbar(f: &mut Fixture) -> (Rect, Rect) {
+    let mut runs = Runs::default();
+    let sc = f.ed.record(&f.doc, &mut f.view, &mut runs, None);
+    let g = *f.ed.geom();
+    let dy = sc.text_origin.y - sc.scroll.y;
+    let base = sc
+        .content
+        .items
+        .iter()
+        .filter_map(|p| match p {
+            Prim::Glyphs(gl) => Some(gl.origin.y + dy),
+            _ => None,
+        })
+        .fold(f32::MIN, f32::max);
+    let glyphs = Rect::new(0.0, base - g.ascent, g.size.w, base + g.descent);
+    let bar = sc
+        .overlay
+        .items
+        .iter()
+        .find_map(|p| match p {
+            Prim::Quad(q) if q.rect.min.y >= g.size.h - skelter_quire::editor::SCROLLBAR_W => {
+                Some(q.rect)
+            }
+            _ => None,
+        })
+        .expect("the horizontal scrollbar is drawn");
+    (glyphs, bar)
+}
+
+/// VS Code's layout (Q-P10): with no wrap and content wider than the view, the horizontal
+/// scrollbar overlays the bottom of the view; scrolled to the end, the last line is clear of it.
+#[test]
+fn the_last_line_scrolls_clear_of_the_horizontal_scrollbar() {
+    let line = "abcdefghij".repeat(20);
+    let text = vec![line.as_str(); 400].join("\n");
+    let size = Size::new(400.0, 200.0);
+    let last = 399;
+
+    // the wheel to the end (scrollBeyondLastLine: the last line goes to the top)
+    let mut f = fixture(&text, size);
+    f.ed.wheel(
+        &f.doc,
+        &mut f.view,
+        ScrollDelta::Pixels(Vec2::new(0.0, -1.0e6)),
+        Modifiers::default(),
+    );
+    f.relayout();
+    assert!(
+        f.ed.visible_lines().contains(&last),
+        "{:?}",
+        f.ed.visible_lines()
+    );
+    let (glyphs, bar) = last_line_and_hbar(&mut f);
+    assert!(glyphs.max.y <= bar.min.y, "wheel: {glyphs:?} under {bar:?}");
+
+    // Ctrl+End: the caret's line is revealed at the bottom of the view, above the bar
+    let mut f = fixture(&text, size);
+    f.key(Key::End, Modifiers::CTRL, None);
+    assert_eq!(f.head(), f.doc.text().len_bytes());
+    let (glyphs, bar) = last_line_and_hbar(&mut f);
+    assert!(
+        glyphs.max.y <= bar.min.y,
+        "ctrl+end: {glyphs:?} under {bar:?}"
+    );
+    assert!(
+        glyphs.max.y > bar.min.y - f.ed.geom().row_h,
+        "a minimal reveal: at the bottom"
+    );
+
+    // arrow down from the top to the last line: each step reveals minimally
+    let mut f = fixture(&text, size);
+    for _ in 0..last {
+        f.key(Key::ArrowDown, Modifiers::default(), None);
+    }
+    let (glyphs, bar) = last_line_and_hbar(&mut f);
+    assert!(
+        glyphs.max.y <= bar.min.y,
+        "arrow down: {glyphs:?} under {bar:?}"
+    );
+}

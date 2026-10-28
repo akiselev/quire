@@ -2728,12 +2728,22 @@ impl FrameCx<'_> {
         let top = self.mem.heights.y_of(line) + row as f32 * self.geom.row_h;
         let bottom = top + self.geom.row_h;
         let view_h = self.geom.text.height();
+        // VS Code `ViewLines._computeScrollTopToRevealRange`: a minimal reveal keeps the
+        // horizontal scrollbar's height clear at the bottom ("reveal one line more when the last
+        // line would be covered by the scrollbar"). VS Code pads whether or not the bar is shown;
+        // here only while it is, so a content-sized editor does not scroll.
+        let bar = if self.content_width() > self.geom.text.width() + 0.5 {
+            SCROLLBAR_W
+        } else {
+            0.0
+        };
+        let view_bottom = view_h - bar;
         if center {
             self.mem.scroll.y = top - (view_h - self.geom.row_h) * 0.5;
         } else if top < self.mem.scroll.y {
             self.mem.scroll.y = top;
-        } else if bottom > self.mem.scroll.y + view_h {
-            self.mem.scroll.y = bottom - view_h;
+        } else if bottom > self.mem.scroll.y + view_bottom {
+            self.mem.scroll.y = bottom - view_bottom;
         }
         let x = x + self.geom.pad_left;
         let view_w = self.geom.text.width();

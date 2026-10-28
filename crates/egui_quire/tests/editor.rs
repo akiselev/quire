@@ -2029,3 +2029,36 @@ fn widget_input_carries_the_editor_author() {
         Some(quire_core::AuthorId(5))
     );
 }
+
+/// VS Code's layout (Q-P10): with no wrap and content wider than the view, the horizontal
+/// scrollbar overlays the bottom of the view. Ctrl+End reveals the last line above the bar, and
+/// the wheel scrolls it clear of the bar.
+#[test]
+fn the_last_line_is_revealed_above_the_horizontal_scrollbar() {
+    let line = "abcdefghij".repeat(20);
+    let text = vec![line.as_str(); 400].join("\n");
+    let mut h = harness(St::new(&text));
+    h.run();
+    focus(&mut h);
+    h.key_press_modifiers(cmd(), Key::End);
+    h.run();
+    assert_eq!(h.state().sel(0).1, text.len());
+    let r = h.state().rects[0];
+    let bar_top = r.bottom() - 8.0;
+    let caret = h.state().caret.expect("the caret is shown");
+    assert!(
+        caret.bottom() <= bar_top + 0.01,
+        "{caret:?} under the bar at {bar_top}"
+    );
+    assert!(
+        caret.bottom() > bar_top - caret.height(),
+        "a minimal reveal: at the bottom"
+    );
+    // the wheel to the end leaves the last line clear of the bar too
+    wheel(&mut h, vec2(0.0, -1.0e6));
+    let caret = h.state().caret.expect("the caret is shown");
+    assert!(
+        caret.bottom() <= bar_top + 0.01,
+        "wheel: {caret:?} under the bar at {bar_top}"
+    );
+}
