@@ -156,3 +156,182 @@ fn records_types_and_reports() {
         host.events
     );
 }
+
+/// A host's own kind under the tag `code-editor` (cadatomic's gallery registers quire's editor as
+/// `gallery-source` beside it).
+#[derive(Default)]
+struct HostEditor;
+
+static HOST_EDITOR: skelter_core::KindSpec = skelter_core::KindSpec {
+    props: &[skelter_core::PropSpec::new(
+        "buffer",
+        skelter_core::ValueType::Str,
+        skelter_base::change::ChangeClass::Paint,
+    )],
+    ..skelter_core::KindSpec::new("code-editor")
+};
+
+impl Kind for HostEditor {
+    fn spec() -> &'static skelter_core::KindSpec {
+        &HOST_EDITOR
+    }
+    fn record(&self, _cx: &mut skelter_core::RecordCx) {}
+}
+
+/// Puts an editor node of kind `kind` showing `buffer` into `root`, readonly or not, and
+/// returns it.
+fn editor_node(
+    d: &mut Document,
+    root: skelter_base::ids::NodeId,
+    kind: skelter_core::KindId,
+    top: f32,
+    buffer: &str,
+    readonly: bool,
+) -> skelter_base::ids::NodeId {
+    let n = d.create(kind);
+    d.set_style(
+        n,
+        StyleInput {
+            inline: Some(
+                format!("position: absolute; left: 0px; top: {top}px; width: 400px; height: 150px")
+                    .into(),
+            ),
+            ..Default::default()
+        },
+    );
+    d.insert(root, n, None, None).unwrap();
+    let spec = d.registry().get(kind).unwrap().spec;
+    d.set_prop(
+        n,
+        spec.prop_named("buffer").unwrap(),
+        Value::Str(buffer.into()),
+    )
+    .unwrap();
+    d.set_prop(
+        n,
+        spec.prop_named("readonly").unwrap(),
+        Value::Bool(readonly),
+    )
+    .unwrap();
+    n
+}
+
+fn draws_glyphs(c: &skelter_base::commit::Commit, n: skelter_base::ids::NodeId) -> bool {
+    c.lists.iter().any(|(id, l)| {
+        *id == n
+            && l.items
+                .iter()
+                .any(|p| matches!(p, skelter_base::display::Prim::Glyphs(_)))
+    })
+}
+
+/// Two registrations of the editor under different tags in one registry: each node takes its own
+/// props (`buffer`, `readonly`) and renders.
+#[test]
+fn register_as_two_tags_take_their_props() {
+    let mut reg = KindRegistry::new();
+    let boxed = reg.register::<BoxKind>().expect("box");
+    let plain = CodeEditorKind::register(&mut reg).expect("code-editor");
+    let gallery = CodeEditorKind::register_as(&mut reg, "gallery-source").expect("gallery-source");
+    assert_ne!(plain, gallery);
+    assert_eq!(
+        reg.get(gallery).unwrap().spec.name,
+        "gallery-source",
+        "the copy carries the new tag"
+    );
+    // registering a tag twice is refused, as for any kind
+    assert!(CodeEditorKind::register_as(&mut reg, "gallery-source").is_err());
+    let mut d = Document::new(Arc::new(reg), Box::new(FixedText));
+    d.set_text_shaper(Box::new(FixedText));
+    let fonts = skelter_text::FontStore::new(skelter_text::FontConfig::testing());
+    let mut host = QuireHost::new(fonts);
+    host.theme.font_family = skelter_text::test_fonts::SANS_FAMILY.into();
+    let a = host.insert_buffer(
+        "a",
+        quire_core::Document::new("alpha", EditorConfig::default()),
+    );
+    let b = host.insert_buffer(
+        "b",
+        quire_core::Document::new("beta", EditorConfig::default()),
+    );
+    d.set_service(host);
+    let root = d.create_window(W, boxed, Size::new(500.0, 400.0), Scale(1.0));
+    let na = editor_node(&mut d, root, plain, 0.0, "a", false);
+    let nb = editor_node(&mut d, root, gallery, 200.0, "b", true);
+    let c = d.frame(W, Time(0)).expect("a first commit");
+    assert!(draws_glyphs(&c, na), "code-editor renders its buffer");
+    assert!(draws_glyphs(&c, nb), "gallery-source renders its buffer");
+
+    // click and type into each: `readonly` reached the gallery node only
+    let mut seq = 0;
+    let mut type_into = |d: &mut Document, y: f32, t: u64| {
+        seq += 3;
+        d.dispatch(&pointer(PointerPhase::Down, Point::new(100.0, y), t, seq));
+        d.dispatch(&pointer(
+            PointerPhase::Up,
+            Point::new(100.0, y),
+            t + 50,
+            seq + 1,
+        ));
+        d.dispatch(&typed(Key::X, "x", t + 100, seq + 2));
+    };
+    type_into(&mut d, 8.0, 1_000);
+    assert_eq!(d.focused(W), Some(na));
+    type_into(&mut d, 208.0, 2_000);
+    assert_eq!(d.focused(W), Some(nb));
+    assert!(
+        a.borrow().text().to_string().contains('x'),
+        "code-editor is editable"
+    );
+    assert_eq!(
+        b.borrow().text().to_string(),
+        "beta",
+        "gallery-source is readonly"
+    );
+
+    // the gallery node's signals are its own tag's
+    let host = d.service::<QuireHost>().unwrap();
+    assert!(
+        host.events
+            .iter()
+            .any(|(id, e)| *id == nb && *e == EditorEvent::FocusChanged(true)),
+        "{:?}",
+        host.events
+    );
+}
+
+/// A host's own `code-editor` kind and quire's editor as `gallery-source` in one registry.
+#[test]
+fn register_as_beside_a_host_code_editor() {
+    let mut reg = KindRegistry::new();
+    let boxed = reg.register::<BoxKind>().expect("box");
+    let theirs = reg
+        .register::<HostEditor>()
+        .expect("the host's code-editor");
+    let gallery = CodeEditorKind::register_as(&mut reg, "gallery-source").expect("gallery-source");
+    // quire's own tag is taken
+    assert!(CodeEditorKind::register(&mut reg).is_err());
+    let mut d = Document::new(Arc::new(reg), Box::new(FixedText));
+    d.set_text_shaper(Box::new(FixedText));
+    let fonts = skelter_text::FontStore::new(skelter_text::FontConfig::testing());
+    let mut host = QuireHost::new(fonts);
+    host.theme.font_family = skelter_text::test_fonts::SANS_FAMILY.into();
+    host.insert_buffer(
+        "src",
+        quire_core::Document::new("let x = 1;", EditorConfig::default()),
+    );
+    d.set_service(host);
+    let root = d.create_window(W, boxed, Size::new(500.0, 400.0), Scale(1.0));
+    let other = d.create(theirs);
+    d.insert(root, other, None, None).unwrap();
+    d.set_prop(
+        other,
+        HOST_EDITOR.prop_named("buffer").unwrap(),
+        Value::Str("src".into()),
+    )
+    .unwrap();
+    let ng = editor_node(&mut d, root, gallery, 0.0, "src", true);
+    let c = d.frame(W, Time(0)).expect("a first commit");
+    assert!(draws_glyphs(&c, ng), "gallery-source renders");
+    assert!(!draws_glyphs(&c, other), "the host's kind is its own");
+}

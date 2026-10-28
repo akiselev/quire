@@ -24,8 +24,9 @@ use skelter_base::input::{InputPurpose, TextInputClient, Utf16Range};
 use skelter_base::text::GlyphRun;
 use skelter_base::time::Time;
 use skelter_core::{
-    A11yCx, Event, EventCx, FocusReason, Handled, Kind, KindSpec, MeasureCx, PrepareCx, PropCx,
-    PropError, PropId, PropSpec, RecordCx, SignalFlags, SignalSpec, Value, ValueType,
+    A11yCx, Event, EventCx, FocusReason, Handled, Kind, KindId, KindRegistry, KindSpec, MeasureCx,
+    NodeView, PrepareCx, PropCx, PropError, PropId, PropSpec, RecordCx, RegistryError, SignalFlags,
+    SignalSpec, Value, ValueType,
 };
 
 use crate::editor::{EditorEvent, EditorOptions, SkelterEditor};
@@ -108,8 +109,18 @@ pub static SPEC: KindSpec = KindSpec {
     ..KindSpec::new("code-editor")
 };
 
-fn prop(name: &str) -> PropId {
-    SPEC.prop_named(name).expect("code-editor prop")
+// Props and signals by their index in [`PROPS`] and [`SIGNALS`]. A node resolves them through the
+// registry entry it was created from, so one kind serves every tag it is registered under
+// ([`CodeEditorKind::register_as`]).
+const BUFFER: usize = 0;
+const READONLY: usize = 1;
+const GUTTER: usize = 2;
+const CHANGE: usize = 0;
+const SELECTIONCHANGE: usize = 1;
+
+/// The id of prop `ix` in the spec the node was registered with.
+fn prop(view: &NodeView, ix: usize) -> PropId {
+    view.kind().prop_ids()[ix]
 }
 
 struct Inner {
@@ -159,6 +170,28 @@ impl RunSink for CxSink<'_, '_> {
 }
 
 impl CodeEditorKind {
+    /// Registers the kind under its own tag, `code-editor` (as `reg.register::<CodeEditorKind>()`).
+    pub fn register(reg: &mut KindRegistry) -> Result<KindId, RegistryError> {
+        reg.register::<CodeEditorKind>()
+    }
+
+    /// Registers the kind under the tag `name` (a gallery's `gallery-source`, or `code-editor`
+    /// beside a host's own `code-editor` kind): a copy of [`SPEC`] with that name, so the props and
+    /// signals are the same and their ids are the new tag's. A node resolves its props through the
+    /// spec it was created with, so every registration takes its own props. Each call keeps one
+    /// `KindSpec` for the life of the process (the registry holds `&'static` specs); a registry
+    /// is built once per host, so this is a few hundred bytes per tag.
+    pub fn register_as(
+        reg: &mut KindRegistry,
+        name: &'static str,
+    ) -> Result<KindId, RegistryError> {
+        if name == SPEC.name {
+            return Self::register(reg);
+        }
+        let spec: &'static KindSpec = Box::leak(Box::new(KindSpec { name, ..SPEC }));
+        reg.register_with(spec, || Box::<CodeEditorKind>::default())
+    }
+
     /// Builds the editor state once the host's service and the named buffer are there.
     fn ensure(&self, host: Option<&mut QuireHost>) {
         let mut slot = self.inner.borrow_mut();
@@ -199,10 +232,14 @@ impl CodeEditorKind {
             host.events
                 .extend(out.events.into_iter().map(|e| (node, e)));
         }
-        if changed && let Some(s) = SPEC.signal_named("change") {
+        let signals = cx
+            .view(node)
+            .map(|v| v.kind().signal_ids().to_vec())
+            .unwrap_or_default();
+        if changed && let Some(&s) = signals.get(CHANGE) {
             cx.emit(s, None);
         }
-        if selected && let Some(s) = SPEC.signal_named("selectionchange") {
+        if selected && let Some(&s) = signals.get(SELECTIONCHANGE) {
             cx.emit(s, None);
         }
     }
@@ -236,18 +273,18 @@ impl Kind for CodeEditorKind {
         p: PropId,
         value: Option<&Value>,
     ) -> Result<(), PropError> {
-        if p == prop("buffer") {
+        if p == prop(cx, BUFFER) {
             let name = value.and_then(Value::as_str).map(str::to_owned);
             if name != self.buffer {
                 self.buffer = name;
                 *self.inner.get_mut() = None;
             }
-        } else if p == prop("readonly") {
+        } else if p == prop(cx, READONLY) {
             self.read_only = value.and_then(Value::as_bool).unwrap_or(false);
             if let Some(i) = self.inner.get_mut() {
                 i.editor.options.read_only = self.read_only;
             }
-        } else if p == prop("gutter") {
+        } else if p == prop(cx, GUTTER) {
             self.gutter = value.and_then(Value::as_bool).unwrap_or(true);
             if let Some(i) = self.inner.get_mut() {
                 i.editor.options.gutter = self.gutter;
@@ -272,12 +309,12 @@ impl Kind for CodeEditorKind {
 
     fn prepare(&mut self, cx: &mut PrepareCx) {
         if self.buffer.is_none() {
-            self.buffer = cx.prop_str(prop("buffer")).map(str::to_owned);
+            self.buffer = cx.prop_str(prop(cx, BUFFER)).map(str::to_owned);
             self.gutter = cx
-                .prop(prop("gutter"))
+                .prop(prop(cx, GUTTER))
                 .and_then(Value::as_bool)
                 .unwrap_or(true);
-            self.read_only = cx.prop_bool(prop("readonly"));
+            self.read_only = cx.prop_bool(prop(cx, READONLY));
         }
         let size = cx.size();
         let scale = cx.service::<QuireHost>().map_or(1.0, |h| h.scale);
