@@ -123,3 +123,65 @@ target (`rustup target add` fixed it). The second, complete run is the one recor
 
 Nothing open in this lane. After the coordinator lands it, cadatomic can call
 `CodeEditorKind::register_as(reg, "gallery-source")` and turn on `quire-syntax/toml`.
+
+## Coordinator answers (2026-10-28)
+
+Landed at `388670c`. (1) and (2) accepted as recommended. (3): cadatomic's P10 came from a static
+shot. VS Code's bars overlay the text too, so a partly covered bottom line at rest matches VS Code,
+and the reveal case was the real bug.
+
+## Follow-up: ligatures and the ASCII fast path (Q-E1)
+
+Asked by the coordinator after landing (found by cadatomic gal3). The coordinator asked for a new
+branch, `claude/q3-features`. This session may push only `claude/q3-editor`, so the work is on that
+branch, on top of the landed `388670c`, which it fast-forwards from.
+
+| Commit | What |
+|---|---|
+| `4431a18` | Ligature-safe `MonoTable::probe`; `EditorTheme::font_features`; JetBrains Mono test font |
+| `76d7302` | fmt of the new test |
+
+- **The bug.** `MonoTable::probe` shaped the 95 printable characters as one string. With
+  JetBrains Mono's default features, `calt` rewrites `<=>`, `|}~` and similar sequences into
+  ligature pieces of the same advance, so the probe accepted them. Every `<`, `=`, `>` then drew
+  as a piece of `<=>`. The new test shows this: shaped together, the 95 glyphs differ from the
+  glyphs shaped alone.
+- **The fix.**
+  - Table glyphs now come from each character **shaped alone**.
+  - The probe refuses the table (`None`) when shaping the 95 together, or any of
+    `shape::LIGATURE_PROBES`, changes a glyph or a column. `LIGATURE_PROBES` holds about 60 common
+    code-font ligature sequences (`->`, `<=`, `!=`, `www`, `0x0`, ...).
+  - A ligature the probes miss draws the plain glyph on the fast path, never a ligature piece.
+- **`EditorTheme::font_features`** (CSS `font-feature-settings`) reaches the general path's style
+  and the probe, through the new `LineShaper::set_features`. The default is
+  `skelter_quire::LIGATURES_OFF` = `"liga" 0, "calt" 0`, which is what VS Code applies for
+  `editor.fontLigatures: false`, its default. An empty string keeps the font's own features, so
+  ligatures are on.
+- **Departure from the ask:** with ligatures on, a font that ligates ASCII leaves the fast path for
+  **every** line, not only for lines that contain a ligature. Finding out whether a line contains a
+  ligature takes shaping it, which is the general path's work. Lines are cached either way. See
+  question 4.
+- **Test font:** `crates/skelter_quire/tests/fonts/JetBrainsMono-Regular.subset.ttf` (43 KB, ASCII
+  with `calt`/`liga`, from JetBrains Mono 2.304, OFL-1.1) and its licence text beside it. The notice
+  is in `THIRD_PARTY_NOTICES.md` under "Test fonts". It is used by tests only.
+
+Public API added: `EditorTheme::font_features: String`, `skelter_quire::LIGATURES_OFF` (also
+`theme::LIGATURES_OFF`), `shape::LIGATURE_PROBES`, `LineShaper::set_features(&str)`,
+`LineShaper::features()`. Adding a field to `EditorTheme` breaks hosts that build it with a struct
+literal and no `..Default::default()`.
+
+Tests: `skelter_quire/tests/shape.rs` (new):
+- `ligatures_off_shape_one_glyph_per_ascii_character_on_the_fast_path`: each table glyph equals the
+  character shaped alone; a line full of would-be ligatures is fast, one glyph per character.
+- `ligatures_on_refuse_the_table_and_draw_the_ligature`: the old probe's input already holds
+  ligature pieces; the new probe refuses; `x <= y` takes the general path and draws the `<=`
+  ligature with caret stops per character; switching to `LIGATURES_OFF` brings the fast path back.
+
+`scripts/cargo.sh test -p skelter_quire`: 26 unit, 17 editor, 3 kind, 2 shape.
+
+`scripts/check.sh` on `76d7302`: **all passed**, **603 pass, 0 fail, 6 ignored**.
+
+4. **Fast path with ligatures on.** Recommendation: keep "a ligating font has no fast path while
+   ligatures are on". The cheaper alternative is to guess ligature lines from character pairs, and
+   a wrong guess brings back the ligature-piece bug. VS Code's default (and quire's) is ligatures
+   off, which keeps the fast path.
