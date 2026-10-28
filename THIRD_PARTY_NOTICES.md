@@ -200,3 +200,14 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Test fonts
+
+### JetBrains Mono (skelter_quire tests)
+
+`crates/skelter_quire/tests/fonts/JetBrainsMono-Regular.subset.ttf` is an ASCII subset
+(U+0020–U+007E, layout features `calt`, `liga`, `ccmp`, `locl` kept, hinting dropped, made with
+fontTools `pyftsubset`) of JetBrains Mono 2.304 Regular, <https://github.com/JetBrains/JetBrainsMono>.
+It is used only by tests and is not part of any crate's build. Copyright 2020 The JetBrains Mono
+Project Authors, licensed under the SIL Open Font License, Version 1.1. The full licence text is
+`crates/skelter_quire/tests/fonts/JetBrainsMono-OFL.txt`. The font declares no Reserved Font Name.

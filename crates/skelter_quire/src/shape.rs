@@ -107,6 +107,15 @@ impl ShapedLine {
     }
 }
 
+/// Sequences that code fonts commonly ligate or rewrite contextually (JetBrains Mono, Fira Code,
+/// Cascadia Code, Iosevka), shaped by [`MonoTable::probe`] besides the 95 characters in order.
+pub const LIGATURE_PROBES: &[&str] = &[
+    "->", "=>", "<-", "<=", ">=", "==", "!=", "===", "!==", "<=>", "&&", "||", "::", ":=", "..",
+    "...", "//", "/*", "*/", "++", "--", "<<", ">>", "|>", "<|", "<>", "##", "#{", "#[", "[|",
+    "|]", "{|", "|}", "~~", "~>", "=~", "!~", "**", "__", "?.", "??", ";;", "</", "/>", "<!--",
+    "-->", "+=", "-=", "*=", "/=", "|=", "&=", "^=", "www", "0x0", "0xF", "1x1", "fi", "fl", "ff",
+];
+
 /// The 95 printable ASCII glyphs of a monospace font at one size.
 #[derive(Clone, Debug, PartialEq)]
 pub struct MonoTable {
@@ -123,33 +132,59 @@ pub struct MonoTable {
 }
 
 impl MonoTable {
-    /// Probes `style`'s font by laying out the printable ASCII characters: a table when they shape
-    /// to one run of 95 glyphs, one per char, all with the same advance (a monospace font without
-    /// ligatures among them); `None` otherwise (the general path then serves every line).
+    /// Probes `style`'s font (with its `features`): a table when every printable ASCII character
+    /// shapes alone to one glyph of one shared advance, and shaping them together, and together in
+    /// [`LIGATURE_PROBES`], changes none of those glyphs. A font whose ASCII shapes contextually
+    /// with these features (a code font's `calt`/`liga` ligatures, as JetBrains Mono's `<=>`) gets
+    /// `None`: the general path then serves every line, ligatures included. The glyph ids come
+    /// from each character shaped alone, so a contextual substitution the probes miss draws the
+    /// plain glyph, never a piece of a ligature.
     pub fn probe(text: &mut TextSystem, style: &TextStyle) -> Option<MonoTable> {
-        let probe: String = (b' '..=b'~').map(char::from).collect();
         let mut st = style.clone();
         st.wrap = false;
-        let layout = text.layout(&RichText::plain(probe, st), None);
-        let [run] = layout.runs() else { return None };
-        let g = &run.run.glyphs;
-        if g.len() != 95 || run.range != (0..95) {
-            return None;
+        let mut shape = |s: &str| text.layout(&RichText::plain(s, st.clone()), None);
+        // each character alone: its glyph, and the shared advance
+        let mut glyphs = [0u32; 95];
+        let mut advance = 0.0f32;
+        for (i, c) in (b' '..=b'~').map(char::from).enumerate() {
+            let layout = shape(&c.to_string());
+            let [run] = layout.runs() else { return None };
+            let [gl] = run.run.glyphs[..] else {
+                return None;
+            };
+            if i == 0 {
+                advance = run.run.advance;
+            } else if (run.run.advance - advance).abs() > 0.01 {
+                return None;
+            }
+            glyphs[i] = gl.id;
         }
-        let advance = run.run.advance / 95.0;
         if advance <= 0.0 {
             return None;
         }
-        for (i, gl) in g.iter().enumerate() {
-            if (gl.x - i as f32 * advance).abs() > 0.01 || gl.y != 0.0 {
+        // together: the same glyphs at column x
+        let all: String = (b' '..=b'~').map(char::from).collect();
+        let together = |layout: &skelter_text::TextLayout, s: &str| -> bool {
+            let [run] = layout.runs() else { return false };
+            let g = &run.run.glyphs;
+            g.len() == s.len()
+                && run.range == (0..s.len())
+                && g.iter().zip(s.bytes()).enumerate().all(|(i, (gl, b))| {
+                    gl.id == glyphs[(b - b' ') as usize]
+                        && (gl.x - i as f32 * advance).abs() <= 0.01
+                        && gl.y == 0.0
+                })
+        };
+        let layout = shape(&all);
+        if !together(&layout, &all) {
+            return None;
+        }
+        for &p in LIGATURE_PROBES {
+            if !together(&shape(p), p) {
                 return None;
             }
         }
-        let mut glyphs = [0u32; 95];
-        for (i, gl) in g.iter().enumerate() {
-            glyphs[i] = gl.id;
-        }
-        let r = &run.run;
+        let r = &layout.runs()[0].run;
         Some(MonoTable {
             font: r.font,
             size: r.size,
@@ -306,6 +341,22 @@ impl LineShaper {
         self.style.size = size;
         self.mono = MonoTable::probe(&mut self.text, &self.style);
         self.cache.clear();
+    }
+
+    /// The editor font's CSS `font-feature-settings` changed ([`crate::EditorTheme::font_features`]):
+    /// both paths and the fast path's probe use them.
+    pub fn set_features(&mut self, features: &str) {
+        if self.style.features == features {
+            return;
+        }
+        self.style.features = features.to_owned();
+        self.mono = MonoTable::probe(&mut self.text, &self.style);
+        self.cache.clear();
+    }
+
+    /// The CSS `font-feature-settings` lines are shaped with.
+    pub fn features(&self) -> &str {
+        &self.style.features
     }
 
     /// Device pixels per point (part of the cache key: glyph sizes are per ppem).

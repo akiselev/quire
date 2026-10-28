@@ -53,4 +53,4 @@ pub use editor::{
 };
 pub use keymap::{Keymap, OperatingSystem};
 pub use scene::{EditorScene, RunSink};
-pub use theme::EditorTheme;
+pub use theme::{EditorTheme, LIGATURES_OFF};

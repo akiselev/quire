@@ -341,7 +341,8 @@ impl SkelterEditor {
         theme: EditorTheme,
         options: EditorOptions,
     ) -> Self {
-        let shaper = LineShaper::new(fonts, &theme.font_family, theme.font_size);
+        let mut shaper = LineShaper::new(fonts, &theme.font_family, theme.font_size);
+        shaper.set_features(&theme.font_features);
         SkelterEditor {
             theme,
             options,
@@ -433,6 +434,7 @@ impl SkelterEditor {
         view.refresh_find(doc);
         self.shaper
             .set_font(&self.theme.font_family, self.theme.font_size);
+        self.shaper.set_features(&self.theme.font_features);
         self.shaper.set_scale(scale);
         self.shaper.set_tab_size(doc.config().tab_size);
         let column = self.shaper.column_width();

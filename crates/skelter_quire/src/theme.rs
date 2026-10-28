@@ -7,6 +7,9 @@
 use skelter_base::color::Color;
 use skelter_base::time::Span;
 
+/// [`EditorTheme::font_features`] with ligatures off (VS Code `editor.fontLigatures: false`).
+pub const LIGATURES_OFF: &str = "\"liga\" 0, \"calt\" 0";
+
 /// Colours and font of one editor.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EditorTheme {
@@ -14,6 +17,11 @@ pub struct EditorTheme {
     pub font_family: String,
     /// Points.
     pub font_size: f32,
+    /// CSS `font-feature-settings` of the editor font. The default turns ligatures off as VS
+    /// Code's `editor.fontLigatures: false` (its default) does: `"liga" 0, "calt" 0`. Empty keeps
+    /// the font's defaults (a code font's ligatures on); lines then leave the ASCII fast path when
+    /// the font ligates ([`crate::shape::MonoTable::probe`]).
+    pub font_features: String,
     /// Line height as a multiple of the font size.
     pub line_height: f32,
     pub background: Color,
@@ -65,6 +73,7 @@ impl EditorTheme {
         EditorTheme {
             font_family: "monospace".into(),
             font_size: 13.0,
+            font_features: LIGATURES_OFF.into(),
             line_height: 1.4,
             background: pick(rgb(30, 30, 30), rgb(255, 255, 255)),
             foreground: fg,
