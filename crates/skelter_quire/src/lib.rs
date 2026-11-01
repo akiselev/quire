@@ -26,6 +26,7 @@
 //! | [`layers`] | the compositor layers and fast commits |
 //! | [`ime`] | the text-input client |
 //! | [`kind`] | the `code-editor` kind |
+//! | [`kind_support`] | the kind's mechanics, for hosts with their own `code-editor` kind |
 //! | [`keymap`], [`chord`], [`command`] | VS Code keybindings over skelter keys |
 
 pub use quire_core;
@@ -39,6 +40,7 @@ pub mod height;
 pub mod ime;
 pub mod keymap;
 pub mod kind;
+pub mod kind_support;
 pub mod layers;
 pub mod lines;
 pub mod scene;

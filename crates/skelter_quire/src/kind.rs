@@ -18,21 +18,19 @@ use std::sync::Arc;
 
 use quire_core::{Document, EditorView};
 use skelter_base::change::ChangeClass;
-use skelter_base::geom::{Affine, Point, Rect, RoundedRect, Vec2};
-use skelter_base::ids::{NodeId, RunId};
-use skelter_base::input::{InputPurpose, TextInputClient, Utf16Range};
-use skelter_base::text::GlyphRun;
+use skelter_base::geom::{Affine, Point};
+use skelter_base::ids::NodeId;
+use skelter_base::input::TextInputClient;
 use skelter_base::time::Time;
 use skelter_core::{
-    A11yCx, Event, EventCx, FocusReason, Handled, Kind, KindId, KindRegistry, KindSpec, MeasureCx,
-    NodeView, PrepareCx, PropCx, PropError, PropId, PropSpec, RecordCx, RegistryError, SignalFlags,
+    A11yCx, Event, EventCx, Handled, Kind, KindId, KindRegistry, KindSpec, MeasureCx, NodeView,
+    PrepareCx, PropCx, PropError, PropId, PropSpec, RecordCx, RegistryError, SignalFlags,
     SignalSpec, Value, ValueType,
 };
 
 use crate::editor::{EditorEvent, EditorOptions, SkelterEditor};
 use crate::ime::ImeTarget;
-use crate::layers::translate_prim;
-use crate::scene::RunSink;
+use crate::kind_support::{ImeHost, input_effects, record_scene, route_event, schedule_wake};
 use crate::theme::EditorTheme;
 
 /// What `code-editor` nodes share, lent through `Document::set_service`.
@@ -160,15 +158,6 @@ impl std::fmt::Debug for CodeEditorKind {
     }
 }
 
-/// [`RunSink`] over a node's [`RecordCx`].
-struct CxSink<'c, 'a>(&'c mut RecordCx<'a>);
-
-impl RunSink for CxSink<'_, '_> {
-    fn add_run(&mut self, run: Arc<GlyphRun>) -> RunId {
-        self.0.add_run(run)
-    }
-}
-
 impl CodeEditorKind {
     /// Registers the kind under its own tag, `code-editor` (as `reg.register::<CodeEditorKind>()`).
     pub fn register(reg: &mut KindRegistry) -> Result<KindId, RegistryError> {
@@ -247,19 +236,6 @@ impl CodeEditorKind {
     fn with<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> Option<R> {
         self.inner.borrow_mut().as_mut().map(f)
     }
-
-    fn ime<R>(&self, f: impl FnOnce(&mut ImeTarget) -> R) -> Option<R> {
-        let mut slot = self.inner.borrow_mut();
-        let i = slot.as_mut()?;
-        let mut doc = i.doc.borrow_mut();
-        let mut t = ImeTarget {
-            editor: &mut i.editor,
-            doc: &mut doc,
-            view: &mut i.view,
-            to_window: i.to_window,
-        };
-        Some(f(&mut t))
-    }
 }
 
 impl Kind for CodeEditorKind {
@@ -329,43 +305,7 @@ impl Kind for CodeEditorKind {
         let mut slot = self.inner.borrow_mut();
         let Some(i) = slot.as_mut() else { return };
         let doc = i.doc.borrow();
-        let sc = i.editor.record(&doc, &mut i.view, &mut CxSink(cx), None);
-        let caret_on = i.editor.caret_visible(i.now);
-        let put = |cx: &mut RecordCx, list: &skelter_base::display::DisplayList, d: Vec2| {
-            for p in &list.items {
-                let (q, ink) = translate_prim(p, d);
-                cx.push(q, ink);
-            }
-        };
-        put(cx, &sc.background, Vec2::ZERO);
-        let content_d = Vec2::new(
-            sc.text_origin.x - sc.scroll.x,
-            sc.text_origin.y - sc.scroll.y,
-        );
-        cx.push_clip(RoundedRect {
-            rect: sc.text_clip,
-            radii: Default::default(),
-        });
-        put(cx, &sc.content, content_d);
-        if caret_on && let Some((p, ink)) = sc.caret_prim() {
-            let (q, ink2) = translate_prim(&p, content_d);
-            let _ = ink;
-            cx.push(q, ink2);
-        }
-        cx.pop_clip();
-        if sc.gutter_width > 0.0 {
-            cx.push_clip(RoundedRect {
-                rect: Rect::new(0.0, 0.0, sc.gutter_width, sc.text_clip.max.y),
-                radii: Default::default(),
-            });
-            put(
-                cx,
-                &sc.gutter,
-                Vec2::new(0.0, sc.text_origin.y - sc.scroll.y),
-            );
-            cx.pop_clip();
-        }
-        put(cx, &sc.overlay, Vec2::ZERO);
+        record_scene(cx, &mut i.editor, &doc, &mut i.view, i.now);
     }
 
     fn event(&mut self, cx: &mut EventCx, ev: &Event) -> Handled {
@@ -380,65 +320,17 @@ impl Kind for CodeEditorKind {
             .with(|i| {
                 i.now = now;
                 i.to_window = Affine::translate(origin.x, origin.y);
-                i.editor.set_now(now);
                 let mut doc = i.doc.borrow_mut();
-                let (e, view) = (&mut i.editor, &mut i.view);
-                match ev {
-                    Event::PointerDown(p) => {
-                        e.focus(&doc, view, true);
-                        e.pointer_down(&mut doc, view, p)
-                    }
-                    Event::PointerMove(p) => e.pointer_move(&mut doc, view, p),
-                    Event::PointerUp(p) => e.pointer_up(&mut doc, view, p),
-                    Event::PointerCancel => e.pointer_up(&mut doc, view, &cancel_input()),
-                    Event::HoverLeave => {
-                        e.pointer_leave(&doc, view);
-                        false
-                    }
-                    Event::Wheel(w) => e.wheel(&doc, view, w.delta, w.modifiers),
-                    Event::Key(k) => e.key(&mut doc, view, k),
-                    Event::Ime(m) => {
-                        e.ime(&mut doc, view, m);
-                        true
-                    }
-                    Event::FocusIn(_) => {
-                        e.focus(&doc, view, true);
-                        false
-                    }
-                    Event::FocusOut => {
-                        e.focus(&doc, view, false);
-                        false
-                    }
-                    Event::Timer => {
-                        e.tick(&mut doc, view, now);
-                        true
-                    }
-                    Event::A11y(req) => a11y_action(e, &mut doc, view, req),
-                    Event::Click(_) | Event::HoverEnter => false,
-                    // raw motion, gestures and per-child a11y requests: nothing for a text editor
-                    _ => false,
-                }
+                route_event(&mut i.editor, &mut doc, &mut i.view, ev, now)
             })
             .unwrap_or(false);
-        if matches!(ev, Event::PointerDown(_)) {
-            cx.focus(FocusReason::Pointer);
-            cx.capture_pointer();
-        }
-        if matches!(ev, Event::PointerUp(_) | Event::PointerCancel) {
-            cx.release_pointer();
-        }
-        if matches!(ev, Event::PointerMove(_) | Event::HoverEnter) {
-            cx.set_cursor(skelter_base::cursor::CursorIcon::Text);
-        }
+        input_effects(cx, ev);
         // the next wake-up: hover and hint deadlines, the caret's next blink
         let next = self.with(|i| {
             let mut doc = i.doc.borrow_mut();
             i.editor.tick(&mut doc, &mut i.view, now)
         });
-        match next.flatten() {
-            Some(t) => cx.wake_at(t),
-            None => cx.cancel_wake(),
-        }
+        schedule_wake(cx, next.flatten());
         self.flush(cx);
         cx.request_paint();
         if handled { Handled::Yes } else { Handled::No }
@@ -469,83 +361,19 @@ impl Kind for CodeEditorKind {
 /// Documents up to this size expose their text as the accessible value.
 pub const A11Y_VALUE_MAX: usize = 64 * 1024;
 
-fn cancel_input() -> skelter_core::PointerInput {
-    skelter_core::PointerInput {
-        pointer: 0,
-        kind: skelter_base::event::PointerType::Mouse,
-        button: None,
-        buttons: 0,
-        pos: Point::ZERO,
-        local: Point::ZERO,
-        modifiers: Default::default(),
-        pressure: 0.0,
-        count: 0,
-        history: Vec::new(),
+impl ImeHost for CodeEditorKind {
+    fn with_ime<R>(&self, f: impl FnOnce(&mut ImeTarget<'_>) -> R) -> Option<R> {
+        let mut slot = self.inner.borrow_mut();
+        let i = slot.as_mut()?;
+        let mut doc = i.doc.borrow_mut();
+        let mut t = ImeTarget {
+            editor: &mut i.editor,
+            doc: &mut doc,
+            view: &mut i.view,
+            to_window: i.to_window,
+        };
+        Some(f(&mut t))
     }
 }
 
-/// `SetValue` replaces the text; `ReplaceSelectedText` the selection (egui_quire's
-/// `handle_accesskit_actions`).
-fn a11y_action(
-    e: &mut SkelterEditor,
-    doc: &mut Document,
-    view: &mut EditorView,
-    req: &skelter_base::accesskit::ActionRequest,
-) -> bool {
-    use skelter_base::accesskit::{Action, ActionData};
-    if e.options.read_only {
-        return false;
-    }
-    let Some(ActionData::Value(v)) = &req.data else {
-        return false;
-    };
-    let len = doc.text().len_bytes();
-    let range = match req.action {
-        Action::SetValue => 0..len,
-        Action::ReplaceSelectedText => view.selection().primary().range(),
-        _ => return false,
-    };
-    let author = e.options.author;
-    if let Some(a) = crate::editor::replace_range(doc, view, range, v, false, author) {
-        e.note_applied(a);
-    }
-    true
-}
-
-impl TextInputClient for CodeEditorKind {
-    fn text_for_range(&self, range: Utf16Range) -> Option<String> {
-        self.ime(|t| t.text_for_range(range)).flatten()
-    }
-    fn selected_range(&self) -> Option<Utf16Range> {
-        self.ime(|t| t.selected_range()).flatten()
-    }
-    fn marked_range(&self) -> Option<Utf16Range> {
-        self.ime(|t| t.marked_range()).flatten()
-    }
-    fn replace_text_in_range(&mut self, range: Option<Utf16Range>, text: &str) {
-        self.ime(|t| t.replace_text_in_range(range, text));
-    }
-    fn replace_and_mark_text_in_range(
-        &mut self,
-        range: Option<Utf16Range>,
-        text: &str,
-        new_selected: Option<Utf16Range>,
-    ) {
-        self.ime(|t| t.replace_and_mark_text_in_range(range, text, new_selected));
-    }
-    fn unmark_text(&mut self) {
-        self.ime(|t| t.unmark_text());
-    }
-    fn bounds_for_range(&self, range: Utf16Range) -> Option<Rect> {
-        self.ime(|t| t.bounds_for_range(range)).flatten()
-    }
-    fn character_index_for_point(&self, p: Point) -> Option<usize> {
-        self.ime(|t| t.character_index_for_point(p)).flatten()
-    }
-    fn surrounding_text(&self, max_bytes: usize) -> Option<(String, std::ops::Range<usize>)> {
-        self.ime(|t| t.surrounding_text(max_bytes)).flatten()
-    }
-    fn purpose(&self) -> InputPurpose {
-        InputPurpose::Code
-    }
-}
+crate::text_input_client!(CodeEditorKind);
