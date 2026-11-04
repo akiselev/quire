@@ -17,7 +17,7 @@ This is an opt-in inline replacement seam. It does not implement arbitrary-heigh
 a cross-block selection engine, or an egui projection renderer. Multi-line replacements remain data
 only and the Skelter view retains source there. These are future generic work, outside scalar v1.
 
-Validation: named-package rustfmt; 395 passing tests across quire-core and skelter_quire, including
+Validation: named-package rustfmt; 396 passing tests across quire-core and skelter_quire, including
 all their integration and doc-test targets. Command from this worktree:
 
 ```sh
@@ -35,3 +35,17 @@ Full Quire check.sh, egui integration and master landing remain unperformed. Ini
 /home; inactive caches were cleaned at the user's request. The root filesystem containing the default
 target is still below the 25 GB full-check start requirement. Keep the lane on its branch until the
 full gate and integration workflow can run. No source was changed in Svelters or Cadatomic.
+
+
+## Optimized provider scheduling repair
+
+Inactive hover/inlay providers could report pending work or a zero deadline in the optimized native
+harness, keeping the host commit barrier busy. Timer aggregation now matches explicit optional timer
+states and only schedules real deadlines. An inactive-provider regression runs in both build profiles;
+Scratchpad's optimized native input/undo harness now settles and passes. A compiler root cause was not
+established; do not infer one from the release/debug difference.
+
+Additional validation: 75 optimized tests (inactive deadline, hover, inlay hints and parameter hints),
+and all-target Clippy with warnings denied for quire-core and skelter_quire. The complete named-package
+suite above passed again with 396 tests. Scratchpad carries a source patch from the base revision for
+reconstructing this private integration lane; it does not depend on a master landing.

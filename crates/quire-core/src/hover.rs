@@ -382,6 +382,22 @@ pub(crate) enum Timer {
 }
 
 impl Timer {
+    pub(crate) fn earliest<const N: usize>(timers: [Option<Self>; N]) -> Option<u64> {
+        let mut next: Option<u64> = None;
+        for timer in timers {
+            if let Some(Self::At(at)) = timer {
+                next = Some(next.map_or(at, |previous| previous.min(at)));
+            }
+        }
+        next
+    }
+
+    pub(crate) fn needs_stamp<const N: usize>(timers: [Option<Self>; N]) -> bool {
+        timers
+            .into_iter()
+            .any(|timer| matches!(timer, Some(Self::After(_))))
+    }
+
     pub(crate) fn new(now: Option<u64>, delay: u64) -> Self {
         match now {
             Some(n) => Timer::At(n + delay),
@@ -490,27 +506,20 @@ impl HoverState {
 
     /// The earliest deadline (host clock, ms) at which [`HoverState::tick`] has work.
     pub fn next_deadline(&self) -> Option<u64> {
-        [
+        Timer::earliest([
             self.op.async_timer,
             self.op.sync_timer,
             self.op.loading_timer,
-        ]
-        .iter()
-        .flatten()
-        .filter_map(Timer::at)
-        .min()
+        ])
     }
 
     /// Whether a timer waits to be placed on the clock (call [`HoverState::tick`]).
     pub fn needs_tick(&self) -> bool {
-        [
+        Timer::needs_stamp([
             self.op.async_timer,
             self.op.sync_timer,
             self.op.loading_timer,
-        ]
-        .iter()
-        .flatten()
-        .any(|t| t.at().is_none())
+        ])
     }
 
     /// Takes what the hover wants from the host.

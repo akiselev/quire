@@ -615,20 +615,27 @@ impl EditorView {
     /// The earliest host time at which [`EditorView::tick`] has work; `Some(0)` when a timer
     /// waits to be placed on the clock.
     pub fn next_deadline(&self) -> Option<u64> {
-        if self.hover.needs_tick()
-            || self.parameter_hints.needs_tick()
-            || self.inlay_hints.needs_tick()
-        {
-            return Some(0);
+        let providers = [
+            (self.hover.needs_tick(), self.hover.next_deadline()),
+            (
+                self.parameter_hints.needs_tick(),
+                self.parameter_hints.next_deadline(),
+            ),
+            (
+                self.inlay_hints.needs_tick(),
+                self.inlay_hints.next_deadline(),
+            ),
+        ];
+        let mut next: Option<u64> = None;
+        for (needs_tick, deadline) in providers {
+            if needs_tick {
+                return Some(0);
+            }
+            if let Some(at) = deadline {
+                next = Some(next.map_or(at, |previous| previous.min(at)));
+            }
         }
-        [
-            self.hover.next_deadline(),
-            self.parameter_hints.next_deadline(),
-            self.inlay_hints.next_deadline(),
-        ]
-        .into_iter()
-        .flatten()
-        .min()
+        next
     }
 
     /// VS Code `ParameterHintsModel.onDidType`, after a `type` command through this view.
@@ -860,4 +867,22 @@ fn prune_auto_closed(auto_closed: &mut Vec<AutoClosed>, sel: &Selection) {
                 .iter()
                 .any(|r| r.head > a.open_start && r.head <= a.close.start)
     });
+}
+
+#[cfg(test)]
+mod deadline_tests {
+    use super::*;
+    use crate::EditorConfig;
+    #[test]
+    fn inactive_providers_have_no_deadline_after_tick() {
+        let doc = Document::new("", EditorConfig::default());
+        let mut view = EditorView::new(&doc);
+        for now in 0..10 {
+            view.tick(&doc, now);
+            assert!(!view.hover().needs_tick());
+            assert!(!view.parameter_hints().needs_tick());
+            assert!(!view.inlay_hints().needs_tick());
+            assert_eq!(view.next_deadline(), None);
+        }
+    }
 }

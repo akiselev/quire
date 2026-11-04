@@ -399,21 +399,14 @@ impl InlayHintsState {
 
     /// The earliest deadline (host clock, ms) at which [`InlayHintsState::tick`] has work.
     pub fn next_deadline(&self) -> Option<u64> {
-        [self.scheduler, self.cursor_timer]
-            .iter()
-            .flatten()
-            .filter_map(Timer::at)
-            .min()
+        Timer::earliest([self.scheduler, self.cursor_timer])
     }
 
     /// Whether a timer waits to be placed on the clock (call [`InlayHintsState::tick`]).
     pub fn needs_tick(&self) -> bool {
         self.content_changed
             || self.session.is_none()
-            || [self.scheduler, self.cursor_timer]
-                .iter()
-                .flatten()
-                .any(|t| t.at().is_none())
+            || Timer::needs_stamp([self.scheduler, self.cursor_timer])
     }
 
     /// `scheduler.schedule(delay)`: (re)starts the request timer.

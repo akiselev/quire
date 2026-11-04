@@ -5,8 +5,10 @@
 - Branch `scratchpad-v1`, based on `f2208478faa1466061af03374639ed40e9842eff`.
   Generic source-backed replacement projections and a committed-transaction outbox support Scratchpad.
   Source text, commands and undo remain canonical. No product calculation semantics enter Quire.
-- `quire-core` and `skelter_quire` tests: **395 passed**, including Unicode/stale-range validation,
+- `quire-core` and `skelter_quire` tests: **396 passed**, including Unicode/stale-range validation,
   live mapping across 99 edits, invalidation, independent view reveal and IME preedit fallback.
+- Optimized inactive-provider timer scheduling is repaired; 75 release provider/deadline tests and
+  named-package all-target Clippy pass. Scratchpad release input/undo now settles and passes.
 - Full workspace `scripts/check.sh` has not run. Root filesystem is below its documented 25 GB
   start threshold. This branch has not been merged or pushed to master.
 - Details and exact test invocation: `docs/handoff/scratchpad-v1.md`. Existing milestone history below
