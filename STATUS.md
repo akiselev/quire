@@ -1,18 +1,24 @@
 # quire status
 
-## Handoff (2026-11-04, scratchpad-v1 branch)
+## Handoff (2026-11-04, Scratchpad integration)
 
-- Branch `scratchpad-v1`, based on `f2208478faa1466061af03374639ed40e9842eff`.
-  Generic source-backed replacement projections and a committed-transaction outbox support Scratchpad.
+- Scratchpad's source-backed projection and opt-in committed-receipt integration is complete locally.
   Source text, commands and undo remain canonical. No product calculation semantics enter Quire.
-- `quire-core` and `skelter_quire` tests: **396 passed**, including Unicode/stale-range validation,
-  live mapping across 99 edits, invalidation, independent view reveal and IME preedit fallback.
-- Optimized inactive-provider timer scheduling is repaired; 75 release provider/deadline tests and
-  named-package all-target Clippy pass. Scratchpad release input/undo now settles and passes.
-- Full workspace `scripts/check.sh` has not run. Root filesystem is below its documented 25 GB
-  start threshold. This branch has not been merged or pushed to master.
-- Details and exact test invocation: `docs/handoff/scratchpad-v1.md`. Existing milestone history below
-  is retained. Svelters source was not changed.
+- Full stock `scripts/check.sh` **passed** on source `4bffa55`: formatting, workspace/all-target/
+  all-feature Clippy with warnings denied, **609 tests passed / 0 failed / 6 existing manual probes
+  ignored**, wasm32 core/text builds and all architectural/dependency checks.
+- Existing 75 optimized provider/deadline tests and Scratchpad release input/undo evidence remain
+  recorded in the lane handoff. The inactive-provider timer repair is retained.
+- Receipt capture is now `Option<Vec<(NodeId, Applied)>>`, default `None`: existing event-only hosts
+  retain no new records. Enabled hosts must drain each checkpoint. Kind tests verify exact delivery
+  and no redelivery; projection validation tests verify failed updates preserve accepted presentation.
+- The coordinating Scratchpad session reviewed the generic APIs and authorized local integration under
+  the user's explicit request. Local master is fast-forwarded from clean `f220847` to this lane after
+  the full gate. No external push; origin/master stays at its fetched base.
+- Full gate used target and build paths on /home to satisfy the 25 GiB start threshold. An interrupted
+  first attempt is preserved separately; the unchanged rerun completed with exit 0. No sibling source
+  or dependency lockfile changed. Details, exact commands and remaining platform boundaries:
+  `docs/handoff/scratchpad-v1.md`. Existing milestone history below is retained.
 
 ## Milestones
 
