@@ -134,6 +134,33 @@ mod tests {
         assert!(p.entries().is_empty());
     }
     #[test]
+    fn invalid_ranges_leave_the_previous_projection_intact() {
+        let mut p = Projections::default();
+        let text = Text::from("éabc");
+        let replacement = |id, range| Replacement {
+            id,
+            range,
+            text: "value".into(),
+        };
+        p.replace(Version(0), Version(0), &text, vec![replacement(7, 2..3)])
+            .unwrap();
+        let before = p.entries().to_vec();
+        let generation = p.generation();
+        for entries in [
+            vec![replacement(1, 0..3), replacement(2, 2..4)],
+            vec![replacement(1, 0..2), replacement(1, 2..3)],
+            vec![replacement(1, 2..2)],
+            vec![replacement(1, 2..9)],
+        ] {
+            assert!(p.replace(Version(0), Version(0), &text, entries).is_err());
+            assert_eq!(p.entries(), before);
+            assert_eq!(p.generation(), generation);
+        }
+        assert_eq!(p.map_source(4, false), 8);
+        assert_eq!(p.map_display(8, false), 4);
+    }
+
+    #[test]
     fn stale_overlap_and_unicode_rejected() {
         let mut p = Projections::default();
         let text = Text::from("éabc");

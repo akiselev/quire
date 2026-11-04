@@ -61,6 +61,15 @@ fn typed(k: Key, text: &str, t_ms: u64, seq: u64) -> InputEnvelope {
 
 #[test]
 fn records_types_and_reports() {
+    records_types_and_reports_with_capture(false);
+}
+
+#[test]
+fn committed_receipts_are_opt_in_and_delivered_once() {
+    records_types_and_reports_with_capture(true);
+}
+
+fn records_types_and_reports_with_capture(capture: bool) {
     let mut reg = KindRegistry::new();
     let boxed = reg.register::<BoxKind>().expect("box");
     let editor = reg.register::<CodeEditorKind>().expect("code-editor");
@@ -68,6 +77,9 @@ fn records_types_and_reports() {
     d.set_text_shaper(Box::new(FixedText));
     let fonts = skelter_text::FontStore::new(skelter_text::FontConfig::testing());
     let mut host = QuireHost::new(fonts);
+    if capture {
+        host.committed = Some(Vec::new());
+    }
     host.theme.font_family = skelter_text::test_fonts::SANS_FAMILY.into();
     let buf = host.insert_buffer(
         "main",
@@ -130,6 +142,7 @@ fn records_types_and_reports() {
             .events,
     );
     assert_eq!(d.focused(W), Some(n));
+    let before = buf.borrow().version();
     events.extend(d.dispatch(&typed(Key::X, "x", 1_100, 3)).events);
     assert!(
         buf.borrow().text().to_string().contains('x'),
@@ -155,6 +168,35 @@ fn records_types_and_reports() {
         "{:?}",
         host.events
     );
+    if capture {
+        let receipts = std::mem::take(host.committed.as_mut().unwrap());
+        let changed: Vec<_> = receipts
+            .iter()
+            .filter(|(_, applied)| applied.changed_text())
+            .collect();
+        assert_eq!(changed.len(), 1, "one receipt for one typed edit");
+        let (node, applied) = changed[0];
+        assert_eq!(*node, n);
+        assert_eq!(applied.prev_version, before);
+        assert_eq!(applied.version, buf.borrow().version());
+        assert_eq!(applied.changes.edits().len(), 1);
+        assert_eq!(applied.changes.edits()[0].insert, "x");
+        // A subsequent frame can repaint or blink, but must never redeliver an edit.
+        let _ = d.frame(W, Time(1_200_000_000));
+        assert!(
+            d.service::<QuireHost>()
+                .unwrap()
+                .committed
+                .as_ref()
+                .unwrap()
+                .is_empty()
+        );
+    } else {
+        assert!(
+            host.committed.is_none(),
+            "legacy hosts retain no unapplied receipts"
+        );
+    }
 }
 
 /// A host's own kind under the tag `code-editor` (cadatomic's gallery registers quire's editor as

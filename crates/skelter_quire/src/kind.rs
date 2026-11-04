@@ -3,6 +3,7 @@
 //! The host registers [`CodeEditorKind`] and lends the kinds a [`QuireHost`] service: the font store,
 //! the theme, the documents by name (a node shows the one its `buffer` prop names; several nodes
 //! may show one document) and the outbox of [`EditorEvent`]s the host drains each frame.
+//! Hosts may also opt into committed transaction receipts through [`QuireHost::committed`].
 //!
 //! A kind records one display list per node, so here the editor's four lists are composed into
 //! it: the content under a clip, translated by the scroll offset, the gutter by its y offset, the
@@ -45,7 +46,10 @@ pub struct QuireHost {
     pub buffers: HashMap<String, Rc<RefCell<Document>>>,
     /// Events of every editor, with the node that produced them; the host drains it.
     pub events: Vec<(NodeId, EditorEvent)>,
-    pub committed: Vec<(NodeId, quire_core::Applied)>,
+    /// Optional committed-transaction outbox, disabled by default for hosts that only consume events.
+    /// Set to `Some(Vec::new())` before editing to capture every applied record exactly once, then
+    /// drain the vector each checkpoint. Capturing does not apply the transactions again.
+    pub committed: Option<Vec<(NodeId, quire_core::Applied)>>,
     /// Device pixels per point of the windows the editors are in.
     pub scale: f32,
 }
@@ -55,6 +59,7 @@ impl std::fmt::Debug for QuireHost {
         f.debug_struct("QuireHost")
             .field("buffers", &self.buffers.keys().collect::<Vec<_>>())
             .field("events", &self.events.len())
+            .field("committed", &self.committed.as_ref().map(Vec::len))
             .field("scale", &self.scale)
             .finish_non_exhaustive()
     }
@@ -68,7 +73,7 @@ impl QuireHost {
             options: EditorOptions::default(),
             buffers: HashMap::new(),
             events: Vec::new(),
-            committed: Vec::new(),
+            committed: None,
             scale: 1.0,
         }
     }
@@ -231,8 +236,9 @@ impl CodeEditorKind {
         let changed = out.applied.iter().any(|a| a.changed_text());
         let selected = !out.applied.is_empty();
         if let Some(host) = cx.service::<QuireHost>() {
-            host.committed
-                .extend(out.applied.into_iter().map(|a| (node, a)));
+            if let Some(committed) = &mut host.committed {
+                committed.extend(out.applied.into_iter().map(|a| (node, a)));
+            }
             host.events
                 .extend(out.events.into_iter().map(|e| (node, e)));
         }
