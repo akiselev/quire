@@ -92,5 +92,7 @@ The coordinating Scratchpad session (`/root`) reviewed and approved the source-b
 Document/apply and DisplayLine seams and the opt-in receipt API under the user's explicit request to
 complete Quire integration. No new default user-facing command was introduced. After the green gate,
 local master is fast-forwarded from the clean `f220847` base to this lane, including this handoff.
-No external push was performed; origin/master remains at the fetched base. No native Windows/macOS
-or real IME/screen-reader acceptance is implied by these Rust regression checks.
+The user subsequently requested publishing the Quire changes. A fresh fetch confirmed origin/master
+still at `f220847`; `git rebase origin/master` reported no changes needed. The publication handoff
+changes documentation only; the previously green source and dependency lockfile are unchanged.
+No native Windows/macOS or real IME/screen-reader acceptance is implied by these Rust regression checks.

@@ -2,7 +2,7 @@
 
 ## Handoff (2026-11-04, Scratchpad integration)
 
-- Scratchpad's source-backed projection and opt-in committed-receipt integration is complete locally.
+- Scratchpad's source-backed projection and opt-in committed-receipt integration is complete and ready for the user-requested publication.
   Source text, commands and undo remain canonical. No product calculation semantics enter Quire.
 - Full stock `scripts/check.sh` **passed** on source `4bffa55`: formatting, workspace/all-target/
   all-feature Clippy with warnings denied, **609 tests passed / 0 failed / 6 existing manual probes
@@ -14,7 +14,9 @@
   and no redelivery; projection validation tests verify failed updates preserve accepted presentation.
 - The coordinating Scratchpad session reviewed the generic APIs and authorized local integration under
   the user's explicit request. Local master is fast-forwarded from clean `f220847` to this lane after
-  the full gate. No external push; origin/master stays at its fetched base.
+  the full gate. The user subsequently requested pushing these changes; origin/master was fetched
+  again and remained at `f220847`, so no source rebase or conflict resolution was necessary.
+  This handoff-only publication commit retains the previously green source unchanged.
 - Full gate used target and build paths on /home to satisfy the 25 GiB start threshold. An interrupted
   first attempt is preserved separately; the unchanged rerun completed with exit 0. No sibling source
   or dependency lockfile changed. Details, exact commands and remaining platform boundaries:
