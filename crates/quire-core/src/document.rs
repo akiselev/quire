@@ -183,6 +183,7 @@ pub struct Document {
     edit_rules: EditRules,
     tokens: TokenStore,
     diagnostics: Diagnostics,
+    projections: crate::projection::Projections,
     saved_at: Option<Version>,
     saved_text: Option<Text>,
     dirty: bool,
@@ -219,6 +220,7 @@ impl Document {
         Document {
             tokens: TokenStore::new(lines),
             diagnostics: Diagnostics::default(),
+            projections: Default::default(),
             saved_at: Some(Version::INITIAL),
             saved_text: Some(text.clone()),
             dirty: false,
@@ -239,6 +241,18 @@ impl Document {
         }
     }
 
+    /// Versioned host presentation data, distinct from source and history.
+    pub fn projections(&self) -> &crate::projection::Projections {
+        &self.projections
+    }
+    pub fn set_projections(
+        &mut self,
+        at: Version,
+        entries: Vec<crate::projection::Replacement>,
+    ) -> Result<(), String> {
+        self.projections
+            .replace(at, self.doc.version(), self.doc.text(), entries)
+    }
     /// The quire-text command rules the config implies (VS Code's word rules with the config's
     /// separators, smart home, the empty-selection clipboard), built once per config.
     pub fn edit_rules(&self) -> &EditRules {
@@ -829,6 +843,7 @@ impl Document {
             None => self.indent_folds = OnceLock::new(),
         }
         self.diagnostics.map(&applied.changes);
+        self.projections.map(&applied.changes, applied.version);
         if matches!(applied.origin, Origin::Reload) {
             self.degraded = crate::large::check(self.doc.text(), &self.config.large_file);
         }

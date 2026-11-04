@@ -480,6 +480,7 @@ impl SkelterEditor {
         view.set_visible_lines(self.visible_lines());
         let key = hash_one((
             doc.version(),
+            doc.projections().generation(),
             view.selection_version(),
             view.folds(),
             view.preedit().map(|p| (&p.text, &p.active)),

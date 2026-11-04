@@ -45,6 +45,7 @@ pub struct QuireHost {
     pub buffers: HashMap<String, Rc<RefCell<Document>>>,
     /// Events of every editor, with the node that produced them; the host drains it.
     pub events: Vec<(NodeId, EditorEvent)>,
+    pub committed: Vec<(NodeId, quire_core::Applied)>,
     /// Device pixels per point of the windows the editors are in.
     pub scale: f32,
 }
@@ -67,6 +68,7 @@ impl QuireHost {
             options: EditorOptions::default(),
             buffers: HashMap::new(),
             events: Vec::new(),
+            committed: Vec::new(),
             scale: 1.0,
         }
     }
@@ -229,6 +231,8 @@ impl CodeEditorKind {
         let changed = out.applied.iter().any(|a| a.changed_text());
         let selected = !out.applied.is_empty();
         if let Some(host) = cx.service::<QuireHost>() {
+            host.committed
+                .extend(out.applied.into_iter().map(|a| (node, a)));
             host.events
                 .extend(out.events.into_iter().map(|e| (node, e)));
         }

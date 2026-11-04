@@ -1,21 +1,16 @@
 # quire status
 
-## Handoff (2026-10-22, wind-down)
+## Handoff (2026-11-04, scratchpad-v1 branch)
 
-- master: TC0 (quire-text, 6f35566), TC0b (fe4919f), P1 part 1 completion and snippets (3b4b15a),
-  licence MIT OR Apache-2.0 restored (2b53b5c). Last full check.sh: 389 pass / 6 ignored (3b4b15a).
-- **Not landed:** P1 part 2, hover and signature help, on branch `p1-hover` at 7fb2955 (base
-  3b4b15a). Filtered tests pass; handoff in that branch's docs/handoff/p1-hover.md. Stopped because
-  free disk fell to 6 GB from other lanes' builds. To land: >= 25 GB free, rebase on master, one
-  check.sh, fast-forward.
-- Decided for P1 part 2 (main-cadatomic): EditorEvent::HoverLinkActivated { href }; parameter-hints
-  retrigger after cancel is "ours (async host provider)"; hover code fences monospace, no colour;
-  no cancellation event.
-- Queued: SnippetSession.merge (14 VSCODE-MAP rows "ours (queued)"), then P1 part 3 inlay hints,
-  part 4 semantic tokens; choice placeholders and snippet variables (todo); TC0 step 5 (widget
-  wrapped motions on VisualLines); F1 off-thread first find.
-- Rules for agents: CLAUDE.md (disk 15 GB, check.sh 25 GB and once per lane, never pkill by
-  pattern, no credentials in commits).
+- Branch `scratchpad-v1`, based on `f2208478faa1466061af03374639ed40e9842eff`.
+  Generic source-backed replacement projections and a committed-transaction outbox support Scratchpad.
+  Source text, commands and undo remain canonical. No product calculation semantics enter Quire.
+- `quire-core` and `skelter_quire` tests: **395 passed**, including Unicode/stale-range validation,
+  live mapping across 99 edits, invalidation, independent view reveal and IME preedit fallback.
+- Full workspace `scripts/check.sh` has not run. Root filesystem is below its documented 25 GB
+  start threshold. This branch has not been merged or pushed to master.
+- Details and exact test invocation: `docs/handoff/scratchpad-v1.md`. Existing milestone history below
+  is retained. Svelters source was not changed.
 
 ## Milestones
 

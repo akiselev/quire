@@ -45,11 +45,25 @@ pub struct DisplayLine {
     pub pieces: Vec<Piece>,
     /// The model line's length.
     pub model_len: usize,
+    pub replacements: Vec<(Range<usize>, Range<usize>)>,
 }
 
 impl DisplayLine {
     /// The display byte of model byte `col` (before pieces at `col`; after a preedit at `col`).
     pub fn to_display(&self, col: usize) -> usize {
+        if !self.replacements.is_empty() {
+            let mut shift = 0isize;
+            for (model, display) in &self.replacements {
+                if col < model.start {
+                    break;
+                }
+                if col < model.end {
+                    return display.start;
+                }
+                shift += display.len() as isize - model.len() as isize;
+            }
+            return col.min(self.model_len).saturating_add_signed(shift);
+        }
         let mut d = col.min(self.model_len);
         for p in &self.pieces {
             if p.col < col || (p.col == col && p.kind == PieceKind::Preedit) {
@@ -61,6 +75,19 @@ impl DisplayLine {
 
     /// The model byte of display byte `d` (inside a piece: the piece's position).
     pub fn to_model(&self, d: usize) -> usize {
+        if !self.replacements.is_empty() {
+            let mut shift = 0isize;
+            for (model, display) in &self.replacements {
+                if d < display.start {
+                    break;
+                }
+                if d < display.end {
+                    return model.start;
+                }
+                shift += display.len() as isize - model.len() as isize;
+            }
+            return d.saturating_add_signed(-shift).min(self.model_len);
+        }
         let mut shift = 0;
         for p in &self.pieces {
             if d < p.display.start {
@@ -167,11 +194,48 @@ pub fn display_line(
         }
     }
     if inject.is_empty() {
+        let end = start + model.len();
+        let reveal = view.focused()
+            && view
+                .selection()
+                .ranges()
+                .iter()
+                .any(|s| s.range().start <= end && s.range().end >= start);
+        if !reveal {
+            let replacements: Vec<_> = doc
+                .projections()
+                .entries()
+                .iter()
+                .filter(|r| r.range.start >= start && r.range.end <= end && !r.text.contains('\n'))
+                .collect();
+            if !replacements.is_empty() {
+                let mut text = String::new();
+                let mut spans = vec![];
+                let mut at = 0;
+                for r in replacements {
+                    let local = r.range.start - start..r.range.end - start;
+                    text.push_str(&model[at..local.start]);
+                    let begin = text.len();
+                    text.push_str(&r.text);
+                    spans.push((local.clone(), begin..text.len()));
+                    at = local.end;
+                }
+                text.push_str(&model[at..]);
+                return DisplayLine {
+                    text,
+                    paints: vec![],
+                    pieces: vec![],
+                    model_len: model.len(),
+                    replacements: spans,
+                };
+            }
+        }
         return DisplayLine {
             text: model.clone(),
             paints,
             pieces: Vec::new(),
             model_len: model.len(),
+            replacements: vec![],
         };
     }
     // stable: hints keep their order, a preedit goes after hints at its position
@@ -222,6 +286,7 @@ pub fn display_line(
         paints: out_paints,
         pieces,
         model_len: model.len(),
+        replacements: vec![],
     }
 }
 
@@ -250,9 +315,43 @@ mod tests {
             paints: Vec::new(),
             pieces: ps,
             model_len: text.len(),
+            replacements: vec![],
         }
     }
 
+    #[test]
+    fn replacements_reveal_source_for_either_view_and_preedit() {
+        use quire_core::{EditorConfig, Selection};
+        let source = "é [[id]] tail\nnext";
+        let mut doc = Document::new(source, EditorConfig::default());
+        doc.set_projections(
+            doc.version(),
+            vec![quire_core::projection::Replacement {
+                id: 1,
+                range: 3..9,
+                text: "42 m".into(),
+            }],
+        )
+        .unwrap();
+        let mut a = EditorView::new(&doc);
+        let mut b = EditorView::new(&doc);
+        let shown = display_line(&doc, &mut a, 0, false);
+        assert_eq!(shown.text, "é 42 m tail");
+        assert_eq!(shown.to_model(5), 3);
+        assert_eq!(shown.to_display(9), 7);
+        b.set_focused(true);
+        b.set_selection(&doc, Selection::single(6, 6));
+        assert_eq!(display_line(&doc, &mut b, 0, false).text, "é [[id]] tail");
+        assert_eq!(display_line(&doc, &mut a, 0, false).text, shown.text);
+        b.set_preedit(Some(quire_core::Preedit {
+            text: "かな".into(),
+            active: Some(0..6),
+        }));
+        let preedit = display_line(&doc, &mut b, 0, false);
+        assert!(preedit.text.contains("かな"));
+        assert!(preedit.replacements.is_empty());
+        assert_eq!(doc.text().to_string(), source);
+    }
     #[test]
     fn positions_map_around_a_hint() {
         // "let x = 1" with ": i32" after x
