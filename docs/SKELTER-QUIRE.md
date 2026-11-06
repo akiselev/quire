@@ -61,12 +61,15 @@ same fields, plus four egui handled inside egui: `CopyText { text }`, `PasteRequ
 - **Find bar**: egui_quire draws its own (two `TextEdit`s). skelter has no text field kind in this
   batch, so the editor emits `FindWidgetRequested` and the host drives `SkelterEditor::set_find`.
 - **AccessKit `TextRun` children**: done (Cradle CQ-2, `a11y.rs`) as skelter-core virtual children.
-  Differences from egui_quire: no live-region announcement when the page shifts (skelter_quire has
-  no localised strings), the page is always 50 lines (skelter has no screen-reader flag), runs are
-  linked previous/next on their visual row (not across a wrapped line's rows), a selection end
-  off the page is clamped to the page's first or last position (egui_quire sets no text
-  selection then), and `SetTextSelection` is not handled (egui_quire does not either). These four
-  differ from ARCH-QUIRE §3.8 and await the user's approval (review Q1) before master.
+  Differences from ARCH-QUIRE §3.8 and egui_quire, approved as interim differences for the
+  skelter view (user, 2026-11-06, "Quire accessibility approved in the interim"; review Q1):
+  (a) no announcement of the line when the page shifts (skelter_quire has no localised strings);
+  (b) the page is always 50 lines (skelter has no screen-reader flag; §3.8 asks for 500 with a
+  screen reader); (c) runs are linked previous/next on their visual row only, not across a
+  wrapped line's rows; (d) a selection end off the page is clamped to the page's first or last
+  position (egui_quire sets no text selection then). Follow-ups: (a) once quire's skelter view
+  gets localised strings, and (b) once skelter reports a screen reader. `SetTextSelection` is not
+  handled (egui_quire does not either).
 - **Hover**: plain text (part contents line by line, no Markdown rendering, no links, no focus/scroll
   commands drawn); the mouse side is simplified (a delayed hover at the position under the pointer,
   no "getting closer" or sticky logic). Inlay-hint tooltips are not drawn.

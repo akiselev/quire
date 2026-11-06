@@ -166,6 +166,10 @@ differences list in `docs/SKELTER-QUIRE.md`; track (a) and (b) as follow-ups for
 reports a screen reader and quire's skelter view gets strings. (c) is arguably the more correct
 reading of AccessKit's `next_on_line`; keep it.
 
+**Q1 answered (user, 2026-11-06, "Quire accessibility approved in the interim", relayed by the
+Cradle batch coordinator):** (a)–(d) approved as documented interim differences; listed in
+`docs/SKELTER-QUIRE.md` with (a) and (b) as follow-ups.
+
 **Coordinator decides (no user approval):**
 
 - `QuireHost.scale` removed (public field). Recommendation: accept, as the lane says; the
