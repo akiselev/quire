@@ -81,5 +81,8 @@ fn an_editor_lays_out_at_its_windows_scale() {
     // the window moves to a screen of scale 2: the editor re-lays out as one created there
     d1.resize_window(w, Size::new(500.0, 400.0), Scale(2.0));
     let moved = glyph_origins(&d1.frame(w, Time(16_000_000)).expect("a commit"), n1);
-    assert_eq!(moved, at_2, "after the scale change the editor draws at scale 2");
+    assert_eq!(
+        moved, at_2,
+        "after the scale change the editor draws at scale 2"
+    );
 }

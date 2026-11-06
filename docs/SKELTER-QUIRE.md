@@ -22,7 +22,7 @@ depends on `quire-text`, `quire-core` (path) and on svelters' `skelter-base`, `s
 | `scene.rs` | Recording into four display lists, one per compositor space: background (local), **content** (content space: current line, find matches, selections, text runs, inlay badges, preedit underline, **diagnostics squiggles as wavy `Line`s**, secondary carets), **gutter** (y-scrolled: diagnostic marks, line numbers, fold chevrons), **overlay** (scrollbars; **suggest list, hover, parameter hints** as popups with clip). The primary caret is returned apart, for the compositor. |
 | `layers.rs` | `EditorLayers`: the editor as four compositor layers (background `Content`, content `Scroll`, gutter `Scroll`, `Overlay`) with box/clip/scroll property nodes. **Scrolling is a compositor offset**: a scroll inside the recorded overscan re-records only the overlay and sends `PropOp::Scroll` / `FastCommit::ScrollOffset`; leaving it re-records. **The caret is a `FastCommit::Caret`** in window space. Run ids per editor (two tables), dropped runs listed per commit. |
 | `ime.rs` | **`TextInputClient`** (`ImeTarget`, `ImeClient`) over a virtual text (the document with the preedit spliced in at the caret), **document-wide UTF-16 offsets**; commit = core `compositionType`, reconversion ranges replaced as one IME input transaction; candidate bounds per range in window space. |
-| `kind.rs` | `code-editor`, a skelter-core `Kind` (props `buffer`, `readonly`, `gutter`; signals `change`, `selectionchange`; role `MultilineTextInput`; focusable). Documents and fonts come from a `QuireHost` service, which also collects the `EditorEvent` outbox. Implements `TextInputClient` itself (skelter-core's `Kind::text_input`). AccessKit: name, value (documents up to 64 KiB), read-only. |
+| `kind.rs` | `code-editor`, a skelter-core `Kind` (props `buffer`, `readonly`, `gutter`; signals `change`, `selectionchange`; role `MultilineTextInput`; focusable). Documents and fonts come from a `QuireHost` service, which also collects the `EditorEvent` outbox. Implements `TextInputClient` itself (skelter-core's `Kind::text_input`). AccessKit: name, value (documents up to 64 KiB), read-only, and `TextRun` virtual children for a page of 50 lines around the caret with the selection in them (`a11y.rs`, Cradle CQ-2; sent again when the text, selection or scroll changes). Lays out at its window's scale (`NodeView::scale`, Cradle CQ-1). |
 | `keymap.rs`, `chord.rs`, `command.rs` | egui_quire's keymap ported to skelter's `Key` (egui-named, so `keybindings.json` notation and the bundled `crates/egui_quire/keymaps/vscode-default.json` are reused unchanged) and `Modifiers` (AltGr kept apart from Ctrl+Alt); an own `OperatingSystem` enum. |
 | `theme.rs` | `EditorTheme` in skelter colours (egui_quire's Dark+/Light+ token palette), font family/size/line height, caret blink timing. |
 
@@ -60,8 +60,11 @@ same fields, plus four egui handled inside egui: `CopyText { text }`, `PasteRequ
 
 - **Find bar**: egui_quire draws its own (two `TextEdit`s). skelter has no text field kind in this
   batch, so the editor emits `FindWidgetRequested` and the host drives `SkelterEditor::set_find`.
-- **AccessKit `TextRun` children** (egui_quire's page of lines around the caret): a kind projects one
-  AccessKit node; the editor exposes name, value (≤ 64 KiB) and read-only only.
+- **AccessKit `TextRun` children**: done (Cradle CQ-2, `a11y.rs`) as skelter-core virtual children.
+  Differences from egui_quire: no live-region announcement when the page shifts (skelter_quire has
+  no localised strings), the page is always 50 lines (skelter has no screen-reader flag), runs are
+  linked previous/next on their visual row (not across a wrapped line's rows), and
+  `SetTextSelection` is not handled (egui_quire does not either).
 - **Hover**: plain text (part contents line by line, no Markdown rendering, no links, no focus/scroll
   commands drawn); the mouse side is simplified (a delayed hover at the position under the pointer,
   no "getting closer" or sticky logic). Inlay-hint tooltips are not drawn.

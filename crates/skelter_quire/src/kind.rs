@@ -133,6 +133,29 @@ struct Inner {
     /// Local → window.
     to_window: Affine,
     now: Time,
+    /// The first line of the accessibility page ([`crate::a11y`]).
+    a11y_page: usize,
+    /// What the accessibility node was last built from: text, selection, scroll.
+    a11y_key: Option<A11yKey>,
+}
+
+/// What the text runs depend on beyond layout (skelter-core re-sends the node after a layout).
+#[derive(Clone, Debug, PartialEq)]
+struct A11yKey {
+    version: quire_core::Version,
+    selection: quire_core::Selection,
+    scroll: (u32, u32),
+}
+
+impl Inner {
+    fn a11y_key(&self) -> A11yKey {
+        let s = self.editor.scroll();
+        A11yKey {
+            version: self.doc.borrow().version(),
+            selection: self.view.selection().clone(),
+            scroll: (s.x.to_bits(), s.y.to_bits()),
+        }
+    }
 }
 
 /// The `code-editor` kind.
@@ -218,6 +241,8 @@ impl CodeEditorKind {
             editor,
             to_window: Affine::IDENTITY,
             now: Time::ZERO,
+            a11y_page: 0,
+            a11y_key: None,
         });
     }
 
@@ -448,6 +473,18 @@ impl Kind for CodeEditorKind {
             Some(t) => cx.wake_at(t),
             None => cx.cancel_wake(),
         }
+        // the text, selection or scroll changed: the runs are sent again (Cradle CQ-2)
+        let a11y_changed = self
+            .with(|i| {
+                let key = i.a11y_key();
+                let changed = i.a11y_key.as_ref() != Some(&key);
+                i.a11y_key = Some(key);
+                changed
+            })
+            .unwrap_or(false);
+        if a11y_changed {
+            cx.request_a11y();
+        }
         self.flush(cx);
         cx.request_paint();
         if handled { Handled::Yes } else { Handled::No }
@@ -459,18 +496,67 @@ impl Kind for CodeEditorKind {
     }
 
     fn a11y(&self, cx: &mut A11yCx) {
+        use skelter_base::accesskit::{self, Action, Role, TextPosition, TextSelection};
         cx.default_a11y();
-        let slot = self.inner.borrow();
-        let Some(i) = slot.as_ref() else { return };
-        let doc = i.doc.borrow();
+        let mut slot = self.inner.borrow_mut();
+        let Some(i) = slot.as_mut() else { return };
+        let doc_rc = i.doc.clone();
+        let doc = doc_rc.borrow();
         let t = doc.text();
-        // the whole value for documents up to a page of text; larger ones expose their name only
-        // (the TextRun projection egui_quire has needs child a11y nodes: docs/SKELTER-QUIRE.md)
+        // the whole value for documents up to a page of text; larger ones expose their name and
+        // the text runs only
         if t.len_bytes() <= A11Y_VALUE_MAX {
             cx.out.set_value(t.to_string());
         }
         if i.editor.options.read_only {
             cx.out.set_read_only();
+        } else {
+            cx.out.add_action(Action::SetValue);
+            cx.out.add_action(Action::ReplaceSelectedText);
+        }
+        // the text as TextRun children for a page around the caret, as egui_quire (Cradle CQ-2)
+        let runs = i.editor.a11y_runs(
+            &doc,
+            &mut i.view,
+            i.a11y_page,
+            skelter_core::a11y::MAX_VIRTUAL_CHILDREN,
+        );
+        i.a11y_page = runs.page_start;
+        let owner = cx.node.id();
+        let id = |k: usize| skelter_core::a11y::virtual_id(owner, k as u32);
+        for (k, r) in runs.runs.iter().enumerate() {
+            let mut n = accesskit::Node::new(Role::TextRun);
+            n.set_text_direction(accesskit::TextDirection::LeftToRight);
+            n.set_bounds(accesskit::Rect {
+                x0: r.rect.min.x as f64,
+                y0: r.rect.min.y as f64,
+                x1: r.rect.max.x as f64,
+                y1: r.rect.max.y as f64,
+            });
+            n.set_value(r.text.clone());
+            n.set_character_lengths(r.lengths.clone());
+            n.set_character_positions(r.positions.clone());
+            n.set_character_widths(r.widths.clone());
+            n.set_word_starts(r.word_starts.clone());
+            if r.chunk > 0 && k > 0 {
+                n.set_previous_on_line(id(k - 1));
+            }
+            if r.chunk + 1 < r.chunks && k + 1 < runs.runs.len() {
+                n.set_next_on_line(id(k + 1));
+            }
+            if cx.add_virtual_child(n).is_none() {
+                break;
+            }
+        }
+        if let (Some(a), Some(f)) = (runs.anchor, runs.focus) {
+            let pos = |(k, c): (usize, usize)| TextPosition {
+                node: id(k),
+                character_index: c,
+            };
+            cx.out.set_text_selection(TextSelection {
+                anchor: pos(a),
+                focus: pos(f),
+            });
         }
     }
 }

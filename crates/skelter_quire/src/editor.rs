@@ -626,7 +626,12 @@ impl SkelterEditor {
         Some(&self.laid[i])
     }
 
-    fn laid_or_layout(&mut self, doc: &Document, view: &mut EditorView, line: usize) -> LaidLine {
+    pub(crate) fn laid_or_layout(
+        &mut self,
+        doc: &Document,
+        view: &mut EditorView,
+        line: usize,
+    ) -> LaidLine {
         match self.laid(line) {
             Some(l) => l.clone(),
             None => self.layout_line(doc, view, line),

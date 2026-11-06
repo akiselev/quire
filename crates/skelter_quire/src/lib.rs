@@ -14,6 +14,7 @@
 //!
 //! | Module | What |
 //! |---|---|
+//! | [`a11y`] | AccessKit text runs for a page of lines around the caret |
 //! | [`theme`] | [`EditorTheme`]: colours, font, caret timing |
 //! | [`cache`] | the two-generation caches and their keys |
 //! | [`shape`] | line shaping: skelter-text per logical line, the ASCII monospace fast path |
@@ -31,6 +32,7 @@
 pub use quire_core;
 pub use skelter_base;
 
+pub mod a11y;
 pub mod cache;
 pub mod chord;
 pub mod command;
