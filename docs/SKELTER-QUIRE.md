@@ -63,8 +63,10 @@ same fields, plus four egui handled inside egui: `CopyText { text }`, `PasteRequ
 - **AccessKit `TextRun` children**: done (Cradle CQ-2, `a11y.rs`) as skelter-core virtual children.
   Differences from egui_quire: no live-region announcement when the page shifts (skelter_quire has
   no localised strings), the page is always 50 lines (skelter has no screen-reader flag), runs are
-  linked previous/next on their visual row (not across a wrapped line's rows), and
-  `SetTextSelection` is not handled (egui_quire does not either).
+  linked previous/next on their visual row (not across a wrapped line's rows), a selection end
+  off the page is clamped to the page's first or last position (egui_quire sets no text
+  selection then), and `SetTextSelection` is not handled (egui_quire does not either). These four
+  differ from ARCH-QUIRE §3.8 and await the user's approval (review Q1) before master.
 - **Hover**: plain text (part contents line by line, no Markdown rendering, no links, no focus/scroll
   commands drawn); the mouse side is simplified (a delayed hover at the position under the pointer,
   no "getting closer" or sticky logic). Inlay-hint tooltips are not drawn.

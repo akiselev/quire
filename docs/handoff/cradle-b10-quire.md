@@ -29,7 +29,7 @@ Coordinator: Cradle batch coordinator `session_01EQ79tfL3cS9uzD95nyo993`.
 2. **CQ-2** (new `crates/skelter_quire/src/a11y.rs`, `kind.rs`): `SkelterEditor::a11y_runs` builds
    `TextRun`s for a page of 50 visible lines around the caret, as egui_quire's `a11y.rs`: one run per
    visual row, cut at 255 chars, a trailing `\n` of width 0 on every line but the last, an empty run
-   for an empty line, shown text without injected pieces (inlay hints, preedit; a projection's
+   for an empty last line (any other empty line gets a `"\n"` run; review D1), shown text without injected pieces (inlay hints, preedit; a projection's
    replacement text is what is read), char lengths, positions, widths, word starts; the selection
    (anchor, focus) mapped onto the runs, an end off the page clamped to the page's first/last
    position. The kind adds them as skelter-core virtual children (`A11yCx::add_virtual_child`,

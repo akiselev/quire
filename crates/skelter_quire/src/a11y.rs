@@ -5,8 +5,8 @@
 //! A page is [`PAGE_LINES`] visible lines (lines hidden by folds get no run); it shifts by whole
 //! pages when the caret leaves it. A line's runs are its visual rows (soft wrap), each cut into
 //! chunks of at most [`MAX_RUN_CHARS`] chars (AccessKit's limit), linked as previous/next on the
-//! row; a line followed by another ends with a line feed of width 0, and an empty line has one
-//! empty run. Runs carry the text the editor shows for the document (a projection's replacement
+//! row; a line followed by another ends with a line feed of width 0, an empty last line has one
+//! empty run, and any other empty line has one `"\n"` run. Runs carry the text the editor shows for the document (a projection's replacement
 //! text included), never injected text (inlay hints, a preedit). Geometry is in the node's local
 //! space (points), as `code-editor` draws it.
 //!
