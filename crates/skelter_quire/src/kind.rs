@@ -39,6 +39,8 @@ use crate::theme::EditorTheme;
 /// What `code-editor` nodes share, lent through `Document::set_service`.
 pub struct QuireHost {
     pub fonts: Arc<skelter_text::FontStore>,
+    /// The theme of every editor. A change reaches existing editors when they next record: call
+    /// `Document::repaint_all` after changing it.
     pub theme: EditorTheme,
     /// Options new editors start with.
     pub options: EditorOptions,
@@ -353,6 +355,13 @@ impl Kind for CodeEditorKind {
         // window's nodes, so this runs again at the new scale.
         let scale = cx.scale();
         self.ensure(cx.service::<QuireHost>());
+        // the host's theme is live: one set after the editor was built (an applied-theme change;
+        // the host then calls `Document::repaint_all`) replaces the editor's copy
+        if let (Some(host), Some(i)) = (cx.service::<QuireHost>(), self.inner.get_mut())
+            && i.editor.theme != host.theme
+        {
+            i.editor.theme = host.theme.clone();
+        }
         self.with(|i| {
             let doc = i.doc.borrow();
             i.editor.layout(&doc, &mut i.view, size, scale);
