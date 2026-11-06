@@ -4,8 +4,8 @@ Session `session_01EQ79tgiJ75udjsdXHUtMSq`, 2026-11-06. Brief and lane file: Cra
 `docs/notes/batch10/BRIEF.md`, `docs/notes/batch10/LANE-quire-berth.md` (Cradle master 94b89e5).
 Coordinator: Cradle batch coordinator `session_01EQ79tfL3cS9uzD95nyo993`.
 
-- **quire:** branch `cradle-b10-quire` from master 7c0a3aa. Final sha: the commit that adds this
-  file (its parent is f14cf3c). Not merged to master (the Cradle coordinator merges).
+- **quire:** branch `cradle-b10-quire` from master 7c0a3aa. Code sha f14cf3c; the final sha is the
+  commit that records the check.sh result in this file. Not merged to master (the Cradle coordinator merges).
 - **berth:** not started: `add_repo akiselev/berth` was refused twice (below). No berth branch exists.
 
 ## Items
@@ -95,7 +95,7 @@ rustc 1.97.0, `CARGO_PROFILE_DEV_DEBUG=0`, `CARGO_NET_GIT_FETCH_WITH_CLI=true`.
 | `scripts/cargo.sh test -p skelter_quire` (final) | 27 + 2 + 17 + 4 + 2 + 1 + 1 + 0 = 54 passed |
 | `scripts/cargo.sh clippy -p skelter_quire --all-targets -- -D warnings` | clean |
 | `scripts/cargo.sh fmt -p skelter_quire -- --check` | clean |
-| `scripts/check.sh` (once, at the end) | CHECK_RESULT |
+| `scripts/check.sh` (once, at the end, on f14cf3c) | **all passed**, exit 0: fmt, workspace clippy `-D warnings`, `cargo test --workspace --all-features` **613 passed / 0 failed / 6 ignored** (master's 609 + 4 new), wasm32 quire-core and quire-text, dependency checks, egui =0.37.0 |
 
 ## Blockers
 

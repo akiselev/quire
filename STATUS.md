@@ -1,5 +1,11 @@
 # quire status
 
+## Cradle batch 10 (2026-11-06, branch `cradle-b10-quire`, not on master)
+
+- CQ-1 (code-editor lays out at its window's scale; `QuireHost.scale` removed), CQ-2 (TextRun
+  accessibility children), live `QuireHost.theme`; svelters 7e3c06d2 in `Cargo.lock`. `scripts/check.sh`
+  passed on f14cf3c (613 pass, 6 ignored). Berth items blocked (no access). `docs/handoff/cradle-b10-quire.md`.
+
 ## Handoff (2026-11-04, Scratchpad integration)
 
 - Scratchpad's source-backed projection and opt-in committed-receipt integration is complete and ready for the user-requested publication.
