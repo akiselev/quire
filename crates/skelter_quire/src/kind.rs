@@ -50,8 +50,6 @@ pub struct QuireHost {
     /// Set to `Some(Vec::new())` before editing to capture every applied record exactly once, then
     /// drain the vector each checkpoint. Capturing does not apply the transactions again.
     pub committed: Option<Vec<(NodeId, quire_core::Applied)>>,
-    /// Device pixels per point of the windows the editors are in.
-    pub scale: f32,
 }
 
 impl std::fmt::Debug for QuireHost {
@@ -60,7 +58,6 @@ impl std::fmt::Debug for QuireHost {
             .field("buffers", &self.buffers.keys().collect::<Vec<_>>())
             .field("events", &self.events.len())
             .field("committed", &self.committed.as_ref().map(Vec::len))
-            .field("scale", &self.scale)
             .finish_non_exhaustive()
     }
 }
@@ -74,7 +71,6 @@ impl QuireHost {
             buffers: HashMap::new(),
             events: Vec::new(),
             committed: None,
-            scale: 1.0,
         }
     }
 
@@ -327,7 +323,10 @@ impl Kind for CodeEditorKind {
             self.read_only = cx.prop_bool(prop(cx, READONLY));
         }
         let size = cx.size();
-        let scale = cx.service::<QuireHost>().map_or(1.0, |h| h.scale);
+        // the scale of the window this node is in (Cradle CQ-1): editors of one document in windows
+        // of different scales each shape for their own device pixels. A scale change re-records the
+        // window's nodes, so this runs again at the new scale.
+        let scale = cx.scale();
         self.ensure(cx.service::<QuireHost>());
         self.with(|i| {
             let doc = i.doc.borrow();
