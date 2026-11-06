@@ -5,6 +5,12 @@
 //! may show one document) and the outbox of [`EditorEvent`]s the host drains each frame.
 //! Hosts may also opt into committed transaction receipts through [`QuireHost::committed`].
 //!
+//! An editor re-records when its own input changes it. A change from elsewhere (an edit in another
+//! editor on the same document, a host-side edit or undo, a selection the host sets through
+//! [`QuireHost::set_selection`]) reaches the other editors when the host calls [`refresh_editors`]
+//! after it (once per turn is enough): it re-records, and re-sends the accessibility of, every
+//! editor whose document moved past what it last showed or whose selection the host set.
+//!
 //! A kind records one display list per node, so here the editor's four lists are composed into
 //! it: the content under a clip, translated by the scroll offset, the gutter by its y offset, the
 //! primary caret drawn in its blink phase (wake-ups at each blink transition). Scrolling therefore
@@ -14,10 +20,10 @@
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::sync::Arc;
 
-use quire_core::{Document, EditorView};
+use quire_core::{Document, EditorView, Selection, Version};
 use skelter_base::change::ChangeClass;
 use skelter_base::geom::{Affine, Point, Rect, RoundedRect, Vec2};
 use skelter_base::ids::{NodeId, RunId};
@@ -52,6 +58,18 @@ pub struct QuireHost {
     /// Set to `Some(Vec::new())` before editing to capture every applied record exactly once, then
     /// drain the vector each checkpoint. Capturing does not apply the transactions again.
     pub committed: Option<Vec<(NodeId, quire_core::Applied)>>,
+    /// What each editor last showed ([`QuireHost::selection`], [`refresh_editors`]).
+    shown: HashMap<NodeId, Shown>,
+    /// Selections the host set ([`QuireHost::set_selection`]), applied at the node's next prepare.
+    pending: HashMap<NodeId, Selection>,
+}
+
+/// What an editor last showed: its document (weakly: the host's buffers own it), the version it
+/// was laid out at, and its selection.
+struct Shown {
+    doc: Weak<RefCell<Document>>,
+    version: Version,
+    selection: Selection,
 }
 
 impl std::fmt::Debug for QuireHost {
@@ -73,7 +91,61 @@ impl QuireHost {
             buffers: HashMap::new(),
             events: Vec::new(),
             committed: None,
+            shown: HashMap::new(),
+            pending: HashMap::new(),
         }
+    }
+
+    /// The selection of the editor `node`: the one the host set last if the editor has not taken
+    /// it yet, else the one it showed after its last event or layout. `None` for a node that is not
+    /// a `code-editor` showing a document. Positions are at the document's current version when
+    /// nothing changed the document since; otherwise at the version the editor last showed.
+    pub fn selection(&self, node: NodeId) -> Option<Selection> {
+        self.pending
+            .get(&node)
+            .or_else(|| self.shown.get(&node).map(|s| &s.selection))
+            .cloned()
+    }
+
+    /// Sets the selection of the editor `node` (a host restoring the caret after its own undo):
+    /// queued, and applied at the node's next prepare, clamped to the document's text and rounded
+    /// down to char boundaries, with the caret scrolled into view. Positions are at the document's
+    /// current version. Call [`refresh_editors`] after it so the node re-records.
+    pub fn set_selection(&mut self, node: NodeId, sel: Selection) {
+        self.pending.insert(node, sel);
+    }
+
+    /// The editors to re-record: a selection is queued for them, or their document moved past the
+    /// version they last showed. Editors whose document is gone are forgotten.
+    fn stale(&mut self) -> Vec<NodeId> {
+        self.shown.retain(|_, s| s.doc.strong_count() > 0);
+        let mut out: Vec<NodeId> = self.pending.keys().copied().collect();
+        for (&n, s) in &self.shown {
+            let moved = s
+                .doc
+                .upgrade()
+                .is_some_and(|d| d.borrow().version() != s.version);
+            if moved && !self.pending.contains_key(&n) {
+                out.push(n);
+            }
+        }
+        out
+    }
+
+    fn forget(&mut self, node: NodeId) {
+        self.shown.remove(&node);
+        self.pending.remove(&node);
+    }
+
+    fn note_shown(&mut self, node: NodeId, i: &Inner) {
+        self.shown.insert(
+            node,
+            Shown {
+                doc: Rc::downgrade(&i.doc),
+                version: i.doc.borrow().version(),
+                selection: i.view.selection().clone(),
+            },
+        );
     }
 
     /// Adds (or replaces) the document named `name`.
@@ -88,6 +160,40 @@ impl QuireHost {
     }
 }
 
+/// Re-records the `code-editor`s a change outside their own input left behind (R1): an edit in
+/// another editor on the same document, a host-side edit or undo, a selection set through
+/// [`QuireHost::set_selection`]. Each re-lays out, re-records and sends its accessibility again
+/// (its `TextRun`s) at the next frame. The host calls it after such changes, once per turn is
+/// enough; it costs one comparison per editor when nothing changed.
+///
+/// skelter-core gives neither a kind nor a host a way to repaint one node, so this bumps the
+/// editor's hidden `revision` prop (a paint-class write). A `Document::request_paint(node)` in
+/// skelter-core would replace it.
+pub fn refresh_editors(d: &mut skelter_core::Document) {
+    let Some(host) = d.service::<QuireHost>() else {
+        return;
+    };
+    let stale = host.stale();
+    for n in stale {
+        let rev = d.view(n).and_then(|v| {
+            // a code-editor (under any tag): its prop at REVISION is `revision`
+            let p = *v.kind().prop_ids().get(REVISION)?;
+            (v.kind().prop(p)?.name == PROPS[REVISION].name)
+                .then(|| (p, v.prop(p).and_then(Value::as_i64).unwrap_or(0)))
+        });
+        match rev {
+            Some((p, r)) => {
+                let _ = d.set_prop(n, p, Value::I64(r.wrapping_add(1)));
+            }
+            None => {
+                if let Some(host) = d.service::<QuireHost>() {
+                    host.forget(n);
+                }
+            }
+        }
+    }
+}
+
 pub const PROPS: &[PropSpec] = &[
     PropSpec::new("buffer", ValueType::Str, ChangeClass::Paint)
         .doc("The name of the document (in the host's QuireHost) this editor shows."),
@@ -96,6 +202,9 @@ pub const PROPS: &[PropSpec] = &[
     PropSpec::new("gutter", ValueType::Bool, ChangeClass::Layout)
         .default(skelter_core::PropDefault::Bool(true))
         .doc("Show line numbers, fold markers and diagnostic marks."),
+    PropSpec::new("revision", ValueType::I64, ChangeClass::Paint)
+        .hidden()
+        .doc("Bumped by `refresh_editors` to re-record an editor a change outside it left behind."),
 ];
 
 pub const SIGNALS: &[SignalSpec] = &[
@@ -120,6 +229,7 @@ pub static SPEC: KindSpec = KindSpec {
 const BUFFER: usize = 0;
 const READONLY: usize = 1;
 const GUTTER: usize = 2;
+const REVISION: usize = 3;
 const CHANGE: usize = 0;
 const SELECTIONCHANGE: usize = 1;
 
@@ -259,6 +369,9 @@ impl CodeEditorKind {
         let changed = out.applied.iter().any(|a| a.changed_text());
         let selected = !out.applied.is_empty();
         if let Some(host) = cx.service::<QuireHost>() {
+            if let Some(i) = self.inner.borrow().as_ref() {
+                host.note_shown(node, i);
+            }
             if let Some(committed) = &mut host.committed {
                 committed.extend(out.applied.into_iter().map(|a| (node, a)));
             }
@@ -362,10 +475,20 @@ impl Kind for CodeEditorKind {
         {
             i.editor.theme = host.theme.clone();
         }
+        let node = cx.node.id();
+        let pending = cx
+            .service::<QuireHost>()
+            .and_then(|h| h.pending.remove(&node));
         self.with(|i| {
             let doc = i.doc.borrow();
+            if let Some(sel) = pending {
+                i.editor.restore_selection(&doc, &mut i.view, sel);
+            }
             i.editor.layout(&doc, &mut i.view, size, scale);
         });
+        if let (Some(host), Some(i)) = (cx.service::<QuireHost>(), self.inner.get_mut()) {
+            host.note_shown(node, i);
+        }
     }
 
     fn record(&self, cx: &mut RecordCx) {
@@ -531,6 +654,8 @@ impl Kind for CodeEditorKind {
             skelter_core::a11y::MAX_VIRTUAL_CHILDREN,
         );
         i.a11y_page = runs.page_start;
+        // what this send was built from: an event that changes none of it sends nothing again
+        i.a11y_key = Some(i.a11y_key());
         let owner = cx.node.id();
         let id = |k: usize| skelter_core::a11y::virtual_id(owner, k as u32);
         for (k, r) in runs.runs.iter().enumerate() {

@@ -896,6 +896,20 @@ impl SkelterEditor {
         self.push_applied(a);
     }
 
+    /// Sets the selection from outside the editor's input paths (the host restoring one after an
+    /// undo, [`crate::kind::QuireHost::set_selection`]): clamped to the text and rounded down to
+    /// char boundaries ([`EditorView::set_selection`]), the caret revealed at the next layout. A view
+    /// change only: no transaction, so nothing is reported back to the host as the editor's own.
+    pub(crate) fn restore_selection(
+        &mut self,
+        doc: &Document,
+        view: &mut EditorView,
+        sel: quire_core::Selection,
+    ) {
+        view.set_selection(doc, sel);
+        self.scroll_to_caret = true;
+    }
+
     /// Dispatches one editor command: Save and host-mode Undo/Redo become events; everything else
     /// goes through the core and is applied now.
     pub fn dispatch(&mut self, doc: &mut Document, view: &mut EditorView, cmd: EditorCommand) {

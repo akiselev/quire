@@ -20,7 +20,7 @@ use skelter_core::{Document, Kind, KindRegistry, StyleInput, Value};
 use skelter_quire::EditorTheme;
 use skelter_quire::a11y::TextRuns;
 use skelter_quire::editor::{EditorOptions, SkelterEditor};
-use skelter_quire::kind::{CodeEditorKind, QuireHost};
+use skelter_quire::kind::{CodeEditorKind, QuireHost, refresh_editors};
 
 const W: WindowId = WindowId(1);
 
@@ -539,7 +539,6 @@ fn a_read_only_editor_offers_no_edit_actions() {
 
 /// R1: a second editor on the same buffer sends its runs again after an edit in the first.
 #[test]
-#[ignore = "R1, fixed in the next commit"]
 fn a_second_editor_on_the_buffer_follows_an_edit_in_the_first() {
     let (mut d, root) = window("fn main() {}\nlet x = 1;", EditorConfig::default(), None);
     let a = add_editor(&mut d, root);
@@ -549,6 +548,7 @@ fn a_second_editor_on_the_buffer_follows_an_edit_in_the_first() {
     click(&mut d, Point::new(390.0, 8.0), 1_000, 1);
     d.frame(W, Time(1_100_000_000));
     d.dispatch(&typed(Key::X, "x", 1_200, 3));
+    refresh_editors(&mut d);
     let c = d
         .frame(W, Time(1_300_000_000))
         .expect("a commit after typing");
@@ -576,4 +576,104 @@ fn a_text_input_client_edit_sends_the_runs_again() {
     let u = c.a11y.as_ref().expect("accessibility is sent");
     let (_, kids) = runs(u, n);
     assert_eq!(values(&kids), ["fn main() {}y"]);
+}
+
+/// R1: a host-side edit (a host command writing the shared document) reaches the editor's runs.
+#[test]
+fn a_host_side_edit_sends_the_runs_again() {
+    let (mut d, n) = editor("fn main() {}");
+    d.frame(W, Time(0)).expect("a first commit");
+    let doc = host(&mut d).buffers["main"].clone();
+    {
+        let mut doc = doc.borrow_mut();
+        let mut view = EditorView::new(&doc);
+        view.set_selection(&doc, Selection::point(0));
+        doc.execute(
+            &mut view,
+            &quire_core::EditorCommand::Type {
+                text: "pub ".into(),
+            },
+            None,
+        )
+        .unwrap();
+    }
+    assert!(
+        d.frame(W, Time(1_000_000_000))
+            .and_then(|c| c.a11y)
+            .is_none(),
+        "nothing tells the editor without refresh_editors"
+    );
+    refresh_editors(&mut d);
+    let c = d.frame(W, Time(2_000_000_000)).expect("a commit");
+    let u = c.a11y.as_ref().expect("accessibility is sent");
+    let (_, kids) = runs(u, n);
+    assert_eq!(values(&kids), ["pub fn main() {}"]);
+    refresh_editors(&mut d);
+    assert!(
+        d.frame(W, Time(3_000_000_000))
+            .and_then(|c| c.a11y)
+            .is_none(),
+        "an editor that caught up is left alone"
+    );
+}
+
+fn host(d: &mut Document) -> &mut QuireHost {
+    d.service::<QuireHost>().expect("the quire host")
+}
+
+/// Item 5: the host reads an editor's selection and sets one, which the editor takes at its next
+/// prepare (clamped), shows and exposes; an undo the host runs restores the caret it saved.
+#[test]
+fn the_host_reads_and_sets_an_editors_selection() {
+    let (mut d, n) = editor("fn main() {}\nlet x = 1;");
+    let c = d.frame(W, Time(0)).expect("a first commit");
+    let (_, kids) = runs(c.a11y.as_ref().expect("tree"), n);
+    let line0 = kids[0].0;
+    assert_eq!(host(&mut d).selection(n), Some(Selection::point(0)));
+    assert_eq!(host(&mut d).selection(NodeId(9_999)), None);
+
+    // set: queued, then taken at the next prepare and exposed in the runs
+    host(&mut d).set_selection(n, Selection::single(3, 7));
+    assert_eq!(host(&mut d).selection(n), Some(Selection::single(3, 7)));
+    refresh_editors(&mut d);
+    let c = d.frame(W, Time(1_000_000_000)).expect("a commit");
+    let (node, _) = runs(c.a11y.as_ref().expect("the selection is sent"), n);
+    let sel = node.text_selection().expect("selection");
+    assert_eq!((sel.anchor.node, sel.anchor.character_index), (line0, 3));
+    assert_eq!((sel.focus.node, sel.focus.character_index), (line0, 7));
+    assert_eq!(host(&mut d).selection(n), Some(Selection::single(3, 7)));
+
+    // clamped to the text
+    host(&mut d).set_selection(n, Selection::point(1_000));
+    refresh_editors(&mut d);
+    d.frame(W, Time(2_000_000_000));
+    assert_eq!(host(&mut d).selection(n), Some(Selection::point(23)));
+
+    // an edit through the editor, then the host's undo and the caret it saved restored
+    let saved = Selection::single(4, 8);
+    click(&mut d, Point::new(390.0, 8.0), 4_000, 1);
+    d.frame(W, Time(4_100_000_000));
+    d.dispatch(&typed(Key::X, "x", 4_200, 3));
+    d.frame(W, Time(4_300_000_000));
+    assert_eq!(host(&mut d).selection(n), Some(Selection::point(13)));
+    let doc = host(&mut d).buffers["main"].clone();
+    {
+        let mut doc = doc.borrow_mut();
+        let mut view = EditorView::new(&doc);
+        doc.execute(&mut view, &quire_core::EditorCommand::Undo, None)
+            .unwrap();
+        assert_eq!(doc.text().to_string(), "fn main() {}\nlet x = 1;");
+    }
+    host(&mut d).set_selection(n, saved.clone());
+    refresh_editors(&mut d);
+    let c = d.frame(W, Time(5_000_000_000)).expect("a commit");
+    assert_eq!(host(&mut d).selection(n), Some(saved));
+    let (node, kids) = runs(c.a11y.as_ref().expect("the runs are sent again"), n);
+    assert_eq!(values(&kids), ["fn main() {}\n", "let x = 1;"]);
+    let sel = node.text_selection().expect("selection");
+    assert_eq!(
+        (sel.anchor.node, sel.anchor.character_index),
+        (kids[0].0, 4)
+    );
+    assert_eq!((sel.focus.node, sel.focus.character_index), (kids[0].0, 8));
 }
