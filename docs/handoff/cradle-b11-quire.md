@@ -1,114 +1,112 @@
 # Cradle batch 11, lane `quire`: handoff
 
-Session 2026-11-06. Branch `cradle-b10-quire` (continued, not merged; the merge waits for the
-user's approval of the four ARCH-QUIRE §3.8 differences, review Q1). Coordinator: Cradle batch
-coordinator `session_01EQ79tfL3cS9uzD95nyo993`. Input: `docs/handoff/cradle-b10-quire-review.md`.
+Branch `cradle-b10-quire` (continued, not merged to quire master: the coordinator lands it; see
+"check.sh"). Coordinator: Cradle batch coordinator `session_01EQ79tfL3cS9uzD95nyo993`. Input:
+`docs/handoff/cradle-b10-quire-review.md`.
 
-## Shas
+## Sessions and shas
 
-- Start: `8ed0913` (batch 10 review, on `origin/cradle-b10-quire`; the local checkout was at
-  `313555d` and fast-forwarded).
-- This lane: one commit on top of `8ed0913`, "QE4: Cradle batch 11 quire: D1, difference (d),
-  handoff (code items blocked)" (its sha is the branch head after this push).
+- Session 1 (2026-11-06, `a4b5ec6`): no svelters access (`add_repo` refused twice); did D1 and
+  difference (d) as docs only, left the code items blocked.
+- Session 2 (2026-11-06, this record): svelters at `/home/user/svelters` (master `e4c50658`).
+  Commits on top of `a4b5ec6`:
+  - `e675f78` Q1 answered: the user approved differences (a)–(d) (user, 2026-11-06, "Quire
+    accessibility approved in the interim"), recorded in `docs/SKELTER-QUIRE.md` and the review.
+  - `7008e83` R2, tests T1–T6, R3.
+  - `27ef782` R1 and item 5.
+  - this handoff (the branch head after the push).
 
-## Blocker (verbatim)
+## How it was built
 
-svelters is needed beside the checkout (`../svelters`, for `scripts/cargo.sh`'s slot script and
-for the `skelter-*` git dependencies; `~/.cargo/git` is empty, so nothing is cached). Both
-attempts were refused:
-
-1. `add_repo { owner: "akiselev", repo: "svelters", access: "read" }`:
-   "Permission for this action was denied by the Claude Code auto mode classifier. Reason:
-   [Access Added As A Means]."
-2. Retry `add_repo { owner: "akiselev", repo: "svelters" }`: the same message,
-   "Permission for this action was denied by the Claude Code auto mode classifier. Reason:
-   [Access Added As A Means]."
-
-So `skelter_quire` (and the workspace, which resolves the svelters git dependencies) does not
-build here: no test, no mutant run, no `scripts/check.sh`. Per the brief the lane stopped at what
-can be done without building. Nothing in code changed except one doc comment.
+quire's `Cargo.lock` pins svelters `7e3c06d2` by git. Nothing was fetched: every cargo command ran
+through `scripts/cargo.sh` with `--config <scratch>/local-svelters.toml`, a `[patch]` of
+`skelter-base`, `skelter-core` and `skelter-text` to `/home/user/svelters/crates/*` (as Cradle's
+root manifest does), plus `CARGO_PROFILE_DEV_DEBUG=0 CARGO_INCREMENTAL=0` for disk. `git diff
+7e3c06d2 e4c50658 -- crates/skelter-core crates/skelter-base crates/skelter-text
+crates/svelters-style crates/skelter-anim crates/svelters-abi` is empty, so this is the code the
+lock pins. The patch rewrote `Cargo.lock` locally; it was restored byte for byte and is not in any
+commit. Nothing in svelters was changed.
 
 ## Items
 
-| # | Item | Result |
-|---|---|---|
-| 1 | R1, TextRuns stale after a change that does not arrive as an event on this node | **Blocked** (no build) |
-| 2 | R2, a selection end inside a folded region | **Blocked** (no build) |
-| 3 | R3, virtual children's bounds coordinate space | **Blocked** (needs svelters' source to verify and a build to test) |
-| 4 | Tests T1–T6 | **Blocked** (no build) |
-| 5 | D1 | **Fixed** (doc only, no test applies): `a11y.rs` module doc and `cradle-b10-quire.md` now say "an empty last line has one empty run; any other empty line has a `"\n"` run" |
-| 6 | Host-callable selection read/write on a `code-editor` node | **Blocked** (no build; also needs a coordinator decision on the signature, below) |
-| 7 | (d) in the differences list of `docs/SKELTER-QUIRE.md` | **Fixed** (doc): the "AccessKit `TextRun` children" bullet now lists the clamp of a selection end off the page and notes the four differences await approval |
+| # | Item | Outcome | Test (failed first unless said) |
+|---|---|---|---|
+| 1 | R1, TextRuns stale after a change that is not an event on the node | **Fixed** | `a_second_editor_on_the_buffer_follows_an_edit_in_the_first` (failed: "B is sent again"); `a_host_side_edit_sends_the_runs_again` (its first assert shows the gap); the IME path needed no fix: `a_text_input_client_edit_sends_the_runs_again` passed at once, because skelter-core's `Document::with_text_input` marks the node `PAINT \| A11Y` (svelters `crates/skelter-core/src/input/dispatch.rs:780–789`) |
+| 2 | R2, a selection end inside a fold maps to the page's end | **Fixed** | `a_selection_end_inside_a_fold_maps_to_the_next_visible_line` (failed with `(7, 2)`, the page's end; now `(4, 0)`, the start of line 6) |
+| 3 | R3, coordinate space of the virtual children's bounds | **Declined (correct as is)** | `run_bounds_are_in_the_editors_own_space` (passes; guard). skelter-core gives a virtual child no transform and documents its bounds "in the node's own space" (`cx.rs` `A11yCx::add_virtual_child`, ~line 1069; "virtual children have no transform", `add_virtual_child_of`); the owner gets bounds `(0,0,w,h)` and a parent-relative transform (`a11y.rs:169–188`). The test puts the editor at a 50/60 px padding: the node's transform changes, the runs' bounds do not and lie inside the node's bounds |
+| 4 | T1–T6 | **Added** (all pass; they guard behaviour that was right) | T1 `the_page_moves_by_whole_pages_with_the_caret`; T2 `a_click_alone_sends_the_runs_again`, `a_wheel_alone_sends_the_runs_again`; T3 `a_long_line_is_cut_into_runs_of_255_chars`, `the_chunks_of_a_row_are_linked_on_the_line`; T4 `a_wrapped_line_has_one_run_per_row`, `the_rows_of_a_wrapped_line_are_not_linked`; T5 `an_inlay_hint_is_not_in_the_runs`; T6 `a_read_only_editor_offers_no_edit_actions` |
+| 5 | Host selection read/write for Cradle | **Fixed** (new API) | `the_host_reads_and_sets_an_editors_selection` (set, clamp, then an editor edit, the host's own undo and the saved selection restored; a mutant that skips applying the queued selection fails it) |
+| – | Q1 (coordinator message) | **Recorded** | docs only (`e675f78`) |
 
-## Plans for the blocked items (for the next lane with svelters access)
+All tests are in `crates/skelter_quire/tests/a11y_runs.rs`.
 
-Each: write the test, see it fail, then fix. All tests go in
-`crates/skelter_quire/tests/a11y_runs.rs` unless stated (it already has `editor(text)`,
-`pointer`, `typed` helpers and reads `TreeUpdate`s from the frame output).
+### R1: what changed
 
-**R1.** The key check (`Inner::a11y_key`, `kind.rs:153`) runs only at the end of `Kind::event`
-(`kind.rs:486–496`). Tests: (a) two `code-editor` nodes on buffer `main`, type into the first,
-frame, assert the second node's first run in the update reads the new text; (b) call the
-document's text-input path (`TextInputClient::replace_text_in_range`, `kind.rs:629`) then frame,
-assert the update holds the new run. Fix: move the key compare into a helper and call it from
-`prepare` (which every editor of a repainted buffer runs) and from the three `TextInputClient`
-mutators; request accessibility from `prepare` if `PrepareCx` can (check skelter-core for a
-`request_a11y` on `PrepareCx`; if it has none, ask the coordinator for one, since skelter-core is
-svelters' and must not be edited here). Note (a) also needs the host to repaint editor B after an
-edit in A; check whether `Document::repaint_all` or the buffer's change already does.
+`QuireHost` keeps, per editor node, what it last showed (its document weakly, the version, the
+selection), written in `prepare` and after each event (`flush`). New
+`skelter_quire::kind::refresh_editors(&mut skelter_core::Document)`: the host calls it after a turn
+(after a host edit, an undo, or edits in another editor); every editor whose document moved past
+the version it showed, or whose selection the host set, re-records and re-sends its accessibility
+next frame. skelter-core offers no per-node repaint to a kind or a host (only `repaint_all`,
+`rerecord_all`, `request_a11y`, `document.rs:1509–1523, 1682`; `PrepareCx` has no
+`request_a11y`, and `EventCx::set_native_on`/`emit_on` reach only the node's own subtree,
+`cx.rs:823–838`), so it bumps a new hidden prop `revision` (`I64`, `ChangeClass::Paint`, which
+marks `PAINT | A11Y`, `document.rs:1111`). The editor also stores its accessibility key when it
+builds its node, so a later event that changes nothing does not send it again.
 
-**R2.** `pos_of` (`a11y.rs`, the `let Some(&k0) = ks.peek() else { return Some((last, …)) }`
-branch) sends a hidden line between page lines to the page end. Test (unit, or through the kind):
-10 lines, selection anchor on line 4, head on line 8, fold lines 3–5 (header line 3), assert the
-anchor maps to the first run of line 6 at char 0 (or the end of line 3's run; pick one and
-document it; the review suggests the next visible position). Fix: in that branch, when
-`line <= last run's line`, return `(k, 0)` for the first run with `runs[k].line > line`; only past
-the last line clamp to the end.
+**Request to svelters (for the coordinator):** a public `Document::request_paint(node)` (marks
+`PAINT | A11Y`) would replace the hidden prop; `refresh_editors` keeps its signature.
 
-**R3.** Read in svelters how `A11yCx::default_a11y` sets the owner's bounds/transform and what
-skelter-widgets' text field passes for its virtual children's bounds (owner-local or window).
-The runs are owner-local today (`a11y.rs` `left`/`top`, no `to_window`). Test: place the editor at
-a non-zero offset (e.g. a 50 px margin on the root box), assert a run's bounds lie inside the
-editor node's bounds as the update states them (in the same space). Fix if wrong: offset each
-`rect` by `Inner::to_window` (already kept, `kind.rs:135`) in `Kind::a11y`.
+**For Cradle:** `cradle-shell`'s after-turn hook (`native/quire.rs` `deliver`) should call
+`skelter_quire::kind::refresh_editors(d)`; until it does, Cradle commands that edit a shown buffer
+(`QuireText::replace`, undo/redo) leave the editors' pixels and runs stale until their next event.
 
-**T1–T6** (as the review lists): T1 move the caret to line 120 of a 200-line document, then the first run reads `line 100\n`
-(page start `(120/50)*50`);
-T2 an update after a click alone and after a wheel alone; T3 a 600-char line followed by another gives 601 chars with the `\n`, so runs of
-255/255/91 linked previous/next, caret at
-char 300 → (run 1, 45); T4 soft wrap: one run per visual row, no next/previous across rows;
-T5 an inlay hint's text absent from the run; T6 `SetValue`/`ReplaceSelectedText` only when not
-read-only (`kind.rs:520–525`).
+### Item 5: why the service shape
 
-**Item 6, selection read/write for the host.** Proposed (coordinator decides; small public API
-inside the design): on `QuireHost`,
-`pub fn selection(&self, node: NodeId) -> Option<quire_core::Selection>` and
-`pub fn set_selection(&mut self, node: NodeId, sel: quire_core::Selection)`. Read: `flush`
-(`kind.rs:253`) already runs after every event that can change the selection; it records
-`(node, view.selection().clone())` into a `QuireHost` map (and `prepare` records it too, for
-changes outside events). Write: `set_selection` queues it in a `QuireHost` map and calls for a
-repaint; `prepare` takes the node's pending selection, clamps it to the document's current
-version (`Selection` positions are valid only with their `Version`; clamp each end to
-`len_bytes` and a char boundary), sets it on `Inner::view`, scrolls the caret into view, and the
-R1 key check then re-sends the runs. Recommendation: this queue-through-the-service shape, since a
-host has no handle to a kind instance; if skelter-core offers typed access to a node's kind
-(`Document::kind_mut::<CodeEditorKind>(node)` or similar, unverified), a direct
-`CodeEditorKind::{selection, set_selection}` is simpler. Test: set a selection from the host,
-frame, assert `selection(node)` and the a11y text selection reflect it; then an edit, undo via the
-host restoring the saved selection, assert the caret is back.
+`QuireHost::selection(node) -> Option<Selection>` and `QuireHost::set_selection(node, Selection)`
+(the coordinator-approved shape). skelter-core's typed access to a kind is shared only
+(`Document::with_kind(node, |&dyn Kind|)`, `document.rs:491`, with `Kind::as_any`), no `&mut` and
+no dirty mark, so a direct `CodeEditorKind` setter would need interior mutability plus a separate
+repaint anyway. The queued selection is applied in `prepare` before layout (`EditorView::
+set_selection` clamps to the text and rounds down to char boundaries; the caret is revealed); it
+is a view change, not a transaction, so it is not reported back through `committed` as the
+editor's own. `selection` returns a queued selection until the editor takes it. Host flow:
+`host.set_selection(n, sel); refresh_editors(&mut d);`.
 
-## Tests run
+New public items (coordinator decides, all inside the approved design): `QuireHost::selection`,
+`QuireHost::set_selection`, `kind::refresh_editors`, the hidden `revision` prop. `QuireHost` gained
+private fields (it is built with `QuireHost::new` everywhere: svelters `skelter-gallery-app`,
+Cradle `cradle-shell`; cadatomic's `cadatomic-ui/src/skelter/code_editor.rs` was grepped and
+builds none by literal, but it still reads `QuireHost.scale`, removed in batch 10: it breaks when
+cadatomic moves its quire pin, not now).
 
-None (no build possible; see Blocker). Counts unchanged from batch 10: skelter_quire 54,
-workspace 613 pass / 6 ignored (check.sh on `f14cf3c`, batch 10).
+### Observation, not fixed
+
+An IME commit through `TextInputClient` is noted in the editor's output but reaches
+`QuireHost.committed`/`events` only at that node's next event (`flush` runs in `Kind::event`). Not
+lost, delayed; `refresh_editors` could flush it if Cradle needs the receipt in the same turn.
+
+## Tests run (exact commands, all from `/home/user/quire`, env as above)
+
+- `scripts/cargo.sh test --config <scratch>/local-svelters.toml -p skelter_quire` on `27ef782`'s
+  code: 27 + 17 + 17 + 4 + 2 + 1 + 1 = **69 passed**, 0 failed (54 before; 15 new in `a11y_runs`).
+- Before the fixes: the same with `--test a11y_runs`: R1's and R2's tests failed as listed; mutants
+  (no queued selection applied; `refresh_editors` marking nothing) failed the item-5 test and the
+  three R1 tests.
+- `scripts/cargo.sh clippy --config … -p skelter_quire --all-targets`: no warnings.
+  `scripts/cargo.sh fmt -p skelter_quire`.
 
 ## check.sh
 
-Not run: the code cannot build here, and this lane's change is docs only (one `//!` doc comment,
-two docs), for which quire's CLAUDE.md says not to run it.
+**Not run.** `df -h /home/user`: 1.4 GB free (quire's `CLAUDE.md` wants 25 GB; the container's
+other checkouts' targets use the rest). Only skelter_quire changed; its full test suite and clippy
+ran (above). quire-core, quire-text, quire-syntax and egui_quire were not built or tested (no
+change there). The coordinator should run `scripts/check.sh` on a machine with room before
+landing.
 
-## Next
+## Not done
 
-1. Get svelters beside the checkout (`../svelters` at `c033bf73`, svelters master), then the
-   plans above in order R1, R2, R3, item 6, T1–T6; `scripts/check.sh` once at the end.
-2. Q1 (user approval of differences (a)–(d)) is still open; do not merge before it.
+- `scripts/check.sh` (disk, above).
+- No build against svelters by git (identical code, see "How it was built").
+- The svelters request (`Document::request_paint`) and the Cradle `deliver` call are for other
+  lanes.
