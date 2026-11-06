@@ -50,3 +50,13 @@ Rerun `scripts/check.sh` at `6e9cdd9` on a machine that can fetch `akiselev/svel
 `7e3c06d2` (the macbook, or a cloud session that has svelters attached). Check that the svelters
 `master` branch still contains `7e3c06d2`. The lock pins it, and cargo said "revision not found"
 only because of the 401, but confirm it there.
+
+## Rerun in the coordinator's container (2026-11-06, passed)
+
+- Tested `cradle-b10-quire` at cb86f8c (code unchanged since 6e9cdd9), svelters fetched by git at the locked sha.
+- First run: every step through tests passed; wasm32 failed only because the container lacked the
+  `wasm32-unknown-unknown` target (E0463). Installed it with `rustup target add`, then reran `scripts/check.sh`
+  once, unmodified, with `CARGO_PROFILE_DEV_DEBUG=0`.
+- Second run: fmt, clippy, tests, wasm32 quire-core, wasm32 quire-text and the dependency guards all passed
+  ("check.sh: all passed", exit 0). Tests: 628 passed, 0 failed, 6 ignored (sum of every `test result` line).
+- Not run: macOS and Windows.
