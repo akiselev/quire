@@ -3624,25 +3624,27 @@ checksum = "33f4fe9184a62d842c9ef383018f3306d8ba224fd9d836f56d7288308847c256"
 [[package]]
 name = "skelter-anim"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#cd2adc4fb247262c589f3f8b07f53edd84a352c4"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
 dependencies = [
  "skelter-base",
+ "svelters-style",
 ]
 
 [[package]]
 name = "skelter-base"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#cd2adc4fb247262c589f3f8b07f53edd84a352c4"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
 dependencies = [
  "accesskit",
  "bytemuck",
  "smallvec",
+ "svelters-abi",
 ]
 
 [[package]]
 name = "skelter-core"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#cd2adc4fb247262c589f3f8b07f53edd84a352c4"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
 dependencies = [
  "accesskit",
  "skelter-anim",
@@ -3655,7 +3657,7 @@ dependencies = [
 [[package]]
 name = "skelter-text"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#cd2adc4fb247262c589f3f8b07f53edd84a352c4"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
 dependencies = [
  "fontique",
  "parley",
@@ -3825,15 +3827,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2b2231b7c3057d5e4ad0156fb3dc807d900806020c5ffa3ee6ff2c8c76fb8520"
 
 [[package]]
+name = "svelters-abi"
+version = "0.0.0"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
+
+[[package]]
 name = "svelters-style"
 version = "0.0.0"
-source = "git+https://github.com/akiselev/svelters?branch=master#cd2adc4fb247262c589f3f8b07f53edd84a352c4"
+source = "git+https://github.com/akiselev/svelters?branch=master#7e3c06d2a0818209199a3a664910e66edafaa6fc"
 dependencies = [
  "cssparser",
  "cssparser-color",
  "precomputed-hash",
  "selectors",
  "smallvec",
+ "svelters-abi",
 ]
 
 [[package]]
