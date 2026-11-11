@@ -23,6 +23,9 @@ pub(crate) struct InjPattern {
     pub lang: Option<InjLang>,
     pub combined: bool,
     pub include_children: bool,
+    /// `(#set! injection.strip-quotes)`: the content node is a quoted string; inject its text without
+    /// the quotes, and without the newline a multi-line string drops after its opening quotes.
+    pub strip_quotes: bool,
 }
 
 #[derive(Debug)]
@@ -75,6 +78,8 @@ impl std::fmt::Display for QueryError {
 impl std::error::Error for QueryError {}
 
 static CONFIGS: [OnceLock<Result<LangConfig, QueryError>>; Lang::ALL.len()] = [
+    OnceLock::new(),
+    OnceLock::new(),
     OnceLock::new(),
     OnceLock::new(),
     OnceLock::new(),
@@ -139,6 +144,7 @@ fn build(lang: Lang, grammar: Language) -> Result<LangConfig, QueryError> {
                     lang: None,
                     combined: false,
                     include_children: false,
+                    strip_quotes: false,
                 };
                 for prop in query.property_settings(i) {
                     match &*prop.key {
@@ -147,6 +153,7 @@ fn build(lang: Lang, grammar: Language) -> Result<LangConfig, QueryError> {
                         }
                         "injection.combined" => p.combined = true,
                         "injection.include-children" => p.include_children = true,
+                        "injection.strip-quotes" => p.strip_quotes = true,
                         _ => {}
                     }
                 }

@@ -2,7 +2,8 @@
 //!
 //! Grammars: Svelte (`tree-sitter-htmlx-svelte`), TypeScript and TSX (`tree-sitter-typescript`),
 //! JavaScript (`tree-sitter-javascript`), CSS (`tree-sitter-css`) and TOML (`tree-sitter-toml-ng`),
-//! one Cargo feature each (all on by default but `toml`).
+//! one Cargo feature each (all on by default), plus Python (`tree-sitter-python`) and WGSL
+//! (`tree-sitter-wgsl-bevy`). WGSL is also injected into TOML strings under a `wgsl.<name>` key.
 //! Queries live in `queries/<lang>/*.scm` (Helix's layout); see `THIRD_PARTY_NOTICES.md`.
 //!
 //! The engine (E5, `docs/design/E5.md`) is our own layered query runner over tree-sitter's

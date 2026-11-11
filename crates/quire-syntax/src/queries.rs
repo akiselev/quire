@@ -21,7 +21,9 @@ table! {
     "css"/"highlights", "css"/"folds", "css"/"indents", "css"/"brackets",
     "svelte"/"highlights", "svelte"/"injections", "svelte"/"folds", "svelte"/"indents",
     "svelte"/"brackets",
-    "toml"/"highlights", "toml"/"folds", "toml"/"indents", "toml"/"brackets",
+    "toml"/"highlights", "toml"/"injections", "toml"/"folds", "toml"/"indents", "toml"/"brackets",
+    "python"/"highlights", "python"/"folds", "python"/"indents", "python"/"brackets",
+    "wgsl"/"highlights", "wgsl"/"folds", "wgsl"/"indents", "wgsl"/"brackets",
 }
 
 /// The raw text of one query file, if it exists.

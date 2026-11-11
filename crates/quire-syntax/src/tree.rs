@@ -705,6 +705,9 @@ fn find_injections<S: Source + ?Sized>(
     for h in hits {
         let pat = &inj.patterns[h.pattern];
         let mut ranges = content_ranges(h.node, pat.include_children);
+        if pat.strip_quotes {
+            ranges = strip_quotes(h.node, ranges, chunks);
+        }
         if !parent_ranges.is_empty() {
             ranges = intersect(&ranges, parent_ranges, ctx.src);
         }
@@ -731,6 +734,69 @@ fn find_injections<S: Source + ?Sized>(
     }
     for f in &mut out {
         f.ranges.sort_by_key(|r| r.start_byte);
+    }
+    out
+}
+
+/// `ranges` of the quoted string `node` without its quotes: `"..."`, `'...'`, `"""..."""` and
+/// `'''...'''`, and without the newline directly after a multi-line string's opening quotes
+/// (TOML drops it). A node that is not quoted is returned as it was.
+fn strip_quotes(node: Node<'_>, ranges: Vec<TsRange>, chunks: &Chunks<'_>) -> Vec<TsRange> {
+    let (start, end) = (node.start_byte(), node.end_byte());
+    let text = chunks.string(start..end);
+    let b = text.as_bytes();
+    let quote = match b.first() {
+        Some(&q @ (b'"' | b'\'')) => q,
+        _ => return ranges,
+    };
+    let q3 = [quote; 3];
+    let n = if b.len() >= 6 && b.starts_with(&q3) && b.ends_with(&q3) {
+        3
+    } else if b.len() >= 2 && b.ends_with(&[quote]) {
+        1
+    } else {
+        return ranges;
+    };
+    let mut open = n;
+    let mut start_point = Point {
+        row: node.start_position().row,
+        column: node.start_position().column + n,
+    };
+    if n == 3 {
+        let nl = if b[n..].starts_with(b"\r\n") {
+            2
+        } else if b[n..].starts_with(b"\n") {
+            1
+        } else {
+            0
+        };
+        if nl > 0 {
+            open += nl;
+            start_point = Point {
+                row: start_point.row + 1,
+                column: 0,
+            };
+        }
+    }
+    let new_start = start + open;
+    let new_end = end - n;
+    let end_point = Point {
+        row: node.end_position().row,
+        column: node.end_position().column - n,
+    };
+    let mut out = Vec::new();
+    for mut r in ranges {
+        if r.start_byte < new_start {
+            r.start_byte = new_start;
+            r.start_point = start_point;
+        }
+        if r.end_byte > new_end {
+            r.end_byte = new_end;
+            r.end_point = end_point;
+        }
+        if r.start_byte < r.end_byte {
+            out.push(r);
+        }
     }
     out
 }

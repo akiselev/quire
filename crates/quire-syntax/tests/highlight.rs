@@ -18,12 +18,13 @@ fn fixture(name: &str) -> String {
 fn queries_compile() {
     quire_syntax::check_queries().unwrap();
     for lang in Lang::ALL {
-        if lang == Lang::Toml {
-            // an optional feature
-            assert_eq!(lang.is_available(), cfg!(feature = "toml"));
-            continue;
-        }
-        assert!(lang.is_available(), "{lang} is a default feature");
+        let on = match lang {
+            Lang::Toml => cfg!(feature = "toml"),
+            Lang::Python => cfg!(feature = "python"),
+            Lang::Wgsl => cfg!(feature = "wgsl"),
+            _ => true,
+        };
+        assert_eq!(lang.is_available(), on, "{lang}");
     }
 }
 
@@ -162,4 +163,22 @@ fn svelte_spots() {
     assert_eq!(style_of(Lang::Svelte, &s, "if count"), "keyword");
     assert_eq!(style_of(Lang::Svelte, &s, "\"app\""), "string");
     assert_eq!(style_of(Lang::Svelte, &s, "bind:"), "keyword");
+}
+
+#[cfg(feature = "python")]
+#[test]
+fn python_spots() {
+    let s = "import os\n\n@cache\ndef f(x: int) -> str:\n    \"\"\"doc\"\"\"\n    return os.path.join('a', \"b\\n\") + str(1.5)  # c\n\nclass Foo:\n    pass\n";
+    assert_eq!(style_of(Lang::Python, s, "import"), "keyword");
+    assert_eq!(style_of(Lang::Python, s, "def"), "keyword");
+    assert_eq!(style_of(Lang::Python, s, "f("), "function");
+    assert_eq!(style_of(Lang::Python, s, "join"), "property");
+    assert_eq!(style_of(Lang::Python, s, "str("), "function+lib");
+    assert_eq!(style_of(Lang::Python, s, "1.5"), "number");
+    assert_eq!(style_of(Lang::Python, s, "# c"), "comment");
+    assert_eq!(style_of(Lang::Python, s, "\\n"), "string.escape");
+    assert_eq!(style_of(Lang::Python, s, "'a'"), "string");
+    assert_eq!(style_of(Lang::Python, s, "Foo"), "constructor");
+    assert_eq!(Lang::from_extension("py"), Some(Lang::Python));
+    assert_eq!(Lang::from_name("Python"), Some(Lang::Python));
 }

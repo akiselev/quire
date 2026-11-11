@@ -1,6 +1,6 @@
 [package]
 name = "quire-syntax"
-description = "tree-sitter highlighters (Svelte, TypeScript, JavaScript, CSS, TOML) for the quire code editor"
+description = "tree-sitter highlighters (Svelte, TypeScript, JavaScript, CSS, TOML, Python, WGSL) for the quire code editor"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,14 +9,16 @@ repository.workspace = true
 publish.workspace = true
 
 [features]
-default = ["svelte", "typescript", "javascript", "css"]
+default = ["svelte", "typescript", "javascript", "css", "toml", "python", "wgsl"]
 # One feature per grammar: each is a C build. Svelte injects JS/TS/CSS, so it pulls them in.
 svelte = ["dep:tree-sitter-htmlx-svelte", "javascript", "typescript", "css"]
 typescript = ["dep:tree-sitter-typescript"]
 javascript = ["dep:tree-sitter-javascript"]
 css = ["dep:tree-sitter-css"]
-# Not a default: cadatomic's gallery shows Cargo manifests (Q-P9).
 toml = ["dep:tree-sitter-toml-ng"]
+python = ["dep:tree-sitter-python"]
+# WGSL is also injected into TOML strings, when `toml` is on too.
+wgsl = ["dep:tree-sitter-wgsl-bevy"]
 
 [dependencies]
 quire-core.workspace = true
@@ -28,6 +30,10 @@ tree-sitter-typescript = { version = "0.23.2", optional = true }
 tree-sitter-javascript = { version = "0.25.0", optional = true }
 tree-sitter-css = { version = "0.25.0", optional = true }
 tree-sitter-toml-ng = { version = "0.7.0", optional = true }
+tree-sitter-python = { version = "0.25.0", optional = true }
+# The Bevy dialect of WGSL: a superset of plain WGSL (adds `#import` and `#ifdef`); the plain grammar
+# (tree-sitter-wgsl 0.0.6) needs tree-sitter 0.20.
+tree-sitter-wgsl-bevy = { version = "0.1.4", optional = true }
 
 [dev-dependencies]
 quire-core.workspace = true

@@ -16,17 +16,24 @@ pub enum Lang {
     Css,
     /// TOML (`tree-sitter-toml-ng`; the optional `toml` feature).
     Toml,
+    /// Python (`tree-sitter-python`; the `python` feature).
+    Python,
+    /// WGSL (`tree-sitter-wgsl-bevy`; the `wgsl` feature). Also injected into TOML strings under a
+    /// `wgsl.<name>` key.
+    Wgsl,
 }
 
 impl Lang {
     /// Every language, in a fixed order (also the index order of per-language tables).
-    pub const ALL: [Lang; 6] = [
+    pub const ALL: [Lang; 8] = [
         Lang::Svelte,
         Lang::TypeScript,
         Lang::Tsx,
         Lang::JavaScript,
         Lang::Css,
         Lang::Toml,
+        Lang::Python,
+        Lang::Wgsl,
     ];
 
     /// The stable id: the query directory name and the name injections use.
@@ -38,6 +45,8 @@ impl Lang {
             Lang::JavaScript => "javascript",
             Lang::Css => "css",
             Lang::Toml => "toml",
+            Lang::Python => "python",
+            Lang::Wgsl => "wgsl",
         }
     }
 
@@ -52,6 +61,8 @@ impl Lang {
             "js" | "javascript" | "jsx" | "mjs" | "cjs" | "ecmascript" => Lang::JavaScript,
             "css" => Lang::Css,
             "toml" => Lang::Toml,
+            "py" | "python" | "pyi" => Lang::Python,
+            "wgsl" => Lang::Wgsl,
             _ => return None,
         })
     }
@@ -85,6 +96,10 @@ impl Lang {
             Lang::Css => Some(tree_sitter_css::LANGUAGE.into()),
             #[cfg(feature = "toml")]
             Lang::Toml => Some(tree_sitter_toml_ng::LANGUAGE.into()),
+            #[cfg(feature = "python")]
+            Lang::Python => Some(tree_sitter_python::LANGUAGE.into()),
+            #[cfg(feature = "wgsl")]
+            Lang::Wgsl => Some(tree_sitter_wgsl_bevy::LANGUAGE.into()),
             #[allow(unreachable_patterns)]
             _ => None,
         }

@@ -107,6 +107,7 @@ copied.
 | `svelte/highlights.scm` | tree-sitter-htmlx-svelte 0.1.16 `queries/highlights.scm` (+ quire overrides) |
 | `svelte/folds.scm` | tree-sitter-htmlx-svelte 0.1.16 `queries/folds.scm` |
 | `svelte/injections.scm`, `svelte/indents.scm` | patterns after tree-sitter-htmlx-svelte 0.1.16 queries |
+| `python/highlights.scm` | tree-sitter-python 0.25.0 `queries/highlights.scm` (+ quire override) |
 | `toml/highlights.scm` | tree-sitter-toml-ng 0.7.0 `queries/highlights.scm` (+ quire overrides) |
 
 ### tree-sitter-javascript, tree-sitter-typescript, tree-sitter-css
